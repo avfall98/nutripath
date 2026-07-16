@@ -1,0 +1,257 @@
+"use client"
+
+import { useMemo, useState, useTransition } from "react"
+import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
+import type { FoodDTO, MealGroupDTO } from "@/lib/types"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { toast } from "sonner"
+import { Apple, Plus, Search } from "lucide-react"
+
+type Props = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  group: MealGroupDTO
+  dateKey: string
+  foods: FoodDTO[]
+  onAdded: () => void
+}
+
+export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdded }: Props) {
+  const [pending, startTransition] = useTransition()
+  const [query, setQuery] = useState("")
+  const [qty, setQty] = useState("1")
+  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return foods
+    return foods.filter(
+      (f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q),
+    )
+  }, [foods, query])
+
+  function num(v: string, fallback = 0): number {
+    const n = Number(v)
+    return Number.isFinite(n) && v.trim() !== "" ? n : fallback
+  }
+
+  function addFromLibrary(food: FoodDTO) {
+    const quantity = num(qty, 1) || 1
+    startTransition(async () => {
+      await addEntryFromFood({
+        dateKey,
+        foodId: food.id,
+        mealGroupId: group.id,
+        mealGroupName: group.name,
+        quantity,
+      })
+      toast.success(`Added ${food.name} to ${group.name}.`)
+      onAdded()
+    })
+  }
+
+  function submitQuick(e: React.FormEvent) {
+    e.preventDefault()
+    if (!quick.name.trim()) {
+      toast.error("Enter a name for the item.")
+      return
+    }
+    startTransition(async () => {
+      await addQuickEntry({
+        dateKey,
+        mealGroupId: group.id,
+        mealGroupName: group.name,
+        name: quick.name,
+        calories: num(quick.calories),
+        protein: num(quick.protein),
+        carbs: quick.carbs.trim() === "" ? null : num(quick.carbs),
+        fat: quick.fat.trim() === "" ? null : num(quick.fat),
+        quantity: num(quick.quantity, 1) || 1,
+      })
+      toast.success(`Added ${quick.name} to ${group.name}.`)
+      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+      onAdded()
+      onOpenChange(false)
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add to {group.name}</DialogTitle>
+          <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>
+        </DialogHeader>
+
+        <Tabs defaultValue="library" className="min-h-0">
+          <TabsList className="w-full">
+            <TabsTrigger value="library" className="flex-1">
+              From library
+            </TabsTrigger>
+            <TabsTrigger value="quick" className="flex-1">
+              Quick add
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="library" className="mt-4 flex flex-col gap-3">
+            <div className="flex items-end gap-3">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Search foods..."
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <div className="w-20">
+                <label htmlFor="lib-qty" className="mb-1 block text-xs font-medium text-muted-foreground">
+                  Servings
+                </label>
+                <Input
+                  id="lib-qty"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="0.5"
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="-mx-1 max-h-72 overflow-y-auto px-1">
+              {foods.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No foods saved yet. Add some in the Foods tab, or use Quick add.
+                </p>
+              ) : filtered.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">No matches for "{query}".</p>
+              ) : (
+                <ul className="flex flex-col gap-1.5">
+                  {filtered.map((food) => (
+                    <li key={food.id}>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => addFromLibrary(food)}
+                        className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left transition-colors hover:bg-accent disabled:opacity-50"
+                      >
+                        <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                          {food.imageUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                          ) : (
+                            <Apple className="size-5 text-muted-foreground" />
+                          )}
+                        </span>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate font-medium">{food.name}</span>
+                          <span className="block truncate text-xs text-muted-foreground">
+                            {Math.round(food.calories)} kcal · {Math.round(food.protein)}g protein
+                            {food.servingSize ? ` · ${food.servingSize}` : ""}
+                          </span>
+                        </span>
+                        <Plus className="size-4 shrink-0 text-muted-foreground" />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="quick" className="mt-4">
+            <form onSubmit={submitQuick}>
+              <FieldGroup>
+                <Field>
+                  <FieldLabel htmlFor="q-name">Name</FieldLabel>
+                  <Input
+                    id="q-name"
+                    value={quick.name}
+                    onChange={(e) => setQuick((s) => ({ ...s, name: e.target.value }))}
+                    placeholder="e.g. Banana"
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <Field>
+                    <FieldLabel htmlFor="q-cal">Calories</FieldLabel>
+                    <Input
+                      id="q-cal"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={quick.calories}
+                      onChange={(e) => setQuick((s) => ({ ...s, calories: e.target.value }))}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-pro">Protein</FieldLabel>
+                    <Input
+                      id="q-pro"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={quick.protein}
+                      onChange={(e) => setQuick((s) => ({ ...s, protein: e.target.value }))}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-carb">Carbs</FieldLabel>
+                    <Input
+                      id="q-carb"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={quick.carbs}
+                      onChange={(e) => setQuick((s) => ({ ...s, carbs: e.target.value }))}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-fat">Fat</FieldLabel>
+                    <Input
+                      id="q-fat"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      value={quick.fat}
+                      onChange={(e) => setQuick((s) => ({ ...s, fat: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+                <Field>
+                  <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
+                  <Input
+                    id="q-qty"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.5"
+                    value={quick.quantity}
+                    onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
+                    className="w-28"
+                  />
+                </Field>
+                <Button type="submit" disabled={pending} className="w-full">
+                  <Plus data-icon="inline-start" />
+                  Add to {group.name}
+                </Button>
+              </FieldGroup>
+            </form>
+          </TabsContent>
+        </Tabs>
+      </DialogContent>
+    </Dialog>
+  )
+}

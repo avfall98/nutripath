@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { createFood, updateFood, uploadFoodImage, type FoodInput } from "@/app/actions/foods"
+import { extractFoodMetadata, type ExtractedFoodData } from "@/app/actions/extract-food-metadata"
 import type { FoodDTO } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,7 +17,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { toast } from "sonner"
-import { ImagePlus, Link2, Loader2, X } from "lucide-react"
+import { ImagePlus, Link2, Loader2, X, Sparkles } from "lucide-react"
 
 type Props = {
   open: boolean
@@ -39,9 +40,11 @@ const empty = {
 export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
+  const [extracting, setExtracting] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
+  const debounceRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
     if (open) {
@@ -61,6 +64,48 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  async function extractMetadata(url: string) {
+    if (!url || !url.startsWith("http")) return
+
+    setExtracting(true)
+    try {
+      const data = await extractFoodMetadata(url)
+
+      setForm((f) => ({
+        ...f,
+        name: data.name || f.name,
+        calories: data.calories != null && !f.calories ? String(data.calories) : f.calories,
+        protein: data.protein != null && !f.protein ? String(data.protein) : f.protein,
+        carbs: data.carbs != null && !f.carbs ? String(data.carbs) : f.carbs,
+        fat: data.fat != null && !f.fat ? String(data.fat) : f.fat,
+        servingSize: data.servingSize || f.servingSize,
+      }))
+
+      if (data.imageUrl && !imageUrl) {
+        setImageUrl(data.imageUrl)
+      }
+
+      if (data.name || data.calories) {
+        toast.success("Details extracted from URL. Edit as needed.")
+      }
+    } catch (error) {
+      console.error("[v0] Extraction failed:", error)
+    } finally {
+      setExtracting(false)
+    }
+  }
+
+  function handleInfoUrlChange(value: string) {
+    set("infoUrl", value)
+
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => {
+      if (value && value.startsWith("http")) {
+        extractMetadata(value)
+      }
+    }, 1500)
   }
 
   function num(v: string): number | null {
@@ -279,15 +324,26 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             <Field>
               <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
               <div className="relative">
-                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                {extracting ? (
+                  <Loader2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-primary" />
+                ) : (
+                  <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                )}
                 <Input
                   id="food-url"
                   type="url"
                   className="pl-9"
                   value={form.infoUrl}
-                  onChange={(e) => set("infoUrl", e.target.value)}
+                  onChange={(e) => handleInfoUrlChange(e.target.value)}
                   placeholder="https://..."
+                  disabled={extracting}
                 />
+                {extracting && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
+                    <Sparkles className="size-3" />
+                    Extracting
+                  </div>
+                )}
               </div>
             </Field>
           </FieldGroup>

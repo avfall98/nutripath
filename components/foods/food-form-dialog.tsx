@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { createFood, updateFood, uploadFoodImage, type FoodInput } from "@/app/actions/foods"
-import { extractFoodMetadata } from "@/app/actions/extract-food-metadata"
 import type { FoodDTO } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,7 +18,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { ImagePlus, Link2, Loader2, X, Sparkles } from "lucide-react"
+import { ImagePlus, Link2, Loader2, X } from "lucide-react"
 
 const KJ_PER_KCAL = 4.184
 type EnergyUnit = "kcal" | "kj"
@@ -45,12 +44,10 @@ const empty = {
 export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
-  const [extracting, setExtracting] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [energyUnit, setEnergyUnit] = useState<EnergyUnit>("kcal")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
-  const debounceRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
     if (open) {
@@ -88,58 +85,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     const n = Number(value)
     if (!Number.isFinite(n)) return set("calories", "")
     set("calories", String(round(n / KJ_PER_KCAL, 2)))
-  }
-
-  async function extractMetadata(url: string) {
-    if (!url || !url.startsWith("http")) return
-
-    setExtracting(true)
-    try {
-      const data = await extractFoodMetadata(url)
-
-      const kcal =
-        data.calories != null
-          ? round(data.calories, 1)
-          : data.energyKj != null
-            ? round(data.energyKj / KJ_PER_KCAL, 1)
-            : null
-
-      setForm((f) => ({
-        ...f,
-        name: data.name || f.name,
-        brand: data.brand || f.brand,
-        calories: kcal != null && !f.calories ? String(kcal) : f.calories,
-        protein: data.protein != null && !f.protein ? String(data.protein) : f.protein,
-        carbs: data.carbs != null && !f.carbs ? String(data.carbs) : f.carbs,
-        fat: data.fat != null && !f.fat ? String(data.fat) : f.fat,
-        servingSize: data.servingSize || f.servingSize,
-      }))
-
-      if (data.imageUrl && !imageUrl) {
-        setImageUrl(data.imageUrl)
-      }
-
-      if (data.name || kcal != null || data.protein != null) {
-        toast.success("Details pulled from the link. Review and edit before saving.")
-      } else {
-        toast.info("Could not read nutrition from that link. Enter details manually.")
-      }
-    } catch (error) {
-      console.error("[v0] Extraction failed:", error)
-    } finally {
-      setExtracting(false)
-    }
-  }
-
-  function handleInfoUrlChange(value: string) {
-    set("infoUrl", value)
-
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => {
-      if (value && value.startsWith("http")) {
-        extractMetadata(value)
-      }
-    }, 1500)
   }
 
   function num(v: string): number | null {
@@ -381,26 +326,15 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             <Field>
               <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
               <div className="relative">
-                {extracting ? (
-                  <Loader2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-primary" />
-                ) : (
-                  <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                )}
+                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="food-url"
                   type="url"
                   className="pl-9"
                   value={form.infoUrl}
-                  onChange={(e) => handleInfoUrlChange(e.target.value)}
+                  onChange={(e) => set("infoUrl", e.target.value)}
                   placeholder="https://..."
-                  disabled={extracting}
                 />
-                {extracting && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <Sparkles className="size-3" />
-                    Extracting
-                  </div>
-                )}
               </div>
             </Field>
           </FieldGroup>

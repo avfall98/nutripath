@@ -61,7 +61,11 @@ export function Dashboard({
     <div className="flex flex-col gap-6">
       <DayNavigator date={dateKey} onDateChange={setDateKey} />
 
-      <DaySummary profile={profile} totals={totals} />
+      <DaySummary
+        totals={totals}
+        targetCalories={profile?.targetCalories ?? null}
+        targetProtein={profile?.targetProtein ?? null}
+      />
 
       <div className="flex flex-col gap-4">
         <h2 className="text-sm font-semibold text-muted-foreground">Meals</h2>

@@ -15,8 +15,13 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { ImagePlus, Link2, Loader2, X } from "lucide-react"
+
+const KJ_PER_KCAL = 4.184
+type EnergyUnit = "kcal" | "kj"
 
 type Props = {
   open: boolean
@@ -40,6 +45,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [energyUnit, setEnergyUnit] = useState<EnergyUnit>("kcal")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -56,11 +62,29 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         infoUrl: food?.infoUrl ?? "",
       })
       setImageUrl(food?.imageUrl ?? null)
+      setEnergyUnit("kcal")
     }
   }, [open, food])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // form.calories is always stored in kcal (source of truth). The energy input
+  // shows and accepts values in the currently selected unit.
+  const energyDisplay =
+    form.calories === ""
+      ? ""
+      : energyUnit === "kcal"
+        ? form.calories
+        : String(round(Number(form.calories) * KJ_PER_KCAL, 0))
+
+  function setEnergy(value: string) {
+    if (value.trim() === "") return set("calories", "")
+    if (energyUnit === "kcal") return set("calories", value)
+    const n = Number(value)
+    if (!Number.isFinite(n)) return set("calories", "")
+    set("calories", String(round(n / KJ_PER_KCAL, 2)))
   }
 
   function num(v: string): number | null {
@@ -226,50 +250,73 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Field>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="food-cal">Energy</FieldLabel>
+                <ToggleGroup
+                  value={[energyUnit]}
+                  onValueChange={(v) => {
+                    const next = v[0] as EnergyUnit | undefined
+                    if (next) setEnergyUnit(next)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  spacing={0}
+                >
+                  <ToggleGroupItem value="kcal" aria-label="Calories in kcal">
+                    kcal
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="kj" aria-label="Energy in kilojoules">
+                    kJ
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <Input
+                id="food-cal"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={energyDisplay}
+                onChange={(e) => setEnergy(e.target.value)}
+                placeholder={energyUnit === "kcal" ? "kcal per serving" : "kJ per serving"}
+              />
+            </Field>
+            <div className="grid grid-cols-3 gap-4">
               <Field>
-                <FieldLabel htmlFor="food-cal">Calories</FieldLabel>
-                <Input
-                  id="food-cal"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={form.calories}
-                  onChange={(e) => set("calories", e.target.value)}
-                  placeholder="kcal"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="food-pro">Protein</FieldLabel>
+                <FieldLabel htmlFor="food-pro">Protein (g)</FieldLabel>
                 <Input
                   id="food-pro"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.protein}
                   onChange={(e) => set("protein", e.target.value)}
                   placeholder="g"
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="food-carb">Carbs</FieldLabel>
+                <FieldLabel htmlFor="food-carb">Carbs (g)</FieldLabel>
                 <Input
                   id="food-carb"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.carbs}
                   onChange={(e) => set("carbs", e.target.value)}
                   placeholder="g"
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="food-fat">Fat</FieldLabel>
+                <FieldLabel htmlFor="food-fat">Fat (g)</FieldLabel>
                 <Input
                   id="food-fat"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.fat}
                   onChange={(e) => set("fat", e.target.value)}
                   placeholder="g"

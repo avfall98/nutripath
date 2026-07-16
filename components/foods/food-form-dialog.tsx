@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react"
 import { createFood, updateFood, uploadFoodImage, type FoodInput } from "@/app/actions/foods"
-import { extractFoodMetadata, type ExtractedFoodData } from "@/app/actions/extract-food-metadata"
+import { extractFoodMetadata } from "@/app/actions/extract-food-metadata"
 import type { FoodDTO } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +16,13 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { ImagePlus, Link2, Loader2, X, Sparkles } from "lucide-react"
+
+const KJ_PER_KCAL = 4.184
+type EnergyUnit = "kcal" | "kj"
 
 type Props = {
   open: boolean
@@ -42,6 +47,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [uploading, setUploading] = useState(false)
   const [extracting, setExtracting] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [energyUnit, setEnergyUnit] = useState<EnergyUnit>("kcal")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<NodeJS.Timeout>()
@@ -59,11 +65,29 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         infoUrl: food?.infoUrl ?? "",
       })
       setImageUrl(food?.imageUrl ?? null)
+      setEnergyUnit("kcal")
     }
   }, [open, food])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
+  }
+
+  // form.calories is always stored in kcal (source of truth). The energy input
+  // shows and accepts values in the currently selected unit.
+  const energyDisplay =
+    form.calories === ""
+      ? ""
+      : energyUnit === "kcal"
+        ? form.calories
+        : String(round(Number(form.calories) * KJ_PER_KCAL, 0))
+
+  function setEnergy(value: string) {
+    if (value.trim() === "") return set("calories", "")
+    if (energyUnit === "kcal") return set("calories", value)
+    const n = Number(value)
+    if (!Number.isFinite(n)) return set("calories", "")
+    set("calories", String(round(n / KJ_PER_KCAL, 2)))
   }
 
   async function extractMetadata(url: string) {
@@ -73,10 +97,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     try {
       const data = await extractFoodMetadata(url)
 
+      const kcal =
+        data.calories != null
+          ? round(data.calories, 1)
+          : data.energyKj != null
+            ? round(data.energyKj / KJ_PER_KCAL, 1)
+            : null
+
       setForm((f) => ({
         ...f,
         name: data.name || f.name,
-        calories: data.calories != null && !f.calories ? String(data.calories) : f.calories,
+        brand: data.brand || f.brand,
+        calories: kcal != null && !f.calories ? String(kcal) : f.calories,
         protein: data.protein != null && !f.protein ? String(data.protein) : f.protein,
         carbs: data.carbs != null && !f.carbs ? String(data.carbs) : f.carbs,
         fat: data.fat != null && !f.fat ? String(data.fat) : f.fat,
@@ -87,8 +119,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         setImageUrl(data.imageUrl)
       }
 
-      if (data.name || data.calories) {
-        toast.success("Details extracted from URL. Edit as needed.")
+      if (data.name || kcal != null || data.protein != null) {
+        toast.success("Details pulled from the link. Review and edit before saving.")
+      } else {
+        toast.info("Could not read nutrition from that link. Enter details manually.")
       }
     } catch (error) {
       console.error("[v0] Extraction failed:", error)
@@ -271,50 +305,73 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Field>
+              <div className="flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="food-cal">Energy</FieldLabel>
+                <ToggleGroup
+                  value={[energyUnit]}
+                  onValueChange={(v) => {
+                    const next = v[0] as EnergyUnit | undefined
+                    if (next) setEnergyUnit(next)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  spacing={0}
+                >
+                  <ToggleGroupItem value="kcal" aria-label="Calories in kcal">
+                    kcal
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="kj" aria-label="Energy in kilojoules">
+                    kJ
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+              <Input
+                id="food-cal"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={energyDisplay}
+                onChange={(e) => setEnergy(e.target.value)}
+                placeholder={energyUnit === "kcal" ? "kcal per serving" : "kJ per serving"}
+              />
+            </Field>
+            <div className="grid grid-cols-3 gap-4">
               <Field>
-                <FieldLabel htmlFor="food-cal">Calories</FieldLabel>
-                <Input
-                  id="food-cal"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={form.calories}
-                  onChange={(e) => set("calories", e.target.value)}
-                  placeholder="kcal"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="food-pro">Protein</FieldLabel>
+                <FieldLabel htmlFor="food-pro">Protein (g)</FieldLabel>
                 <Input
                   id="food-pro"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.protein}
                   onChange={(e) => set("protein", e.target.value)}
                   placeholder="g"
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="food-carb">Carbs</FieldLabel>
+                <FieldLabel htmlFor="food-carb">Carbs (g)</FieldLabel>
                 <Input
                   id="food-carb"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.carbs}
                   onChange={(e) => set("carbs", e.target.value)}
                   placeholder="g"
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="food-fat">Fat</FieldLabel>
+                <FieldLabel htmlFor="food-fat">Fat (g)</FieldLabel>
                 <Input
                   id="food-fat"
                   type="number"
                   inputMode="decimal"
                   min={0}
+                  step="any"
                   value={form.fat}
                   onChange={(e) => set("fat", e.target.value)}
                   placeholder="g"

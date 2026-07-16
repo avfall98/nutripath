@@ -1,4 +1,3 @@
-import { AppNav } from "@/components/app-nav"
 import { ProfileForm } from "@/components/profile/profile-form"
 import { getProfile } from "@/app/actions/profile"
 
@@ -7,7 +6,6 @@ export default async function ProfilePage() {
 
   return (
     <div className="min-h-svh">
-      <AppNav />
       <main className="mx-auto max-w-3xl px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-balance">Profile & goals</h1>

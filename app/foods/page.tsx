@@ -1,4 +1,3 @@
-import { AppNav } from "@/components/app-nav"
 import { FoodLibrary } from "@/components/foods/food-library"
 import { getFoods } from "@/app/actions/foods"
 
@@ -7,7 +6,6 @@ export default async function FoodsPage() {
 
   return (
     <div className="min-h-svh">
-      <AppNav />
       <main className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-6">
           <h1 className="text-2xl font-semibold tracking-tight text-balance">Food library</h1>

@@ -39,6 +39,10 @@ const empty = {
   protein: "",
   carbs: "",
   fat: "",
+  caloriesPerHundred: "",
+  proteinPerHundred: "",
+  carbsPerHundred: "",
+  fatPerHundred: "",
   infoUrl: "",
 }
 
@@ -75,6 +79,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
         fat: food?.fat != null ? String(food.fat) : "",
+        caloriesPerHundred: food?.caloriesPerHundred != null ? String(food.caloriesPerHundred) : "",
+        proteinPerHundred: food?.proteinPerHundred != null ? String(food.proteinPerHundred) : "",
+        carbsPerHundred: food?.carbsPerHundred != null ? String(food.carbsPerHundred) : "",
+        fatPerHundred: food?.fatPerHundred != null ? String(food.fatPerHundred) : "",
         infoUrl: food?.infoUrl ?? "",
       })
       setImageUrl(food?.imageUrl ?? null)
@@ -143,6 +151,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       protein: num(form.protein),
       carbs: num(form.carbs),
       fat: num(form.fat),
+      caloriesPerHundred: num(form.caloriesPerHundred),
+      proteinPerHundred: num(form.proteinPerHundred),
+      carbsPerHundred: num(form.carbsPerHundred),
+      fatPerHundred: num(form.fatPerHundred),
       imageUrl,
       infoUrl: form.infoUrl,
     }
@@ -291,9 +303,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
             </div>
-            <Field>
+            <div className="space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <FieldLabel htmlFor="food-cal">Energy</FieldLabel>
+                <h3 className="text-sm font-semibold">Nutrition Information</h3>
                 <ToggleGroup
                   value={[energyUnit]}
                   onValueChange={(v) => {
@@ -312,57 +324,131 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   </ToggleGroupItem>
                 </ToggleGroup>
               </div>
-              <Input
-                id="food-cal"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                value={energyDisplay}
-                onChange={(e) => setEnergy(e.target.value)}
-                placeholder={energyUnit === "kcal" ? "kcal per serving" : "kJ per serving"}
-              />
-            </Field>
-            <div className="grid grid-cols-3 gap-4">
-              <Field>
-                <FieldLabel htmlFor="food-pro">Protein (g)</FieldLabel>
-                <Input
-                  id="food-pro"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.protein}
-                  onChange={(e) => set("protein", e.target.value)}
-                  placeholder="g"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="food-carb">Carbs (g)</FieldLabel>
-                <Input
-                  id="food-carb"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.carbs}
-                  onChange={(e) => set("carbs", e.target.value)}
-                  placeholder="g"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="food-fat">Fat (g)</FieldLabel>
-                <Input
-                  id="food-fat"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.fat}
-                  onChange={(e) => set("fat", e.target.value)}
-                  placeholder="g"
-                />
-              </Field>
+              
+              {/* Nutrition table */}
+              <div className="overflow-x-auto border border-border rounded-lg">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="px-3 py-2 text-left text-sm font-semibold text-foreground bg-muted/30">Nutrient</th>
+                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per serving</th>
+                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100g/100mL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm text-foreground">Energy</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={energyDisplay}
+                          onChange={(e) => setEnergy(e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            inputMode="decimal"
+                            min={0}
+                            step="any"
+                            value={form.caloriesPerHundred}
+                            onChange={(e) => set("caloriesPerHundred", e.target.value)}
+                            placeholder="0"
+                            className="h-8 text-center text-sm"
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm text-foreground">Protein (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.protein}
+                          onChange={(e) => set("protein", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.proteinPerHundred}
+                          onChange={(e) => set("proteinPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm text-foreground">Carbs (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.carbs}
+                          onChange={(e) => set("carbs", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.carbsPerHundred}
+                          onChange={(e) => set("carbsPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="px-3 py-2 text-sm text-foreground">Fat (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.fat}
+                          onChange={(e) => set("fat", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.fatPerHundred}
+                          onChange={(e) => set("fatPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             <Field>
               <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>

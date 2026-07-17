@@ -18,6 +18,10 @@ export type FoodDTO = {
   protein: number
   carbs: number | null
   fat: number | null
+  caloriesPerHundred: number | null
+  proteinPerHundred: number | null
+  carbsPerHundred: number | null
+  fatPerHundred: number | null
   imageUrl: string | null
   infoUrl: string | null
 }

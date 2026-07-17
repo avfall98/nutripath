@@ -18,6 +18,10 @@ function serialize(r: typeof foods.$inferSelect): FoodDTO {
     protein: num0(r.protein),
     carbs: num(r.carbs),
     fat: num(r.fat),
+    caloriesPerHundred: num(r.caloriesPerHundred),
+    proteinPerHundred: num(r.proteinPerHundred),
+    carbsPerHundred: num(r.carbsPerHundred),
+    fatPerHundred: num(r.fatPerHundred),
     imageUrl: r.imageUrl,
     infoUrl: r.infoUrl,
   }
@@ -36,6 +40,10 @@ export type FoodInput = {
   protein?: number | null
   carbs?: number | null
   fat?: number | null
+  caloriesPerHundred?: number | null
+  proteinPerHundred?: number | null
+  carbsPerHundred?: number | null
+  fatPerHundred?: number | null
   imageUrl?: string | null
   infoUrl?: string | null
 }
@@ -51,6 +59,10 @@ export async function createFood(input: FoodInput): Promise<FoodDTO> {
       protein: toNumeric(input.protein) ?? "0",
       carbs: toNumeric(input.carbs),
       fat: toNumeric(input.fat),
+      caloriesPerHundred: toNumeric(input.caloriesPerHundred),
+      proteinPerHundred: toNumeric(input.proteinPerHundred),
+      carbsPerHundred: toNumeric(input.carbsPerHundred),
+      fatPerHundred: toNumeric(input.fatPerHundred),
       imageUrl: input.imageUrl || null,
       infoUrl: input.infoUrl?.trim() || null,
     })
@@ -71,6 +83,10 @@ export async function updateFood(id: number, input: FoodInput) {
       protein: toNumeric(input.protein) ?? "0",
       carbs: toNumeric(input.carbs),
       fat: toNumeric(input.fat),
+      caloriesPerHundred: toNumeric(input.caloriesPerHundred),
+      proteinPerHundred: toNumeric(input.proteinPerHundred),
+      carbsPerHundred: toNumeric(input.carbsPerHundred),
+      fatPerHundred: toNumeric(input.fatPerHundred),
       imageUrl: input.imageUrl || null,
       infoUrl: input.infoUrl?.trim() || null,
     })

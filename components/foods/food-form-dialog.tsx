@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import { createFood, updateFood, uploadFoodImage, type FoodInput } from "@/app/actions/foods"
+import { upload } from "@vercel/blob/client"
+import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -117,14 +118,26 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file.")
+      if (fileRef.current) fileRef.current.value = ""
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("Image is too large (max 10MB).")
+      if (fileRef.current) fileRef.current.value = ""
+      return
+    }
     setUploading(true)
     try {
-      const fd = new FormData()
-      fd.append("file", file)
-      const { url } = await uploadFoodImage(fd)
-      setImageUrl(url)
+      const blob = await upload(`foods/${file.name}`, file, {
+        access: "public",
+        handleUploadUrl: "/api/foods/upload",
+      })
+      setImageUrl(blob.url)
       toast.success("Photo uploaded.")
-    } catch {
+    } catch (err) {
+      console.log("[v0] Food image upload failed:", err)
       toast.error("Upload failed. Try again.")
     } finally {
       setUploading(false)
@@ -362,6 +375,35 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                         <div className="h-8 flex items-center justify-center text-sm text-muted-foreground">
                           {form.caloriesPerHundred ? round(Number(form.caloriesPerHundred) / KJ_PER_KCAL, 1) : "—"}
                         </div>
+                      </td>
+                    </tr>
+                    
+                    {/* Protein */}
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Protein (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.protein}
+                          onChange={(e) => set("protein", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.proteinPerHundred}
+                          onChange={(e) => set("proteinPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
                       </td>
                     </tr>
                     

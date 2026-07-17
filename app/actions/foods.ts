@@ -4,7 +4,6 @@ import { db } from "@/lib/db"
 import { foods } from "@/lib/db/schema"
 import { asc, eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
-import { put } from "@vercel/blob"
 import { num, num0, toNumeric } from "@/lib/format"
 import type { FoodDTO } from "@/lib/types"
 
@@ -131,14 +130,4 @@ export async function deleteFood(id: number) {
   await db.delete(foods).where(eq(foods.id, id))
   revalidatePath("/foods")
   revalidatePath("/")
-}
-
-export async function uploadFoodImage(formData: FormData): Promise<{ url: string }> {
-  const file = formData.get("file") as File | null
-  if (!file) throw new Error("No file provided")
-  const blob = await put(`foods/${Date.now()}-${file.name}`, file, {
-    access: "public",
-    addRandomSuffix: true,
-  })
-  return { url: blob.url }
 }

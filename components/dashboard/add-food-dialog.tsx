@@ -28,6 +28,7 @@ type Props = {
 }
 
 export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdded }: Props) {
+  const KJ_PER_KCAL = 4.184
   const [pending, startTransition] = useTransition()
   const [query, setQuery] = useState("")
   const [qty, setQty] = useState("1")
@@ -159,7 +160,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-medium">{food.name}</span>
                           <span className="block truncate text-xs text-muted-foreground">
-                            {Math.round(food.calories)} kcal · {Math.round(food.protein)}g protein
+                            {Math.round(food.calories)} kj · {Math.round(food.calories / KJ_PER_KCAL)} kcal · {Math.round(food.protein)}g protein
                             {food.servingSize ? ` · ${food.servingSize}` : ""}
                           </span>
                         </span>

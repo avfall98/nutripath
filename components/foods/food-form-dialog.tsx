@@ -22,6 +22,7 @@ import { ImagePlus, Link2, Loader2, X } from "lucide-react"
 
 const KJ_PER_KCAL = 4.184
 type EnergyUnit = "kcal" | "kj"
+type ServingUnit = "g" | "ml"
 
 type Props = {
   open: boolean
@@ -46,15 +47,30 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [energyUnit, setEnergyUnit] = useState<EnergyUnit>("kcal")
+  const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (open) {
+      // Parse servingSize to extract number and unit
+      let servingNum = ""
+      let unit: ServingUnit = "g"
+      if (food?.servingSize) {
+        const match = food.servingSize.match(/^([\d.]+)\s*(g|ml)$/i)
+        if (match) {
+          servingNum = match[1]
+          unit = (match[2].toLowerCase() as ServingUnit) || "g"
+        } else {
+          // Fallback: treat entire string as serving size if no unit found
+          servingNum = food.servingSize
+        }
+      }
+      
       setForm({
         name: food?.name ?? "",
         brand: food?.brand ?? "",
-        servingSize: food?.servingSize ?? "",
+        servingSize: servingNum,
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
@@ -63,6 +79,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       })
       setImageUrl(food?.imageUrl ?? null)
       setEnergyUnit("kcal")
+      setServingUnit(unit)
     }
   }, [open, food])
 
@@ -117,10 +134,11 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       toast.error("Give the food a name.")
       return
     }
+    const servingSize = form.servingSize.trim() ? `${form.servingSize}${servingUnit}` : ""
     const input: FoodInput = {
       name: form.name,
       brand: form.brand,
-      servingSize: form.servingSize,
+      servingSize,
       calories: num(form.calories),
       protein: num(form.protein),
       carbs: num(form.carbs),
@@ -241,12 +259,35 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="food-serving">Serving size</FieldLabel>
+                <div className="flex items-center justify-between gap-2">
+                  <FieldLabel htmlFor="food-serving">Serving size</FieldLabel>
+                  <ToggleGroup
+                    value={[servingUnit]}
+                    onValueChange={(v) => {
+                      const next = v[0] as ServingUnit | undefined
+                      if (next) setServingUnit(next)
+                    }}
+                    size="sm"
+                    variant="outline"
+                    spacing={0}
+                  >
+                    <ToggleGroupItem value="g" aria-label="Grams">
+                      g
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="ml" aria-label="Milliliters">
+                      ml
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                </div>
                 <Input
                   id="food-serving"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
                   value={form.servingSize}
                   onChange={(e) => set("servingSize", e.target.value)}
-                  placeholder="e.g. 170g / 1 cup"
+                  placeholder="e.g. 100"
                 />
               </Field>
             </div>

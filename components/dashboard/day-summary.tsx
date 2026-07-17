@@ -5,6 +5,8 @@ import { Progress } from "@/components/ui/progress"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
+const KJ_PER_KCAL = 4.184
+
 export type DayTotals = {
   calories: number
   protein: number
@@ -17,9 +19,12 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
   const stroke = 14
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  const pct = target && target > 0 ? Math.min(consumed / target, 1) : 0
-  const over = target != null && consumed > target
-  const remaining = target != null ? Math.round(target - consumed) : null
+  // Convert kJ to kcal for display (consumed is in kJ, target is already in kcal)
+  const consumedKcal = Math.round(consumed / KJ_PER_KCAL)
+  const targetKcal = target
+  const pct = targetKcal && targetKcal > 0 ? Math.min(consumedKcal / targetKcal, 1) : 0
+  const over = targetKcal != null && consumedKcal > targetKcal
+  const remaining = targetKcal != null ? Math.round(targetKcal - consumedKcal) : null
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -46,9 +51,9 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-semibold tabular-nums">{Math.round(consumed)}</span>
+        <span className="text-3xl font-semibold tabular-nums">{consumedKcal}</span>
         <span className="text-xs text-muted-foreground">
-          {target != null ? `of ${Math.round(target)} kcal` : "kcal today"}
+          {targetKcal != null ? `of ${targetKcal} kcal` : "kcal today"}
         </span>
         {remaining != null && (
           <span className={cn("mt-1 text-xs font-medium", over ? "text-destructive" : "text-primary")}>
@@ -94,6 +99,9 @@ export function DaySummary({
   targetCalories: number | null
   targetProtein: number | null
 }) {
+  // Convert kJ to kcal for display (totals.calories is in kJ, targetCalories is already in kcal)
+  const caloriesKcal = Math.round(totals.calories / KJ_PER_KCAL)
+  const targetCaloriesKcal = targetCalories
   const proteinPct =
     targetProtein && targetProtein > 0 ? Math.min((totals.protein / targetProtein) * 100, 100) : 0
 
@@ -115,7 +123,7 @@ export function DaySummary({
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
-            <MacroStat label="Calories" value={totals.calories} target={targetCalories} unit="" />
+            <MacroStat label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
             <MacroStat label="Protein" value={totals.protein} target={targetProtein} unit="g" />
             <MacroStat label="Carbs" value={totals.carbs} unit="g" />
             <MacroStat label="Fat" value={totals.fat} unit="g" />

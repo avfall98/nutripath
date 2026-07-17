@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
@@ -38,7 +39,9 @@ export function MealSection({
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
+  const KJ_PER_KCAL = 4.184
   const groupCalories = entries.reduce((sum, e) => sum + e.calories * e.quantity, 0)
+  const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
 
   function changeQty(entry: EntryDTO, next: number) {
@@ -71,7 +74,7 @@ export function MealSection({
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
             <span className="text-sm tabular-nums text-muted-foreground">
-              {Math.round(groupCalories)} kcal · {round(groupProtein)}g protein
+              {Math.round(groupCalories)} kj · {groupCaloriesKcal} kcal · {round(groupProtein)}g protein
             </span>
           )}
         </div>
@@ -97,7 +100,7 @@ export function MealSection({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{entry.name}</p>
                   <p className="text-xs tabular-nums text-muted-foreground">
-                    {Math.round(entry.calories * entry.quantity)} kcal ·{" "}
+                    {Math.round(entry.calories * entry.quantity)} kj · {round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)} kcal ·{" "}
                     {round(entry.protein * entry.quantity)}g protein
                   </p>
                 </div>
@@ -130,13 +133,18 @@ export function MealSection({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
-                      {allGroups
-                        .filter((g) => g.id !== entry.mealGroupId)
-                        .map((g) => (
-                          <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
-                            Move to {g.name}
-                          </DropdownMenuItem>
-                        ))}
+                      {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
+                        <>
+                          <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                          {allGroups
+                            .filter((g) => g.id !== entry.mealGroupId)
+                            .map((g) => (
+                              <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
+                                {g.name}
+                              </DropdownMenuItem>
+                            ))}
+                        </>
+                      )}
                       <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
                         <Trash2 data-icon="inline-start" />
                         Remove

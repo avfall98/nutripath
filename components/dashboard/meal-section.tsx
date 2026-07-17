@@ -11,6 +11,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
@@ -130,13 +131,18 @@ export function MealSection({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
-                      {allGroups
-                        .filter((g) => g.id !== entry.mealGroupId)
-                        .map((g) => (
-                          <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
-                            Move to {g.name}
-                          </DropdownMenuItem>
-                        ))}
+                      {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
+                        <>
+                          <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                          {allGroups
+                            .filter((g) => g.id !== entry.mealGroupId)
+                            .map((g) => (
+                              <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
+                                {g.name}
+                              </DropdownMenuItem>
+                            ))}
+                        </>
+                      )}
                       <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
                         <Trash2 data-icon="inline-start" />
                         Remove

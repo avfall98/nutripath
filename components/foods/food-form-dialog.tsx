@@ -21,7 +21,6 @@ import { toast } from "sonner"
 import { ImagePlus, Link2, Loader2, X } from "lucide-react"
 
 const KJ_PER_KCAL = 4.184
-type EnergyUnit = "kcal" | "kj"
 type ServingUnit = "g" | "ml"
 
 type Props = {
@@ -39,10 +38,18 @@ const empty = {
   protein: "",
   carbs: "",
   fat: "",
+  saturatedFat: "",
+  sugars: "",
+  dietaryFiber: "",
+  sodium: "",
   caloriesPerHundred: "",
   proteinPerHundred: "",
   carbsPerHundred: "",
   fatPerHundred: "",
+  saturatedFatPerHundred: "",
+  sugarsPerHundred: "",
+  dietaryFiberPerHundred: "",
+  sodiumPerHundred: "",
   infoUrl: "",
 }
 
@@ -50,7 +57,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
-  const [energyUnit, setEnergyUnit] = useState<EnergyUnit>("kcal")
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -79,37 +85,27 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
         fat: food?.fat != null ? String(food.fat) : "",
+        saturatedFat: food?.saturatedFat != null ? String(food.saturatedFat) : "",
+        sugars: food?.sugars != null ? String(food.sugars) : "",
+        dietaryFiber: food?.dietaryFiber != null ? String(food.dietaryFiber) : "",
+        sodium: food?.sodium != null ? String(food.sodium) : "",
         caloriesPerHundred: food?.caloriesPerHundred != null ? String(food.caloriesPerHundred) : "",
         proteinPerHundred: food?.proteinPerHundred != null ? String(food.proteinPerHundred) : "",
         carbsPerHundred: food?.carbsPerHundred != null ? String(food.carbsPerHundred) : "",
         fatPerHundred: food?.fatPerHundred != null ? String(food.fatPerHundred) : "",
+        saturatedFatPerHundred: food?.saturatedFatPerHundred != null ? String(food.saturatedFatPerHundred) : "",
+        sugarsPerHundred: food?.sugarsPerHundred != null ? String(food.sugarsPerHundred) : "",
+        dietaryFiberPerHundred: food?.dietaryFiberPerHundred != null ? String(food.dietaryFiberPerHundred) : "",
+        sodiumPerHundred: food?.sodiumPerHundred != null ? String(food.sodiumPerHundred) : "",
         infoUrl: food?.infoUrl ?? "",
       })
       setImageUrl(food?.imageUrl ?? null)
-      setEnergyUnit("kcal")
       setServingUnit(unit)
     }
   }, [open, food])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
-  }
-
-  // form.calories is always stored in kcal (source of truth). The energy input
-  // shows and accepts values in the currently selected unit.
-  const energyDisplay =
-    form.calories === ""
-      ? ""
-      : energyUnit === "kcal"
-        ? form.calories
-        : String(round(Number(form.calories) * KJ_PER_KCAL, 0))
-
-  function setEnergy(value: string) {
-    if (value.trim() === "") return set("calories", "")
-    if (energyUnit === "kcal") return set("calories", value)
-    const n = Number(value)
-    if (!Number.isFinite(n)) return set("calories", "")
-    set("calories", String(round(n / KJ_PER_KCAL, 2)))
   }
 
   function num(v: string): number | null {
@@ -151,10 +147,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       protein: num(form.protein),
       carbs: num(form.carbs),
       fat: num(form.fat),
+      saturatedFat: num(form.saturatedFat),
+      sugars: num(form.sugars),
+      dietaryFiber: num(form.dietaryFiber),
+      sodium: num(form.sodium),
       caloriesPerHundred: num(form.caloriesPerHundred),
       proteinPerHundred: num(form.proteinPerHundred),
       carbsPerHundred: num(form.carbsPerHundred),
       fatPerHundred: num(form.fatPerHundred),
+      saturatedFatPerHundred: num(form.saturatedFatPerHundred),
+      sugarsPerHundred: num(form.sugarsPerHundred),
+      dietaryFiberPerHundred: num(form.dietaryFiberPerHundred),
+      sodiumPerHundred: num(form.sodiumPerHundred),
       imageUrl,
       infoUrl: form.infoUrl,
     }
@@ -304,26 +308,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               </Field>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">Nutrition Information</h3>
-                <ToggleGroup
-                  value={[energyUnit]}
-                  onValueChange={(v) => {
-                    const next = v[0] as EnergyUnit | undefined
-                    if (next) setEnergyUnit(next)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  spacing={0}
-                >
-                  <ToggleGroupItem value="kcal" aria-label="Calories in kcal">
-                    kcal
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="kj" aria-label="Energy in kilojoules">
-                    kJ
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
+              <h3 className="text-sm font-semibold">Nutrition Information</h3>
               
               {/* Nutrition table */}
               <div className="overflow-x-auto border border-border rounded-lg">
@@ -336,45 +321,61 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     </tr>
                   </thead>
                   <tbody>
+                    {/* Energy */}
                     <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm text-foreground">Energy</td>
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Energy (kJ)</td>
                       <td className="px-3 py-2">
                         <Input
                           type="number"
                           inputMode="decimal"
                           min={0}
                           step="any"
-                          value={energyDisplay}
-                          onChange={(e) => setEnergy(e.target.value)}
+                          value={form.calories}
+                          onChange={(e) => set("calories", e.target.value)}
                           placeholder="0"
                           className="h-8 text-center text-sm"
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <div className="relative">
-                          <Input
-                            type="number"
-                            inputMode="decimal"
-                            min={0}
-                            step="any"
-                            value={form.caloriesPerHundred}
-                            onChange={(e) => set("caloriesPerHundred", e.target.value)}
-                            placeholder="0"
-                            className="h-8 text-center text-sm"
-                          />
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.caloriesPerHundred}
+                          onChange={(e) => set("caloriesPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    
+                    {/* Calories (read-only, auto-calculated from kJ) */}
+                    <tr className="border-b border-border bg-muted/20">
+                      <td className="px-3 py-2 text-sm text-muted-foreground">Calories (kcal)</td>
+                      <td className="px-3 py-2">
+                        <div className="h-8 flex items-center justify-center text-sm text-muted-foreground">
+                          {form.calories ? round(Number(form.calories) / KJ_PER_KCAL, 1) : "—"}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2">
+                        <div className="h-8 flex items-center justify-center text-sm text-muted-foreground">
+                          {form.caloriesPerHundred ? round(Number(form.caloriesPerHundred) / KJ_PER_KCAL, 1) : "—"}
                         </div>
                       </td>
                     </tr>
+                    
+                    {/* Fat */}
                     <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm text-foreground">Protein (g)</td>
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Fat (g)</td>
                       <td className="px-3 py-2">
                         <Input
                           type="number"
                           inputMode="decimal"
                           min={0}
                           step="any"
-                          value={form.protein}
-                          onChange={(e) => set("protein", e.target.value)}
+                          value={form.fat}
+                          onChange={(e) => set("fat", e.target.value)}
                           placeholder="0"
                           className="h-8 text-center text-sm"
                         />
@@ -385,15 +386,46 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                           inputMode="decimal"
                           min={0}
                           step="any"
-                          value={form.proteinPerHundred}
-                          onChange={(e) => set("proteinPerHundred", e.target.value)}
+                          value={form.fatPerHundred}
+                          onChange={(e) => set("fatPerHundred", e.target.value)}
                           placeholder="0"
                           className="h-8 text-center text-sm"
                         />
                       </td>
                     </tr>
+                    
+                    {/* Saturated Fat (child of Fat) */}
                     <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm text-foreground">Carbs (g)</td>
+                      <td className="px-3 py-2 text-sm text-foreground pl-8">— Saturated (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.saturatedFat}
+                          onChange={(e) => set("saturatedFat", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.saturatedFatPerHundred}
+                          onChange={(e) => set("saturatedFatPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    
+                    {/* Carbs */}
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Carbs (g)</td>
                       <td className="px-3 py-2">
                         <Input
                           type="number"
@@ -419,16 +451,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                         />
                       </td>
                     </tr>
-                    <tr>
-                      <td className="px-3 py-2 text-sm text-foreground">Fat (g)</td>
+                    
+                    {/* Sugars (child of Carbs) */}
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm text-foreground pl-8">— Sugars (g)</td>
                       <td className="px-3 py-2">
                         <Input
                           type="number"
                           inputMode="decimal"
                           min={0}
                           step="any"
-                          value={form.fat}
-                          onChange={(e) => set("fat", e.target.value)}
+                          value={form.sugars}
+                          onChange={(e) => set("sugars", e.target.value)}
                           placeholder="0"
                           className="h-8 text-center text-sm"
                         />
@@ -439,8 +473,66 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                           inputMode="decimal"
                           min={0}
                           step="any"
-                          value={form.fatPerHundred}
-                          onChange={(e) => set("fatPerHundred", e.target.value)}
+                          value={form.sugarsPerHundred}
+                          onChange={(e) => set("sugarsPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    
+                    {/* Dietary Fibre */}
+                    <tr className="border-b border-border">
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Dietary Fibre (g)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.dietaryFiber}
+                          onChange={(e) => set("dietaryFiber", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.dietaryFiberPerHundred}
+                          onChange={(e) => set("dietaryFiberPerHundred", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                    </tr>
+                    
+                    {/* Sodium */}
+                    <tr>
+                      <td className="px-3 py-2 text-sm font-medium text-foreground">Sodium (mg)</td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.sodium}
+                          onChange={(e) => set("sodium", e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-center text-sm"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          value={form.sodiumPerHundred}
+                          onChange={(e) => set("sodiumPerHundred", e.target.value)}
                           placeholder="0"
                           className="h-8 text-center text-sm"
                         />

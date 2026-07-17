@@ -19,9 +19,9 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
   const stroke = 14
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
-  // Convert kJ to kcal for display
+  // Convert kJ to kcal for display (consumed is in kJ, target is already in kcal)
   const consumedKcal = Math.round(consumed / KJ_PER_KCAL)
-  const targetKcal = target != null ? Math.round(target / KJ_PER_KCAL) : null
+  const targetKcal = target
   const pct = targetKcal && targetKcal > 0 ? Math.min(consumedKcal / targetKcal, 1) : 0
   const over = targetKcal != null && consumedKcal > targetKcal
   const remaining = targetKcal != null ? Math.round(targetKcal - consumedKcal) : null
@@ -99,9 +99,9 @@ export function DaySummary({
   targetCalories: number | null
   targetProtein: number | null
 }) {
-  // Convert kJ to kcal for display
+  // Convert kJ to kcal for display (totals.calories is in kJ, targetCalories is already in kcal)
   const caloriesKcal = Math.round(totals.calories / KJ_PER_KCAL)
-  const targetCaloriesKcal = targetCalories != null ? Math.round(targetCalories / KJ_PER_KCAL) : null
+  const targetCaloriesKcal = targetCalories
   const proteinPct =
     targetProtein && targetProtein > 0 ? Math.min((totals.protein / targetProtein) * 100, 100) : 0
 

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { deleteFood } from "@/app/actions/foods"
-import type { FoodDTO } from "@/lib/types"
+import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { toast } from "sonner"
 import { Apple, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
 
-export function FoodLibrary({ foods }: { foods: FoodDTO[] }) {
+export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: ProfileDTO | null }) {
   const router = useRouter()
   const [query, setQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -93,10 +93,13 @@ export function FoodLibrary({ foods }: { foods: FoodDTO[] }) {
       ) : filtered.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">No foods match "{query}".</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((food) => (
-            <Card key={food.id} className="flex flex-col gap-0 overflow-hidden p-0">
-              <div className="relative aspect-video w-full bg-muted">
+        <div className="flex flex-col gap-4">
+          {filtered.map((food) => {
+            const caloriesPct = profile?.targetCalories ? Math.round((food.calories / profile.targetCalories) * 100) : 0
+            const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
+            return (
+            <Card key={food.id} className="flex flex-row gap-0 overflow-hidden p-0">
+              <div className="relative aspect-square w-32 shrink-0 bg-muted">
                 {food.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -142,9 +145,15 @@ export function FoodLibrary({ foods }: { foods: FoodDTO[] }) {
                     </p>
                   )}
                 </div>
-                <div className="mt-auto flex flex-wrap gap-1.5">
-                  <Badge variant="secondary">{Math.round(food.calories)} kcal</Badge>
-                  <Badge variant="secondary">{Math.round(food.protein)}g protein</Badge>
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge variant="secondary">
+                    {Math.round(food.calories)} kcal
+                    {profile?.targetCalories && ` (${caloriesPct}%)`}
+                  </Badge>
+                  <Badge variant="secondary">
+                    {Math.round(food.protein)}g protein
+                    {profile?.targetProtein && ` (${proteinPct}%)`}
+                  </Badge>
                   {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
                   {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
                 </div>
@@ -161,7 +170,8 @@ export function FoodLibrary({ foods }: { foods: FoodDTO[] }) {
                 )}
               </div>
             </Card>
-          ))}
+            )
+          })}
         </div>
       )}
 

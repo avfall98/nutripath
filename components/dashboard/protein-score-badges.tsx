@@ -6,7 +6,7 @@ function ScoreBadge({ score, unit, label }: { score: ProteinScore; unit: string;
   const text = isNa ? "N/A" : `${score.grade} • ${round(score.value ?? 0, 1)}${unit}`
   return (
     <span
-      className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none tabular-nums"
+      className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums"
       style={{ color: score.color, borderColor: score.color, backgroundColor: `${score.color}1a` }}
       title={label}
       aria-label={`${label}: ${text}`}

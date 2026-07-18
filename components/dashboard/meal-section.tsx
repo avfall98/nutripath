@@ -26,6 +26,8 @@ export function MealSection({
   dateKey,
   foods,
   allGroups,
+  targetCalories,
+  targetProtein,
   onChanged,
 }: {
   group: SectionGroup
@@ -33,6 +35,8 @@ export function MealSection({
   dateKey: string
   foods: FoodDTO[]
   allGroups: MealGroupDTO[]
+  targetCalories: number | null
+  targetProtein: number | null
   onChanged: () => void
 }) {
   const [addOpen, setAddOpen] = useState(false)
@@ -43,6 +47,9 @@ export function MealSection({
   const groupCalories = entries.reduce((sum, e) => sum + e.calories * e.quantity, 0)
   const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
+  
+  const groupCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((groupCaloriesKcal / targetCalories) * 100) : 0
+  const groupProteinPct = targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
 
   function changeQty(entry: EntryDTO, next: number) {
     const q = Math.max(0.5, round(next, 2))
@@ -74,7 +81,7 @@ export function MealSection({
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
             <span className="text-sm tabular-nums text-muted-foreground">
-              {Math.round(groupCalories)} kj · {groupCaloriesKcal} kcal · {round(groupProtein)}g protein
+              {Math.round(groupCalories)} kj · {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
             </span>
           )}
         </div>
@@ -109,10 +116,18 @@ export function MealSection({
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{entry.name}</p>
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    {Math.round(entry.calories * entry.quantity)} kj · {round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)} kcal ·{" "}
-                    {round(entry.protein * entry.quantity)}g protein
-                  </p>
+                  {(() => {
+                    const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
+                    const entryProtein = round(entry.protein * entry.quantity)
+                    const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
+                    const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
+                    return (
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {Math.round(entry.calories * entry.quantity)} kj · {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} ·{" "}
+                        {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
+                      </p>
+                    )
+                  })()}
                 </div>
                 <div className="flex items-center gap-0.5 rounded-md border border-border">
                   <Button

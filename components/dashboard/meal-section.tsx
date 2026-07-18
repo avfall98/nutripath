@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { deleteEntry, moveEntry, updateEntryQuantity } from "@/app/actions/entries"
+import { deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { Apple, Minus, MoreVertical, Plus, Trash2 } from "lucide-react"
+import { Apple, MoreVertical, Plus, Trash2 } from "lucide-react"
 
 type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
@@ -50,14 +50,6 @@ export function MealSection({
   
   const groupCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((groupCaloriesKcal / targetCalories) * 100) : 0
   const groupProteinPct = targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
-
-  function changeQty(entry: EntryDTO, next: number) {
-    const q = Math.max(0.5, round(next, 2))
-    startTransition(async () => {
-      await updateEntryQuantity(entry.id, q)
-      onChanged()
-    })
-  }
 
   function remove(entry: EntryDTO) {
     startTransition(async () => {
@@ -128,27 +120,6 @@ export function MealSection({
                       </p>
                     )
                   })()}
-                </div>
-                <div className="flex items-center gap-0.5 rounded-md border border-border">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-7"
-                    aria-label="Decrease servings"
-                    onClick={() => changeQty(entry, entry.quantity - 0.5)}
-                  >
-                    <Minus />
-                  </Button>
-                  <span className="w-8 text-center text-sm tabular-nums">{round(entry.quantity, 2)}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-7"
-                    aria-label="Increase servings"
-                    onClick={() => changeQty(entry, entry.quantity + 0.5)}
-                  >
-                    <Plus />
-                  </Button>
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger

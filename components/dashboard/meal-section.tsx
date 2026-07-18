@@ -68,7 +68,7 @@ export function MealSection({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
+      <CardHeader className="relative pb-3">
         <div className="flex items-baseline gap-2">
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
@@ -78,7 +78,7 @@ export function MealSection({
           )}
         </div>
         {isReal && (
-          <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
+          <Button size="sm" className="absolute right-6 top-6 w-20 shrink-0" onClick={() => setAddOpen(true)}>
             <Plus data-icon="inline-start" />
             Add
           </Button>

@@ -98,8 +98,8 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
             const caloriesPct = profile?.targetCalories ? Math.round((food.calories / profile.targetCalories) * 100) : 0
             const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
             return (
-            <Card key={food.id} className="flex flex-row gap-0 overflow-hidden p-0">
-              <div className="relative aspect-square w-32 shrink-0 bg-muted">
+            <Card key={food.id} className="relative flex flex-row gap-0 overflow-hidden p-0">
+              <div className="aspect-square w-32 shrink-0 bg-muted">
                 {food.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -112,29 +112,29 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <Apple className="size-8" />
                   </div>
                 )}
-                <div className="absolute right-2 top-2">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      render={
-                        <Button size="icon" variant="secondary" className="size-8 shadow-sm" aria-label="Food options" />
-                      }
-                    >
-                      <MoreVertical />
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuGroup>
-                        <DropdownMenuItem onClick={() => openEdit(food)}>
-                          <Pencil data-icon="inline-start" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem variant="destructive" onClick={() => handleDelete(food)}>
-                          <Trash2 data-icon="inline-start" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuGroup>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+              </div>
+              <div className="absolute right-2 top-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={
+                      <Button size="icon" variant="secondary" className="size-8 shadow-sm" aria-label="Food options" />
+                    }
+                  >
+                    <MoreVertical />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => openEdit(food)}>
+                        <Pencil data-icon="inline-start" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onClick={() => handleDelete(food)}>
+                        <Trash2 data-icon="inline-start" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               <div className="flex flex-1 flex-col gap-3 p-4">
                 <div>

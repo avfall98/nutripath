@@ -73,7 +73,7 @@ export function MealSection({
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
             <span className="text-sm tabular-nums text-muted-foreground">
-              {Math.round(groupCalories)} kj · {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
+              {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
             </span>
           )}
         </div>
@@ -115,8 +115,7 @@ export function MealSection({
                     const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
                     return (
                       <p className="text-xs tabular-nums text-muted-foreground">
-                        {Math.round(entry.calories * entry.quantity)} kj · {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} ·{" "}
-                        {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
+                        {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
                       </p>
                     )
                   })()}

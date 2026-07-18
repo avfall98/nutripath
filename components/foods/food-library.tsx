@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { deleteFood } from "@/app/actions/foods"
 import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
+import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -147,17 +148,20 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Badge variant="secondary">
-                    {caloriesKcal} kcal
-                    {profile?.targetCalories && ` (${caloriesPct}%)`}
-                  </Badge>
-                  <Badge variant="secondary">
-                    {Math.round(food.protein)}g protein
-                    {profile?.targetProtein && ` (${proteinPct}%)`}
-                  </Badge>
-                  {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
-                  {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap gap-1.5">
+                    <Badge variant="secondary">
+                      {caloriesKcal} kcal
+                      {profile?.targetCalories && ` (${caloriesPct}%)`}
+                    </Badge>
+                    <Badge variant="secondary">
+                      {Math.round(food.protein)}g protein
+                      {profile?.targetProtein && ` (${proteinPct}%)`}
+                    </Badge>
+                    {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
+                    {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
+                  </div>
+                  <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                 </div>
                 {food.infoUrl && (
                   <a

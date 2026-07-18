@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useRef, useState, useTransition } from "react"
-import { upload } from "@vercel/blob/client"
 import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { Button } from "@/components/ui/button"
@@ -130,11 +129,15 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     }
     setUploading(true)
     try {
-      const blob = await upload(`foods/${file.name}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/foods/upload",
-      })
-      setImageUrl(blob.url)
+      const fd = new FormData()
+      fd.append("file", file)
+      const res = await fetch("/api/foods/upload", { method: "POST", body: fd })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? "Upload failed")
+      }
+      const { url } = (await res.json()) as { url: string }
+      setImageUrl(url)
       toast.success("Photo uploaded.")
     } catch (err) {
       console.log("[v0] Food image upload failed:", err)

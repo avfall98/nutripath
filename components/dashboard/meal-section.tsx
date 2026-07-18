@@ -92,11 +92,21 @@ export function MealSection({
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
-            {entries.map((entry) => (
+            {entries.map((entry) => {
+              const food = entry.foodId ? foods.find((f) => f.id === entry.foodId) : null
+              return (
               <li key={entry.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <Apple className="size-4" />
-                </span>
+                {food?.imageUrl ? (
+                  <img
+                    src={food.imageUrl}
+                    alt={entry.name}
+                    className="size-9 shrink-0 rounded-md object-cover"
+                  />
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Apple className="size-4" />
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{entry.name}</p>
                   <p className="text-xs tabular-nums text-muted-foreground">
@@ -153,7 +163,8 @@ export function MealSection({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
-            ))}
+            )
+            })}
           </ul>
         )}
       </CardContent>

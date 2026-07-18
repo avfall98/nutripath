@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { deleteEntry, moveEntry, updateEntryQuantity } from "@/app/actions/entries"
+import { deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { Button } from "@/components/ui/button"
@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { Apple, Minus, MoreVertical, Plus, Trash2 } from "lucide-react"
+import { Apple, MoreVertical, Plus, Trash2 } from "lucide-react"
 
 type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
@@ -26,6 +26,8 @@ export function MealSection({
   dateKey,
   foods,
   allGroups,
+  targetCalories,
+  targetProtein,
   onChanged,
 }: {
   group: SectionGroup
@@ -33,6 +35,8 @@ export function MealSection({
   dateKey: string
   foods: FoodDTO[]
   allGroups: MealGroupDTO[]
+  targetCalories: number | null
+  targetProtein: number | null
   onChanged: () => void
 }) {
   const [addOpen, setAddOpen] = useState(false)
@@ -43,14 +47,9 @@ export function MealSection({
   const groupCalories = entries.reduce((sum, e) => sum + e.calories * e.quantity, 0)
   const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
-
-  function changeQty(entry: EntryDTO, next: number) {
-    const q = Math.max(0.5, round(next, 2))
-    startTransition(async () => {
-      await updateEntryQuantity(entry.id, q)
-      onChanged()
-    })
-  }
+  
+  const groupCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((groupCaloriesKcal / targetCalories) * 100) : 0
+  const groupProteinPct = targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
 
   function remove(entry: EntryDTO) {
     startTransition(async () => {
@@ -69,17 +68,17 @@ export function MealSection({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between gap-2 pb-3">
+      <CardHeader className="flex flex-row items-baseline justify-between gap-2 pb-3">
         <div className="flex items-baseline gap-2">
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
             <span className="text-sm tabular-nums text-muted-foreground">
-              {Math.round(groupCalories)} kj · {groupCaloriesKcal} kcal · {round(groupProtein)}g protein
+              {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
             </span>
           )}
         </div>
         {isReal && (
-          <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+          <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
             <Plus data-icon="inline-start" />
             Add
           </Button>
@@ -92,38 +91,34 @@ export function MealSection({
           </p>
         ) : (
           <ul className="flex flex-col divide-y divide-border">
-            {entries.map((entry) => (
+            {entries.map((entry) => {
+              const food = entry.foodId ? foods.find((f) => f.id === entry.foodId) : null
+              return (
               <li key={entry.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                  <Apple className="size-4" />
-                </span>
+                {food?.imageUrl ? (
+                  <img
+                    src={food.imageUrl}
+                    alt={entry.name}
+                    className="size-9 shrink-0 rounded-md object-cover"
+                  />
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Apple className="size-4" />
+                  </span>
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{entry.name}</p>
-                  <p className="text-xs tabular-nums text-muted-foreground">
-                    {Math.round(entry.calories * entry.quantity)} kj · {round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)} kcal ·{" "}
-                    {round(entry.protein * entry.quantity)}g protein
-                  </p>
-                </div>
-                <div className="flex items-center gap-0.5 rounded-md border border-border">
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-7"
-                    aria-label="Decrease servings"
-                    onClick={() => changeQty(entry, entry.quantity - 0.5)}
-                  >
-                    <Minus />
-                  </Button>
-                  <span className="w-8 text-center text-sm tabular-nums">{round(entry.quantity, 2)}</span>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="size-7"
-                    aria-label="Increase servings"
-                    onClick={() => changeQty(entry, entry.quantity + 0.5)}
-                  >
-                    <Plus />
-                  </Button>
+                  {(() => {
+                    const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
+                    const entryProtein = round(entry.protein * entry.quantity)
+                    const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
+                    const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
+                    return (
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
+                      </p>
+                    )
+                  })()}
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -153,7 +148,8 @@ export function MealSection({
                   </DropdownMenuContent>
                 </DropdownMenu>
               </li>
-            ))}
+            )
+            })}
           </ul>
         )}
       </CardContent>

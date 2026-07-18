@@ -105,7 +105,56 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   }, [open, food])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
-    setForm((f) => ({ ...f, [key]: value }))
+    setForm((f) => {
+      const updated = { ...f, [key]: value }
+      
+      // Map of per-100g fields to per-serving fields
+      const syncMap: Record<string, string> = {
+        caloriesPerHundred: "calories",
+        proteinPerHundred: "protein",
+        carbsPerHundred: "carbs",
+        fatPerHundred: "fat",
+        saturatedFatPerHundred: "saturatedFat",
+        sugarsPerHundred: "sugars",
+        dietaryFiberPerHundred: "dietaryFiber",
+        sodiumPerHundred: "sodium",
+      }
+      
+      // Case 1: User is editing a per-100g value
+      // Auto-sync per-serving values from per-100g values
+      const servingSizeNum = num(f.servingSize)
+      if (servingSizeNum && servingSizeNum > 0) {
+        const multiplier = servingSizeNum / 100
+        
+        if (syncMap[key as string]) {
+          const per100Value = num(value)
+          if (per100Value !== null) {
+            const perServingValue = round(per100Value * multiplier, 1)
+            updated[syncMap[key as string] as K] = String(perServingValue)
+          }
+        }
+      }
+      
+      // Case 2: User is editing serving size
+      // Recalculate all per-serving values based on per-100g values
+      if (key === "servingSize") {
+        const newServingSizeNum = num(value)
+        if (newServingSizeNum && newServingSizeNum > 0) {
+          const multiplier = newServingSizeNum / 100
+          
+          // Recalculate all per-serving values
+          Object.entries(syncMap).forEach(([per100Key, perServingKey]) => {
+            const per100Value = num(f[per100Key as keyof typeof f] as string)
+            if (per100Value !== null) {
+              const perServingValue = round(per100Value * multiplier, 1)
+              updated[perServingKey as K] = String(perServingValue)
+            }
+          })
+        }
+      }
+      
+      return updated
+    })
   }
 
   function num(v: string): number | null {
@@ -333,7 +382,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     <tr className="border-b border-border">
                       <th className="px-3 py-2 text-left text-sm font-semibold text-foreground bg-muted/30">Nutrient</th>
                       <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per serving</th>
-                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100g/100mL</th>
+                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100{servingUnit}</th>
                     </tr>
                   </thead>
                   <tbody>

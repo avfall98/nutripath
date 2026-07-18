@@ -1,8 +1,9 @@
 import { FoodLibrary } from "@/components/foods/food-library"
 import { getFoods } from "@/app/actions/foods"
+import { getProfile } from "@/app/actions/profile"
 
 export default async function FoodsPage() {
-  const foods = await getFoods()
+  const [foods, profile] = await Promise.all([getFoods(), getProfile()])
 
   return (
     <div className="min-h-svh">
@@ -13,7 +14,7 @@ export default async function FoodsPage() {
             Reusable foods with nutrition, photos, and links you can log any day.
           </p>
         </div>
-        <FoodLibrary foods={foods} />
+        <FoodLibrary foods={foods} profile={profile} />
       </main>
     </div>
   )

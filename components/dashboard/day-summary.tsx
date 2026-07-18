@@ -55,6 +55,11 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
         <span className="text-xs text-muted-foreground">
           {targetKcal != null ? `of ${targetKcal} kcal` : "kcal today"}
         </span>
+        {targetKcal != null && (
+          <span className="text-xs font-medium text-primary">
+            {Math.round(pct * 100)}%
+          </span>
+        )}
         {remaining != null && (
           <span className={cn("mt-1 text-xs font-medium", over ? "text-destructive" : "text-primary")}>
             {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
@@ -117,6 +122,9 @@ export function DaySummary({
               <span className="text-sm tabular-nums text-muted-foreground">
                 {round(totals.protein)}
                 {targetProtein != null ? ` / ${Math.round(targetProtein)}` : ""} g
+                {targetProtein != null && (
+                  <span className="ml-2 font-medium text-primary">{Math.round(proteinPct)}%</span>
+                )}
               </span>
             </div>
             <Progress value={proteinPct} />

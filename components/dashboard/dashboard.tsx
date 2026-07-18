@@ -84,6 +84,8 @@ export function Dashboard({
                 dateKey={dateKey}
                 foods={foods}
                 allGroups={mealGroups}
+                targetCalories={profile?.targetCalories ?? null}
+                targetProtein={profile?.targetProtein ?? null}
                 onChanged={() => mutate()}
               />
             ))}
@@ -94,6 +96,8 @@ export function Dashboard({
                 dateKey={dateKey}
                 foods={foods}
                 allGroups={mealGroups}
+                targetCalories={profile?.targetCalories ?? null}
+                targetProtein={profile?.targetProtein ?? null}
                 onChanged={() => mutate()}
               />
             )}

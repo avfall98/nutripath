@@ -79,7 +79,7 @@ export function MealSection({
           )}
         </div>
         {isReal && (
-          <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+          <Button size="sm" variant="outline" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
             <Plus data-icon="inline-start" />
             Add
           </Button>

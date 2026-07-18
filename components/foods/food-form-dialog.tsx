@@ -108,22 +108,23 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     setForm((f) => {
       const updated = { ...f, [key]: value }
       
+      // Map of per-100g fields to per-serving fields
+      const syncMap: Record<string, string> = {
+        caloriesPerHundred: "calories",
+        proteinPerHundred: "protein",
+        carbsPerHundred: "carbs",
+        fatPerHundred: "fat",
+        saturatedFatPerHundred: "saturatedFat",
+        sugarsPerHundred: "sugars",
+        dietaryFiberPerHundred: "dietaryFiber",
+        sodiumPerHundred: "sodium",
+      }
+      
+      // Case 1: User is editing a per-100g value
       // Auto-sync per-serving values from per-100g values
       const servingSizeNum = num(f.servingSize)
       if (servingSizeNum && servingSizeNum > 0) {
         const multiplier = servingSizeNum / 100
-        
-        // Map of per-100g fields to per-serving fields
-        const syncMap: Record<string, string> = {
-          caloriesPerHundred: "calories",
-          proteinPerHundred: "protein",
-          carbsPerHundred: "carbs",
-          fatPerHundred: "fat",
-          saturatedFatPerHundred: "saturatedFat",
-          sugarsPerHundred: "sugars",
-          dietaryFiberPerHundred: "dietaryFiber",
-          sodiumPerHundred: "sodium",
-        }
         
         if (syncMap[key as string]) {
           const per100Value = num(value)
@@ -131,6 +132,24 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             const perServingValue = round(per100Value * multiplier, 1)
             updated[syncMap[key as string] as K] = String(perServingValue)
           }
+        }
+      }
+      
+      // Case 2: User is editing serving size
+      // Recalculate all per-serving values based on per-100g values
+      if (key === "servingSize") {
+        const newServingSizeNum = num(value)
+        if (newServingSizeNum && newServingSizeNum > 0) {
+          const multiplier = newServingSizeNum / 100
+          
+          // Recalculate all per-serving values
+          Object.entries(syncMap).forEach(([per100Key, perServingKey]) => {
+            const per100Value = num(f[per100Key as keyof typeof f] as string)
+            if (per100Value !== null) {
+              const perServingValue = round(per100Value * multiplier, 1)
+              updated[perServingKey as K] = String(perServingValue)
+            }
+          })
         }
       }
       

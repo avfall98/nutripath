@@ -382,7 +382,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     <tr className="border-b border-border">
                       <th className="px-3 py-2 text-left text-sm font-semibold text-foreground bg-muted/30">Nutrient</th>
                       <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per serving</th>
-                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100g/100mL</th>
+                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100{servingUnit}</th>
                     </tr>
                   </thead>
                   <tbody>

@@ -2,6 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
+import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -128,6 +129,12 @@ export function DaySummary({
               </span>
             </div>
             <Progress value={proteinPct} />
+            <div className="mt-2">
+              <ProteinScoreBadges 
+                proteinG={totals.protein}
+                kcal={caloriesKcal}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">

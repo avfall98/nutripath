@@ -11,6 +11,54 @@ export const SEXES = [
   { value: "female", label: "Female" },
 ] as const
 
+export type ProteinGrade = "A" | "B" | "C" | "D" | "F"
+
+export type ProteinScore = {
+  grade: ProteinGrade | null
+  color: string
+  value: number | null
+}
+
+const GRADE_COLORS: Record<ProteinGrade, string> = {
+  A: "#10B981",
+  B: "#84CC16",
+  C: "#F59E0B",
+  D: "#F97316",
+  F: "#EF4444",
+}
+
+const NA_COLOR = "#94A3B8"
+
+// Method 1: Protein per 100 Calories -> (protein / kcal) * 100
+export function proteinPer100Cal(proteinG: number, kcal: number): ProteinScore {
+  if (!Number.isFinite(kcal) || kcal <= 0 || !Number.isFinite(proteinG)) {
+    return { grade: null, color: NA_COLOR, value: null }
+  }
+  const value = (proteinG / kcal) * 100
+  let grade: ProteinGrade
+  if (value >= 10) grade = "A"
+  else if (value >= 8) grade = "B"
+  else if (value >= 6) grade = "C"
+  else if (value >= 4) grade = "D"
+  else grade = "F"
+  return { grade, color: GRADE_COLORS[grade], value }
+}
+
+// Method 2: Protein Calorie Percentage -> ((protein * 4) / kcal) * 100
+export function proteinCaloriePct(proteinG: number, kcal: number): ProteinScore {
+  if (!Number.isFinite(kcal) || kcal <= 0 || !Number.isFinite(proteinG)) {
+    return { grade: null, color: NA_COLOR, value: null }
+  }
+  const value = ((proteinG * 4) / kcal) * 100
+  let grade: ProteinGrade
+  if (value >= 40) grade = "A"
+  else if (value >= 32) grade = "B"
+  else if (value >= 24) grade = "C"
+  else if (value >= 16) grade = "D"
+  else grade = "F"
+  return { grade, color: GRADE_COLORS[grade], value }
+}
+
 // Mifflin-St Jeor basal metabolic rate.
 export function bmr(sex: string, weightKg: number, heightCm: number, age: number): number {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age

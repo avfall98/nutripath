@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
+import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { toast } from "sonner"
 import { Apple, MoreVertical, Plus, Trash2 } from "lucide-react"
 
@@ -119,6 +120,7 @@ export function MealSection({
                       </p>
                     )
                   })()}
+                  <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger

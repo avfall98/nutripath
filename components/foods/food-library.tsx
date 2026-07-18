@@ -95,7 +95,9 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
       ) : (
         <div className="flex flex-col gap-4">
           {filtered.map((food) => {
-            const caloriesPct = profile?.targetCalories ? Math.round((food.calories / profile.targetCalories) * 100) : 0
+            const KJ_PER_KCAL = 4.184
+            const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
+            const caloriesPct = profile?.targetCalories ? Math.round((caloriesKcal / profile.targetCalories) * 100) : 0
             const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
             return (
             <Card key={food.id} className="relative flex flex-row gap-0 overflow-hidden p-0">
@@ -147,7 +149,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   <Badge variant="secondary">
-                    {Math.round(food.calories)} kcal
+                    {caloriesKcal} kcal
                     {profile?.targetCalories && ` (${caloriesPct}%)`}
                   </Badge>
                   <Badge variant="secondary">

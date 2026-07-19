@@ -69,8 +69,8 @@ export function MealSection({
 
   return (
     <Card>
-      <CardHeader className="flex flex-col gap-2 pb-3">
-        <div className="flex flex-row items-center justify-between gap-2">
+      <CardHeader className="relative flex flex-col gap-2 pb-3">
+        <div className="flex flex-row items-center gap-2">
           <div className="flex items-center gap-2">
             <CardTitle className="text-base">{group.name}</CardTitle>
             {entries.length > 0 && (
@@ -79,13 +79,13 @@ export function MealSection({
               </span>
             )}
           </div>
-          {isReal && (
-            <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
-              <Plus data-icon="inline-start" />
-              Add
-            </Button>
-          )}
         </div>
+        {isReal && (
+          <Button size="sm" className="absolute right-4 top-4 w-20 shrink-0" onClick={() => setAddOpen(true)}>
+            <Plus data-icon="inline-start" />
+            Add
+          </Button>
+        )}
         {entries.length > 0 && (
           <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
         )}

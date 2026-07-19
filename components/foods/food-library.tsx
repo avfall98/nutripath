@@ -150,16 +150,16 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-[13px]">
                     {caloriesKcal} kcal
                     {profile?.targetCalories && ` (${caloriesPct}%)`}
                   </Badge>
-                  <Badge variant="secondary">
+                  <Badge variant="secondary" className="text-[13px]">
                     {Math.round(food.protein)}g protein
                     {profile?.targetProtein && ` (${proteinPct}%)`}
                   </Badge>
-                  {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
-                  {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
+                  {food.carbs != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.carbs)}g carbs</Badge>}
+                  {food.fat != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.fat)}g fat</Badge>}
                 </div>
                 {food.infoUrl && (
                   <a

@@ -69,23 +69,25 @@ export function MealSection({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base">{group.name}</CardTitle>
-          {entries.length > 0 && (
-            <>
-              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
+      <CardHeader className="flex flex-col gap-2 pb-3">
+        <div className="flex flex-row items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">{group.name}</CardTitle>
+            {entries.length > 0 && (
               <span className="text-sm tabular-nums text-muted-foreground">
                 {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
               </span>
-            </>
+            )}
+          </div>
+          {isReal && (
+            <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Add
+            </Button>
           )}
         </div>
-        {isReal && (
-          <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
-            <Plus data-icon="inline-start" />
-            Add
-          </Button>
+        {entries.length > 0 && (
+          <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
         )}
       </CardHeader>
       <CardContent className="pt-0">

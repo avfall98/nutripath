@@ -69,20 +69,25 @@ export function MealSection({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-baseline justify-between gap-2 pb-3">
-        <div className="flex items-baseline gap-2">
-          <CardTitle className="text-base">{group.name}</CardTitle>
-          {entries.length > 0 && (
-            <span className="text-sm tabular-nums text-muted-foreground">
-              {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
-            </span>
-          )}
+      <CardHeader className="relative flex flex-col gap-2 pb-3">
+        <div className="flex flex-row items-center gap-2">
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-base">{group.name}</CardTitle>
+            {entries.length > 0 && (
+              <span className="text-sm tabular-nums text-muted-foreground">
+                {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
+              </span>
+            )}
+          </div>
         </div>
         {isReal && (
-          <Button size="sm" className="w-20 shrink-0" onClick={() => setAddOpen(true)}>
+          <Button size="sm" className="absolute right-4 top-4 w-20 shrink-0" onClick={() => setAddOpen(true)}>
             <Plus data-icon="inline-start" />
             Add
           </Button>
+        )}
+        {entries.length > 0 && (
+          <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
         )}
       </CardHeader>
       <CardContent className="pt-0">
@@ -108,7 +113,7 @@ export function MealSection({
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{entry.name}</p>
+                  <p className="truncate text-sm font-medium">{food?.name || entry.name}</p>
                   {(() => {
                     const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
                     const entryProtein = round(entry.protein * entry.quantity)

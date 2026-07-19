@@ -74,7 +74,7 @@ export function MealSection({
           <CardTitle className="text-base">{group.name}</CardTitle>
           {entries.length > 0 && (
             <>
-              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
               <span className="text-sm tabular-nums text-muted-foreground">
                 {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
               </span>

@@ -23,7 +23,15 @@ function getGradeColor(grade: ProteinScore["grade"]): string {
 }
 
 // proteinG in grams, kcal in kilocalories.
-export function ProteinScoreBadges({ proteinG, kcal }: { proteinG: number; kcal: number }) {
+export function ProteinScoreBadges({ 
+  proteinG, 
+  kcal,
+  fontSize = "text-[11px]"
+}: { 
+  proteinG: number; 
+  kcal: number;
+  fontSize?: string;
+}) {
   const p100 = proteinPer100Cal(proteinG, kcal)
   const pCal = proteinCaloriePct(proteinG, kcal)
   
@@ -38,7 +46,7 @@ export function ProteinScoreBadges({ proteinG, kcal }: { proteinG: number; kcal:
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1">
       <span
-        className="inline-flex items-center rounded-full border px-1.5 py-0.5 text-[11px] font-semibold leading-none tabular-nums"
+        className={`inline-flex items-center rounded-full border px-1.5 py-0.5 ${fontSize} font-semibold leading-none tabular-nums`}
         style={{ color, borderColor: color, backgroundColor: `${color}1a` }}
         title="Protein Score: per 100kcal and calorie percentage"
         aria-label={`Protein Score: ${text}`}

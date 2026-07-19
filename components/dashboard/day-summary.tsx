@@ -1,12 +1,32 @@
 "use client"
 
 import { Card, CardContent } from "@/components/ui/card"
-import { Progress } from "@/components/ui/progress"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
 const KJ_PER_KCAL = 4.184
+
+function getGradientColor(percentage: number, isHigherBetter: boolean): string {
+  // Clamp percentage between 0 and 1
+  const pct = Math.min(Math.max(percentage / 100, 0), 1)
+  
+  if (isHigherBetter) {
+    // Protein: Red -> Green (higher is better)
+    // Red: #EF4444, Green: #22C55E
+    const red = Math.round(239 - (239 - 34) * pct)
+    const green = Math.round(68 + (197 - 68) * pct)
+    const blue = Math.round(68 + (94 - 68) * pct)
+    return `rgb(${red}, ${green}, ${blue})`
+  } else {
+    // Calories: Green -> Red (lower is better)
+    // Green: #22C55E, Red: #EF4444
+    const red = Math.round(34 + (239 - 34) * pct)
+    const green = Math.round(197 - (197 - 68) * pct)
+    const blue = Math.round(94 - (94 - 68) * pct)
+    return `rgb(${red}, ${green}, ${blue})`
+  }
+}
 
 export type DayTotals = {
   calories: number
@@ -26,6 +46,7 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
   const pct = targetKcal && targetKcal > 0 ? Math.min(consumedKcal / targetKcal, 1) : 0
   const over = targetKcal != null && consumedKcal > targetKcal
   const remaining = targetKcal != null ? Math.round(targetKcal - consumedKcal) : null
+  const ringColor = getGradientColor((pct * 100), false)
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
@@ -43,12 +64,12 @@ function CalorieRing({ consumed, target }: { consumed: number; target: number | 
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke={over ? "var(--destructive)" : "var(--primary)"}
+          stroke={ringColor}
           strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - pct)}
-          className="transition-[stroke-dashoffset] duration-500"
+          className="transition-[stroke-dashoffset,stroke] duration-500"
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -128,7 +149,19 @@ export function DaySummary({
                 )}
               </span>
             </div>
-            <Progress value={proteinPct} />
+            <div className="flex flex-wrap gap-3">
+              <div className="relative flex h-1 w-full items-center overflow-x-hidden rounded-full bg-muted">
+                <div
+                  style={{
+                    width: `${proteinPct}%`,
+                    backgroundColor: getGradientColor(proteinPct, true),
+                    height: "100%",
+                    borderRadius: "9999px",
+                    transition: "width 500ms, background-color 500ms"
+                  }}
+                />
+              </div>
+            </div>
             <div className="mt-2">
               <ProteinScoreBadges 
                 proteinG={totals.protein}

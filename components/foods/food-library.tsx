@@ -139,36 +139,34 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-              <div className="flex flex-1 flex-col gap-3 p-4">
-                <div>
+              <div className="flex flex-1 flex-col gap-2 p-4">
+                <div className="flex flex-wrap items-baseline gap-x-2">
                   <h3 className="font-medium leading-tight text-balance">{food.name}</h3>
                   {(food.brand || food.servingSize) && (
-                    <p className="mt-0.5 text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
                     </p>
                   )}
                 </div>
-                <div className="flex flex-col gap-2">
-                  <div className="flex flex-wrap gap-1.5">
-                    <Badge variant="secondary">
-                      {caloriesKcal} kcal
-                      {profile?.targetCalories && ` (${caloriesPct}%)`}
-                    </Badge>
-                    <Badge variant="secondary">
-                      {Math.round(food.protein)}g protein
-                      {profile?.targetProtein && ` (${proteinPct}%)`}
-                    </Badge>
-                    {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
-                    {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
-                  </div>
+                <div className="flex flex-wrap items-center gap-1.5">
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                  <Badge variant="secondary">
+                    {caloriesKcal} kcal
+                    {profile?.targetCalories && ` (${caloriesPct}%)`}
+                  </Badge>
+                  <Badge variant="secondary">
+                    {Math.round(food.protein)}g protein
+                    {profile?.targetProtein && ` (${proteinPct}%)`}
+                  </Badge>
+                  {food.carbs != null && <Badge variant="outline">{Math.round(food.carbs)}g carbs</Badge>}
+                  {food.fat != null && <Badge variant="outline">{Math.round(food.fat)}g fat</Badge>}
                 </div>
                 {food.infoUrl && (
                   <a
                     href={food.infoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    className="mt-auto ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
                   >
                     <ExternalLink className="size-3.5" />
                     More info

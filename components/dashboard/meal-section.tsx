@@ -95,103 +95,60 @@ export function MealSection({
             {entries.map((entry) => {
               const food = entry.foodId ? foods.find((f) => f.id === entry.foodId) : null
               return (
-              <li key={entry.id} className="flex flex-col gap-2 py-2.5 first:pt-0 last:pb-0">
-                <div className="flex items-start gap-3">
-                  {food?.imageUrl ? (
-                    <img
-                      src={food.imageUrl}
-                      alt={entry.name}
-                      className="size-9 shrink-0 rounded-md object-cover"
-                    />
-                  ) : (
-                    <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                      <Apple className="size-4" />
-                    </span>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-col">
-                      <p className="truncate text-sm font-medium">{entry.name}</p>
-                      {(food?.brand || food?.servingSize) && (
-                        <p className="text-xs text-muted-foreground">
-                          {food.brand && <span>{food.brand}</span>}
-                          {food.brand && food.servingSize && <span> • </span>}
-                          {food.servingSize && <span>{food.servingSize}</span>}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+              <li key={entry.id} className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0">
+                {food?.imageUrl ? (
+                  <img
+                    src={food.imageUrl}
+                    alt={entry.name}
+                    className="size-9 shrink-0 rounded-md object-cover"
+                  />
+                ) : (
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                    <Apple className="size-4" />
+                  </span>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium">{entry.name}</p>
+                  {(() => {
+                    const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
+                    const entryProtein = round(entry.protein * entry.quantity)
+                    const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
+                    const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
+                    return (
+                      <p className="text-xs tabular-nums text-muted-foreground">
+                        {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
+                      </p>
+                    )
+                  })()}
+                  <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                 </div>
-                {(() => {
-                  const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
-                  const entryProtein = round(entry.protein * entry.quantity)
-                  const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
-                  const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
-                  return (
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-wrap items-center gap-4">
-                        <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                        <p className="text-xs tabular-nums text-muted-foreground">
-                          {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1" />
-                        <div className="flex items-center gap-2">
-                          {food?.infoUrl && (
-                            <a
-                              href={food.infoUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs font-medium text-primary hover:underline flex items-center gap-1"
-                            >
-                              <span>More info</span>
-                              <svg
-                                className="size-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4m-4-4l4-4m0 0l4 4m-4-4v12"
-                                />
-                              </svg>
-                            </a>
-                          )}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger
-                              render={<Button size="icon" variant="ghost" className="size-8" aria-label="Item options" />}
-                            >
-                              <MoreVertical />
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuGroup>
-                                {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
-                                  <>
-                                    <DropdownMenuLabel>Move to</DropdownMenuLabel>
-                                    {allGroups
-                                      .filter((g) => g.id !== entry.mealGroupId)
-                                      .map((g) => (
-                                        <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
-                                          {g.name}
-                                        </DropdownMenuItem>
-                                      ))}
-                                  </>
-                                )}
-                                <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
-                                  <Trash2 data-icon="inline-start" />
-                                  Remove
-                                </DropdownMenuItem>
-                              </DropdownMenuGroup>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })()}
+                <DropdownMenu>
+                  <DropdownMenuTrigger
+                    render={<Button size="icon" variant="ghost" className="size-8" aria-label="Item options" />}
+                  >
+                    <MoreVertical />
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuGroup>
+                      {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
+                        <>
+                          <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                          {allGroups
+                            .filter((g) => g.id !== entry.mealGroupId)
+                            .map((g) => (
+                              <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
+                                {g.name}
+                              </DropdownMenuItem>
+                            ))}
+                        </>
+                      )}
+                      <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
+                        <Trash2 data-icon="inline-start" />
+                        Remove
+                      </DropdownMenuItem>
+                    </DropdownMenuGroup>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </li>
             )
             })}

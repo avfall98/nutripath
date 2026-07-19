@@ -102,7 +102,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
             const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
             return (
             <Card key={food.id} className="relative flex flex-row gap-0 overflow-hidden p-0">
-              <div className="aspect-square w-32 shrink-0 bg-muted">
+              <div className="aspect-square w-20 shrink-0 bg-muted">
                 {food.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -243,13 +244,13 @@ export function DaySummary({
                 />
               )}
             </div>
-            <div className="mt-2">
+            <>
               <ProteinScoreBadges 
                 proteinG={totals.protein}
                 kcal={caloriesKcal}
-                fontSize="text-[12px]"
               />
-            </div>
+              <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${caloriesKcal}g`} />
+            </>
           </div>
         </div>
 

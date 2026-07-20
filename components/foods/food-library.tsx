@@ -6,6 +6,7 @@ import { deleteFood } from "@/app/actions/foods"
 import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -150,6 +151,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                  <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                   <Badge variant="secondary" className="text-[13px]">
                     {caloriesKcal} kcal
                     {profile?.targetCalories && ` (${caloriesPct}%)`}

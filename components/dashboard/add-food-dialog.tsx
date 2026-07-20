@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { toast } from "sonner"
 import { Apple, Plus, Search } from "lucide-react"
 
@@ -28,11 +29,16 @@ type Props = {
   onAdded: () => void
 }
 
+type QuantityMode = "servings" | "weight"
+
 export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdded }: Props) {
   const KJ_PER_KCAL = 4.184
   const [pending, startTransition] = useTransition()
   const [query, setQuery] = useState("")
-  const [qty, setQty] = useState("1")
+  const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
+  const [servings, setServings] = useState("1")
+  const [weight, setWeight] = useState("")
+  const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
   const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
 
   const filtered = useMemo(() => {
@@ -49,7 +55,30 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
   }
 
   function addFromLibrary(food: FoodDTO) {
-    const quantity = num(qty, 1) || 1
+    let quantity = 1
+    
+    if (qtyMode === "servings") {
+      quantity = num(servings, 1) || 1
+    } else {
+      // weight mode: convert weight to servings based on serving size
+      const weightValue = num(weight, 0)
+      if (!food.servingSize || weightValue <= 0) {
+        toast.error("Enter a weight and ensure the food has a serving size defined.")
+        return
+      }
+      
+      // Parse serving size (e.g., "100g" -> 100)
+      const servingSizeMatch = food.servingSize.match(/^([\d.]+)/)
+      const servingSizeValue = servingSizeMatch ? parseFloat(servingSizeMatch[1]) : null
+      
+      if (servingSizeValue === null || servingSizeValue <= 0) {
+        toast.error("Food serving size is not properly defined.")
+        return
+      }
+      
+      quantity = weightValue / servingSizeValue
+    }
+    
     startTransition(async () => {
       await addEntryFromFood({
         dateKey,
@@ -117,20 +146,90 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <div className="w-20">
-                <label htmlFor="lib-qty" className="mb-1 block text-xs font-medium text-muted-foreground">
-                  Servings
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {qtyMode === "servings" ? "Servings" : "Weight"}
                 </label>
-                <Input
-                  id="lib-qty"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.5"
-                  value={qty}
-                  onChange={(e) => setQty(e.target.value)}
-                />
+                <ToggleGroup
+                  value={[qtyMode]}
+                  onValueChange={(v) => {
+                    const mode = v[0] as QuantityMode | undefined
+                    if (mode) setQtyMode(mode)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  spacing={0}
+                >
+                  <ToggleGroupItem value="servings" aria-label="Servings">
+                    Servings
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="weight" aria-label="Weight">
+                    Weight
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
+            </div>
+            
+            <div className="flex items-end gap-3">
+              {qtyMode === "servings" ? (
+                <div className="flex-1">
+                  <label htmlFor="lib-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Servings
+                  </label>
+                  <Input
+                    id="lib-servings"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="0.5"
+                    value={servings}
+                    onChange={(e) => setServings(e.target.value)}
+                    placeholder="1.0"
+                  />
+                </div>
+              ) : (
+                <>
+                  <div className="flex-1">
+                    <label htmlFor="lib-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Weight
+                    </label>
+                    <Input
+                      id="lib-weight"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      placeholder="e.g. 150"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setWeightUnit("g")}
+                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        weightUnit === "g"
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border hover:bg-accent/50"
+                      }`}
+                    >
+                      g
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWeightUnit("ml")}
+                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        weightUnit === "ml"
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border hover:bg-accent/50"
+                      }`}
+                    >
+                      ml
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="-mx-1 max-h-72 overflow-y-auto px-1">

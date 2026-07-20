@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { toast } from "sonner"
 import { Apple, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
 
@@ -90,7 +91,10 @@ export function MealSection({
           </Button>
         )}
         {entries.length > 0 && (
-          <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
+          <div className="flex flex-wrap items-center gap-1">
+            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
+            <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupCaloriesKcal}g`} />
+          </div>
         )}
       </CardHeader>
       <CardContent className="pt-0">
@@ -130,12 +134,17 @@ export function MealSection({
                     const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
                     const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
                     return (
-                      <p className="text-xs tabular-nums text-muted-foreground">
-                        {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
-                      </p>
+                      <>
+                        <p className="text-xs tabular-nums text-muted-foreground">
+                          {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                          <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                        </div>
+                      </>
                     )
                   })()}
-                  <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                 </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger

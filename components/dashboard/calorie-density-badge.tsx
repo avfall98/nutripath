@@ -23,13 +23,15 @@ export function CalorieDensityBadge({
     : `Calorie Density: ${density.grade} • ${density.label}`
 
   return (
-    <span
-      className={`inline-flex items-center rounded-full border px-1.5 py-0.5 ${fontSize} font-semibold leading-none tabular-nums`}
-      style={{ color: density.color, borderColor: density.color, backgroundColor: `${density.color}1a` }}
-      title={title}
-      aria-label={title}
-    >
-      {text}
-    </span>
+    <div className="mt-1 flex flex-wrap items-center gap-1">
+      <span
+        className={`inline-flex items-center rounded-full border px-1.5 py-0.5 ${fontSize} font-semibold leading-none tabular-nums`}
+        style={{ color: density.color, borderColor: density.color, backgroundColor: `${density.color}1a` }}
+        title={title}
+        aria-label={title}
+      >
+        {text}
+      </span>
+    </div>
   )
 }

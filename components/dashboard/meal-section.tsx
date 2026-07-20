@@ -91,10 +91,10 @@ export function MealSection({
           </Button>
         )}
         {entries.length > 0 && (
-          <div className="flex flex-wrap items-center gap-1">
+          <>
             <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
             <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupCaloriesKcal}g`} />
-          </div>
+          </>
         )}
       </CardHeader>
       <CardContent className="pt-0">
@@ -138,10 +138,10 @@ export function MealSection({
                         <p className="text-xs tabular-nums text-muted-foreground">
                           {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
                         </p>
-                        <div className="flex flex-wrap items-center gap-1">
+                        <>
                           <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                           <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
-                        </div>
+                        </>
                       </>
                     )
                   })()}

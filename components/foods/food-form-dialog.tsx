@@ -645,7 +645,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               <div className="flex flex-col gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground mb-1">Per serving:</p>
-                  <div className="flex flex-wrap items-center gap-1">
+                  <>
                     <ProteinScoreBadges 
                       proteinG={Number(form.protein) || 0}
                       kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
@@ -654,7 +654,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                       kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
                       servingSize={form.servingSize ? `${form.servingSize}${servingUnit}` : null}
                     />
-                  </div>
+                  </>
                 </div>
                 <div>
                   <p className="text-muted-foreground mb-1">Per 100{servingUnit}:</p>

@@ -264,13 +264,13 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                             {Math.round(food.calories)} kj · {Math.round(food.calories / KJ_PER_KCAL)} kcal · {Math.round(food.protein)}g protein
                             {food.servingSize ? ` · ${food.servingSize}` : ""}
                           </span>
-                          <div className="mt-1 flex flex-wrap items-center gap-1">
+                          <>
                             <ProteinScoreBadges proteinG={food.protein} kcal={Math.round(food.calories / KJ_PER_KCAL)} />
                             <CalorieDensityBadge
                               kcal={Math.round(food.calories / KJ_PER_KCAL)}
                               servingSize={food.servingSize}
                             />
-                          </div>
+                          </>
                         </span>
                         <Plus className="size-4 shrink-0 text-muted-foreground" />
                       </button>

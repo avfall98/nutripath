@@ -244,14 +244,14 @@ export function DaySummary({
                 />
               )}
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-1">
+            <>
               <ProteinScoreBadges 
                 proteinG={totals.protein}
                 kcal={caloriesKcal}
                 fontSize="text-[12px]"
               />
               <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${caloriesKcal}g`} />
-            </div>
+            </>
           </div>
         </div>
 

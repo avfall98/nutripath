@@ -59,6 +59,60 @@ export function proteinCaloriePct(proteinG: number, kcal: number): ProteinScore 
   return { grade, color: GRADE_COLORS[grade], value }
 }
 
+export type CalorieDensityGrade = "A" | "B" | "C" | "D" | "F"
+
+export type CalorieDensity = {
+  grade: CalorieDensityGrade | null
+  color: string
+  value: number | null
+  label: string
+}
+
+const DENSITY_COLORS: Record<CalorieDensityGrade, string> = {
+  A: "#10B981",
+  B: "#84CC16",
+  C: "#F59E0B",
+  D: "#F97316",
+  F: "#EF4444",
+}
+
+const DENSITY_LABELS: Record<CalorieDensityGrade, string> = {
+  A: "Low Density",
+  B: "Moderate Density",
+  C: "Medium Density",
+  D: "High Density",
+  F: "Very High Density",
+}
+
+// Parse a serving size string like "100g" or "250 ml" into grams/millilitres.
+export function parseServingWeight(servingSize: string | null | undefined): number | null {
+  if (!servingSize) return null
+  const match = servingSize.match(/([\d.]+)/)
+  if (!match) return null
+  const value = Number(match[1])
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+// Calorie density: (kcal / serving weight in grams) * 100 -> kcal per 100g/100ml.
+export function calorieDensity(kcal: number, servingWeightG: number | null): CalorieDensity {
+  if (
+    servingWeightG == null ||
+    !Number.isFinite(servingWeightG) ||
+    servingWeightG <= 0 ||
+    !Number.isFinite(kcal)
+  ) {
+    return { grade: null, color: NA_COLOR, value: null, label: "N/A" }
+  }
+  const value = (kcal / servingWeightG) * 100
+  let grade: CalorieDensityGrade
+  if (value < 70) grade = "A"
+  else if (value <= 150) grade = "B"
+  else if (value <= 250) grade = "C"
+  else if (value <= 400) grade = "D"
+  else grade = "F"
+  return { grade, color: DENSITY_COLORS[grade], value, label: DENSITY_LABELS[grade] }
+}
+
 // Mifflin-St Jeor basal metabolic rate.
 export function bmr(sex: string, weightKg: number, heightCm: number, age: number): number {
   const base = 10 * weightKg + 6.25 * heightCm - 5 * age

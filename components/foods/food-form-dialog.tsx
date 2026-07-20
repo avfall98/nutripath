@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react"
 import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -644,10 +645,16 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               <div className="flex flex-col gap-2 text-xs">
                 <div>
                   <p className="text-muted-foreground mb-1">Per serving:</p>
-                  <ProteinScoreBadges 
-                    proteinG={Number(form.protein) || 0}
-                    kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
-                  />
+                  <div className="flex flex-wrap items-center gap-1">
+                    <ProteinScoreBadges 
+                      proteinG={Number(form.protein) || 0}
+                      kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
+                    />
+                    <CalorieDensityBadge
+                      kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
+                      servingSize={form.servingSize ? `${form.servingSize}${servingUnit}` : null}
+                    />
+                  </div>
                 </div>
                 <div>
                   <p className="text-muted-foreground mb-1">Per 100{servingUnit}:</p>

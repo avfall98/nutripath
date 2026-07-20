@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react"
 import { updateEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -232,8 +233,12 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                             {Math.round(food.calories)} kj · {Math.round(food.calories / KJ_PER_KCAL)} kcal · {Math.round(food.protein)}g protein
                             {food.servingSize ? ` · ${food.servingSize}` : ""}
                           </span>
-                          <div className="mt-1">
+                          <div className="mt-1 flex flex-wrap items-center gap-1">
                             <ProteinScoreBadges proteinG={food.protein} kcal={Math.round(food.calories / KJ_PER_KCAL)} />
+                            <CalorieDensityBadge
+                              kcal={Math.round(food.calories / KJ_PER_KCAL)}
+                              servingSize={food.servingSize}
+                            />
                           </div>
                         </span>
                         <Plus className="size-4 shrink-0 text-muted-foreground" />

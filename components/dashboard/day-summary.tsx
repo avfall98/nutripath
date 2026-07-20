@@ -245,34 +245,34 @@ export function DaySummary({
           <div>
             <div className="mb-1.5 flex items-baseline justify-between">
               <span className="text-sm font-medium">Protein</span>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                {round(totals.protein)}
-                {targetProtein != null ? ` / ${Math.round(targetProtein)}` : ""} g
+              <span className="flex items-baseline gap-2 text-sm tabular-nums text-muted-foreground">
+                <span>
+                  {round(totals.protein)}
+                  {targetProtein != null ? ` / ${Math.round(targetProtein)}` : ""} g
+                </span>
+                {proteinRemaining != null && (
+                  <span className={cn("text-xs font-medium", proteinRemaining < 0 ? "text-destructive" : "text-primary")}>
+                    {proteinRemaining < 0 ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`}
+                  </span>
+                )}
                 {targetProtein != null && (
                   <span className="ml-2 font-medium text-primary">{Math.round(proteinPct)}%</span>
                 )}
               </span>
             </div>
-            <div className="flex flex-col gap-3">
-              <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
-                {mealGroups.length > 0 ? (
-                  renderProteinSegments()
-                ) : (
-                  <div
-                    style={{
-                      width: `${proteinPct}%`,
-                      backgroundColor: getGradientColor(proteinPct, true),
-                      height: "100%",
-                      borderRadius: "9999px",
-                      transition: "width 500ms, background-color 500ms"
-                    }}
-                  />
-                )}
-              </div>
-              {proteinRemaining != null && (
-                <span className={cn("text-xs font-medium", proteinRemaining < 0 ? "text-destructive" : "text-primary")}>
-                  {proteinRemaining < 0 ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`}
-                </span>
+            <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+              {mealGroups.length > 0 ? (
+                renderProteinSegments()
+              ) : (
+                <div
+                  style={{
+                    width: `${proteinPct}%`,
+                    backgroundColor: getGradientColor(proteinPct, true),
+                    height: "100%",
+                    borderRadius: "9999px",
+                    transition: "width 500ms, background-color 500ms"
+                  }}
+                />
               )}
             </div>
             <div className="mt-2">

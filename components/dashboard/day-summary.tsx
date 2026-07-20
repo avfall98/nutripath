@@ -38,7 +38,7 @@ export type GroupNutrition = {
   protein: number
 }
 
-function CalorieRing({ 
+function CalorieBar({ 
   consumed, 
   target,
   groups = []
@@ -47,10 +47,6 @@ function CalorieRing({
   target: number | null
   groups?: GroupNutrition[]
 }) {
-  const size = 176
-  const stroke = 14
-  const radius = (size - stroke) / 2
-  const circumference = 2 * Math.PI * radius
   // Convert kJ to kcal for display (consumed is in kJ, target is already in kcal)
   const consumedKcal = Math.round(consumed / KJ_PER_KCAL)
   const targetKcal = target
@@ -58,97 +54,72 @@ function CalorieRing({
   const over = targetKcal != null && consumedKcal > targetKcal
   const remaining = targetKcal != null ? Math.round(targetKcal - consumedKcal) : null
 
-  // Calculate group chunks
-  const groupChunks = groups.map(g => ({
-    ...g,
-    caloriesKcal: Math.round(g.calories / KJ_PER_KCAL),
-    pct: targetKcal && targetKcal > 0 ? (Math.round(g.calories / KJ_PER_KCAL)) / targetKcal : 0
-  }))
+  const [hoveredCalorieGroup, setHoveredCalorieGroup] = useState<number | null>(null)
 
-  const [hoveredGroup, setHoveredGroup] = useState<number | null>(null)
-
-  // Render segments
-  const renderSegments = () => {
-    let currentOffset = 0
-    return groupChunks.map((group, idx) => {
-      const segmentPct = Math.min(group.pct, 1 - currentOffset)
-      const segmentDasharray = circumference * segmentPct
-      const segmentDashoffset = circumference - circumference * currentOffset - segmentDasharray
-      const ringColor = getGroupColor(group.id)
-      
+  // Render calorie bar segments
+  const renderCalorieSegments = () => {
+    let currentPosition = 0
+    return groups.map((group, idx) => {
+      const groupKcal = Math.round(group.calories / KJ_PER_KCAL)
+      const groupPct = targetKcal && targetKcal > 0 ? (groupKcal / targetKcal) * 100 : 0
+      const width = Math.min(groupPct, 100 - currentPosition)
       const element = (
-        <circle
+        <div
           key={idx}
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={ringColor}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={segmentDasharray}
-          strokeDashoffset={segmentDashoffset}
-          className={cn("transition-opacity duration-200", 
-            hoveredGroup === null || hoveredGroup === group.id ? "opacity-100" : "opacity-30"
-          )}
-          onMouseEnter={() => setHoveredGroup(group.id)}
-          onMouseLeave={() => setHoveredGroup(null)}
+          className={cn("relative h-full transition-all duration-200 group")}
           style={{
-            filter: hoveredGroup === group.id ? "drop-shadow(0 0 8px rgba(0,0,0,0.3))" : "none"
+            width: `${width}%`,
+            backgroundColor: getGroupColor(group.id),
+            opacity: hoveredCalorieGroup === null || hoveredCalorieGroup === group.id ? 1 : 0.3
           }}
-        />
+          onMouseEnter={() => setHoveredCalorieGroup(group.id)}
+          onMouseLeave={() => setHoveredCalorieGroup(null)}
+          title={group.name}
+        >
+          {hoveredCalorieGroup === group.id && (
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none">
+              {group.name}
+            </div>
+          )}
+        </div>
       )
-      
-      currentOffset += segmentPct
+      currentPosition += width
       return element
     })
   }
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
-      <svg width={size} height={size} className="-rotate-90">
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="var(--muted)"
-          strokeWidth={stroke}
-        />
-        {groups.length > 0 ? renderSegments() : (
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={groupColors[0]}
-            strokeWidth={stroke}
-            strokeLinecap="round"
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * (1 - pct)}
-            className="transition-[stroke-dashoffset,stroke] duration-500"
-          />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-        <span className="text-3xl font-semibold tabular-nums">{consumedKcal}</span>
-        <span className="text-xs text-muted-foreground">
-          {targetKcal != null ? `of ${targetKcal} kcal` : "kcal today"}
+    <div>
+      <div className="mb-1.5 flex items-baseline justify-between">
+        <span className="text-sm font-medium">Calories</span>
+        <span className="flex items-baseline gap-2 text-sm tabular-nums text-muted-foreground">
+          <span>
+            {consumedKcal}
+            {targetKcal != null ? ` / ${Math.round(targetKcal)}` : ""} kcal
+          </span>
+          {remaining != null && (
+            <span className={cn("text-xs font-medium", over ? "text-destructive" : "text-primary")}>
+              {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
+            </span>
+          )}
+          {targetKcal != null && (
+            <span className="ml-2 font-medium text-primary">{Math.round(pct * 100)}%</span>
+          )}
         </span>
-        {targetKcal != null && (
-          <span className="text-xs font-medium text-primary">
-            {Math.round(pct * 100)}%
-          </span>
-        )}
-        {remaining != null && (
-          <span className={cn("mt-1 text-xs font-medium", over ? "text-destructive" : "text-primary")}>
-            {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
-          </span>
-        )}
-        {hoveredGroup !== null && (
-          <span className="absolute top-4 text-xs font-medium text-primary">
-            {groups.find(g => g.id === hoveredGroup)?.name}
-          </span>
+      </div>
+      <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+        {groups.length > 0 ? (
+          renderCalorieSegments()
+        ) : (
+          <div
+            style={{
+              width: `${pct * 100}%`,
+              backgroundColor: groupColors[0],
+              height: "100%",
+              borderRadius: "9999px",
+              transition: "width 500ms, background-color 500ms"
+            }}
+          />
         )}
       </div>
     </div>
@@ -233,10 +204,12 @@ export function DaySummary({
 
   return (
     <Card>
-      <CardContent className="flex flex-col items-center gap-6 py-6 md:flex-row md:items-center md:gap-8">
-        <CalorieRing consumed={totals.calories} target={targetCalories} groups={mealGroups} />
+      <CardContent className="flex flex-col gap-6 py-6">
+        <div className="flex w-full flex-col gap-5">
+          {/* Calorie Bar */}
+          <CalorieBar consumed={totals.calories} target={targetCalories} groups={mealGroups} />
 
-        <div className="flex w-full flex-1 flex-col gap-4">
+          {/* Protein Bar */}
           <div>
             <div className="mb-1.5 flex items-baseline justify-between">
               <span className="text-sm font-medium">Protein</span>
@@ -278,13 +251,14 @@ export function DaySummary({
               />
             </div>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-2 lg:grid-cols-4">
-            <MacroStat label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
-            <MacroStat label="Protein" value={totals.protein} target={targetProtein} unit="g" />
-            <MacroStat label="Carbs" value={totals.carbs} unit="g" />
-            <MacroStat label="Fat" value={totals.fat} unit="g" />
-          </div>
+        {/* Macro Statistics */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <MacroStat label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
+          <MacroStat label="Protein" value={totals.protein} target={targetProtein} unit="g" />
+          <MacroStat label="Carbs" value={totals.carbs} unit="g" />
+          <MacroStat label="Fat" value={totals.fat} unit="g" />
         </div>
       </CardContent>
     </Card>

@@ -100,6 +100,28 @@ export async function moveEntry(id: number, mealGroupId: number, mealGroupName: 
   revalidatePath("/")
 }
 
+export async function updateEntry(id: number, input: {
+  foodId: number
+  quantity: number
+}) {
+  const [food] = await db.select().from(foods).where(eq(foods.id, input.foodId)).limit(1)
+  if (!food) throw new Error("Food not found")
+  
+  await db
+    .update(entries)
+    .set({
+      foodId: food.id,
+      name: food.name,
+      calories: food.calories,
+      protein: food.protein,
+      carbs: food.carbs,
+      fat: food.fat,
+      quantity: toNumeric(input.quantity) ?? "1",
+    })
+    .where(eq(entries.id, id))
+  revalidatePath("/")
+}
+
 export async function deleteEntry(id: number) {
   await db.delete(entries).where(eq(entries.id, id))
   revalidatePath("/")

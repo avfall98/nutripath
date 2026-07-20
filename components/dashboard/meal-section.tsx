@@ -4,6 +4,7 @@ import { useState, useTransition } from "react"
 import { deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
+import { EditEntryDialog } from "@/components/dashboard/edit-entry-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -17,7 +18,7 @@ import {
 import { round } from "@/lib/format"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { toast } from "sonner"
-import { Apple, MoreVertical, Plus, Trash2 } from "lucide-react"
+import { Apple, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
 
 type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
@@ -41,6 +42,8 @@ export function MealSection({
   onChanged: () => void
 }) {
   const [addOpen, setAddOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [selectedEntry, setSelectedEntry] = useState<EntryDTO | null>(null)
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
@@ -113,7 +116,14 @@ export function MealSection({
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{food?.name || entry.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium">{food?.name || entry.name}</p>
+                    {entry.quantity && (
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                        {entry.quantity % 1 === 0 ? entry.quantity.toFixed(1) : entry.quantity} servings
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
                     const entryProtein = round(entry.protein * entry.quantity)
@@ -135,6 +145,13 @@ export function MealSection({
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => {
+                        setSelectedEntry(entry)
+                        setEditOpen(true)
+                      }}>
+                        <Edit data-icon="inline-start" />
+                        Edit entry
+                      </DropdownMenuItem>
                       {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
                         <>
                           <DropdownMenuLabel>Move to</DropdownMenuLabel>
@@ -162,14 +179,25 @@ export function MealSection({
       </CardContent>
 
       {isReal && (
-        <AddFoodDialog
-          open={addOpen}
-          onOpenChange={setAddOpen}
-          group={{ id: group.id, name: group.name, sortOrder: 0 }}
-          dateKey={dateKey}
-          foods={foods}
-          onAdded={onChanged}
-        />
+        <>
+          <AddFoodDialog
+            open={addOpen}
+            onOpenChange={setAddOpen}
+            group={{ id: group.id, name: group.name, sortOrder: 0 }}
+            dateKey={dateKey}
+            foods={foods}
+            onAdded={onChanged}
+          />
+          {selectedEntry && (
+            <EditEntryDialog
+              open={editOpen}
+              onOpenChange={setEditOpen}
+              entry={selectedEntry}
+              foods={foods}
+              onUpdated={onChanged}
+            />
+          )}
+        </>
       )}
     </Card>
   )

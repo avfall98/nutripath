@@ -29,19 +29,6 @@ export function Dashboard({
 
   const list = entries ?? []
 
-  const totals = useMemo(() => {
-    return list.reduce(
-      (acc, e) => {
-        acc.calories += e.calories * e.quantity
-        acc.protein += e.protein * e.quantity
-        acc.carbs += (e.carbs ?? 0) * e.quantity
-        acc.fat += (e.fat ?? 0) * e.quantity
-        return acc
-      },
-      { calories: 0, protein: 0, carbs: 0, fat: 0 },
-    )
-  }, [list])
-
   // Group entries by meal group, plus an "unassigned" bucket for orphaned items.
   const grouped = useMemo(() => {
     const byGroup = new Map<number, EntryDTO[]>()
@@ -57,6 +44,43 @@ export function Dashboard({
     return { byGroup, orphans }
   }, [list, mealGroups])
 
+  const totals = useMemo(() => {
+    return list.reduce(
+      (acc, e) => {
+        acc.calories += e.calories * e.quantity
+        acc.protein += e.protein * e.quantity
+        acc.carbs += (e.carbs ?? 0) * e.quantity
+        acc.fat += (e.fat ?? 0) * e.quantity
+        return acc
+      },
+      { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    )
+  }, [list])
+
+  const mealGroupNutrition = useMemo(() => {
+    const result: Array<{ id: number; name: string; calories: number; protein: number }> = []
+    for (const group of mealGroups) {
+      const entries = grouped.byGroup.get(group.id) ?? []
+      const groupTotals = entries.reduce(
+        (acc, e) => {
+          acc.calories += e.calories * e.quantity
+          acc.protein += e.protein * e.quantity
+          return acc
+        },
+        { calories: 0, protein: 0 },
+      )
+      if (groupTotals.calories > 0 || groupTotals.protein > 0) {
+        result.push({
+          id: group.id,
+          name: group.name,
+          calories: groupTotals.calories,
+          protein: groupTotals.protein,
+        })
+      }
+    }
+    return result
+  }, [grouped, mealGroups])
+
   return (
     <div className="flex flex-col gap-6">
       <DayNavigator date={dateKey} onDateChange={setDateKey} />
@@ -65,6 +89,7 @@ export function Dashboard({
         totals={totals}
         targetCalories={profile?.targetCalories ?? null}
         targetProtein={profile?.targetProtein ?? null}
+        mealGroups={mealGroupNutrition}
       />
 
       <div className="flex flex-col gap-4">

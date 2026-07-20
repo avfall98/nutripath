@@ -1,12 +1,11 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
-import type { FoodDTO, MealGroupDTO } from "@/lib/types"
+import { updateEntry } from "@/app/actions/entries"
+import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -14,7 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { toast } from "sonner"
@@ -23,23 +21,21 @@ import { Apple, Plus, Search } from "lucide-react"
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  group: MealGroupDTO
-  dateKey: string
+  entry: EntryDTO
   foods: FoodDTO[]
-  onAdded: () => void
+  onUpdated: () => void
 }
 
 type QuantityMode = "servings" | "weight"
 
-export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdded }: Props) {
+export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }: Props) {
   const KJ_PER_KCAL = 4.184
   const [pending, startTransition] = useTransition()
   const [query, setQuery] = useState("")
   const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
-  const [servings, setServings] = useState("1")
+  const [servings, setServings] = useState(entry.quantity.toString())
   const [weight, setWeight] = useState("")
   const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
-  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -54,7 +50,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
     return Number.isFinite(n) && v.trim() !== "" ? n : fallback
   }
 
-  function addFromLibrary(food: FoodDTO) {
+  function updateFromLibrary(food: FoodDTO) {
     let quantity = 1
     
     if (qtyMode === "servings") {
@@ -80,39 +76,12 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
     }
     
     startTransition(async () => {
-      await addEntryFromFood({
-        dateKey,
+      await updateEntry(entry.id, {
         foodId: food.id,
-        mealGroupId: group.id,
-        mealGroupName: group.name,
         quantity,
       })
-      toast.success(`Added ${food.name} to ${group.name}.`)
-      onAdded()
-    })
-  }
-
-  function submitQuick(e: React.FormEvent) {
-    e.preventDefault()
-    if (!quick.name.trim()) {
-      toast.error("Enter a name for the item.")
-      return
-    }
-    startTransition(async () => {
-      await addQuickEntry({
-        dateKey,
-        mealGroupId: group.id,
-        mealGroupName: group.name,
-        name: quick.name,
-        calories: num(quick.calories),
-        protein: num(quick.protein),
-        carbs: quick.carbs.trim() === "" ? null : num(quick.carbs),
-        fat: quick.fat.trim() === "" ? null : num(quick.fat),
-        quantity: num(quick.quantity, 1) || 1,
-      })
-      toast.success(`Added ${quick.name} to ${group.name}.`)
-      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
-      onAdded()
+      toast.success(`Updated ${food.name}.`)
+      onUpdated()
       onOpenChange(false)
     })
   }
@@ -121,17 +90,17 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Add to {group.name}</DialogTitle>
-          <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>
+          <DialogTitle>Edit entry</DialogTitle>
+          <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="library" className="min-h-0">
           <TabsList className="w-full">
             <TabsTrigger value="library" className="flex-1">
-              From library
+              Change food
             </TabsTrigger>
-            <TabsTrigger value="quick" className="flex-1">
-              Quick add
+            <TabsTrigger value="quantity" className="flex-1">
+              Quantity only
             </TabsTrigger>
           </TabsList>
 
@@ -235,7 +204,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
             <div className="-mx-1 max-h-72 overflow-y-auto px-1">
               {foods.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
-                  No foods saved yet. Add some in the Foods tab, or use Quick add.
+                  No foods saved yet. Add some in the Foods tab.
                 </p>
               ) : filtered.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">No matches for "{query}".</p>
@@ -246,7 +215,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                       <button
                         type="button"
                         disabled={pending}
-                        onClick={() => addFromLibrary(food)}
+                        onClick={() => updateFromLibrary(food)}
                         className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left transition-colors hover:bg-accent disabled:opacity-50"
                       >
                         <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
@@ -276,83 +245,110 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
             </div>
           </TabsContent>
 
-          <TabsContent value="quick" className="mt-4">
-            <form onSubmit={submitQuick}>
-              <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="q-name">Name</FieldLabel>
+          <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-sm font-medium">{entry.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {Math.round(entry.calories / KJ_PER_KCAL)} kcal · {Math.round(entry.protein)}g protein
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-medium text-muted-foreground">
+                  {qtyMode === "servings" ? "Servings" : "Weight"}
+                </label>
+                <ToggleGroup
+                  value={[qtyMode]}
+                  onValueChange={(v) => {
+                    const mode = v[0] as QuantityMode | undefined
+                    if (mode) setQtyMode(mode)
+                  }}
+                  size="sm"
+                  variant="outline"
+                  spacing={0}
+                >
+                  <ToggleGroupItem value="servings" aria-label="Servings">
+                    Servings
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="weight" aria-label="Weight">
+                    Weight
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
+
+              {qtyMode === "servings" ? (
+                <div>
+                  <label htmlFor="qty-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
+                    Servings
+                  </label>
                   <Input
-                    id="q-name"
-                    value={quick.name}
-                    onChange={(e) => setQuick((s) => ({ ...s, name: e.target.value }))}
-                    placeholder="e.g. Banana"
-                  />
-                </Field>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <Field>
-                    <FieldLabel htmlFor="q-cal">Calories</FieldLabel>
-                    <Input
-                      id="q-cal"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      value={quick.calories}
-                      onChange={(e) => setQuick((s) => ({ ...s, calories: e.target.value }))}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="q-pro">Protein</FieldLabel>
-                    <Input
-                      id="q-pro"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      value={quick.protein}
-                      onChange={(e) => setQuick((s) => ({ ...s, protein: e.target.value }))}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="q-carb">Carbs</FieldLabel>
-                    <Input
-                      id="q-carb"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      value={quick.carbs}
-                      onChange={(e) => setQuick((s) => ({ ...s, carbs: e.target.value }))}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="q-fat">Fat</FieldLabel>
-                    <Input
-                      id="q-fat"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      value={quick.fat}
-                      onChange={(e) => setQuick((s) => ({ ...s, fat: e.target.value }))}
-                    />
-                  </Field>
-                </div>
-                <Field>
-                  <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
-                  <Input
-                    id="q-qty"
+                    id="qty-servings"
                     type="number"
                     inputMode="decimal"
                     min={0}
                     step="0.5"
-                    value={quick.quantity}
-                    onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
-                    className="w-28"
+                    value={servings}
+                    onChange={(e) => setServings(e.target.value)}
                   />
-                </Field>
-                <Button type="submit" disabled={pending} className="w-full">
-                  <Plus data-icon="inline-start" />
-                  Add to {group.name}
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <label htmlFor="qty-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
+                      Weight
+                    </label>
+                    <Input
+                      id="qty-weight"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                      placeholder="e.g. 150"
+                    />
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setWeightUnit("g")}
+                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        weightUnit === "g"
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border hover:bg-accent/50"
+                      }`}
+                    >
+                      g
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWeightUnit("ml")}
+                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
+                        weightUnit === "ml"
+                          ? "bg-accent text-accent-foreground"
+                          : "border border-border hover:bg-accent/50"
+                      }`}
+                    >
+                      ml
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {entry.foodId && (
+                <Button
+                  onClick={() => {
+                    const food = foods.find((f) => f.id === entry.foodId)
+                    if (food) updateFromLibrary(food)
+                  }}
+                  disabled={pending}
+                  className="w-full"
+                >
+                  Save changes
                 </Button>
-              </FieldGroup>
-            </form>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </DialogContent>

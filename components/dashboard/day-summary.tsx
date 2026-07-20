@@ -8,25 +8,20 @@ import { round } from "@/lib/format"
 
 const KJ_PER_KCAL = 4.184
 
-function getGradientColor(percentage: number, isHigherBetter: boolean): string {
-  // Clamp percentage between 0 and 1
-  const pct = Math.min(Math.max(percentage / 100, 0), 1)
-  
-  if (isHigherBetter) {
-    // Protein: Red -> Green (higher is better)
-    // Red: #EF4444, Green: #22C55E
-    const red = Math.round(239 - (239 - 34) * pct)
-    const green = Math.round(68 + (197 - 68) * pct)
-    const blue = Math.round(68 + (94 - 68) * pct)
-    return `rgb(${red}, ${green}, ${blue})`
-  } else {
-    // Calories: Green -> Red (lower is better)
-    // Green: #22C55E, Red: #EF4444
-    const red = Math.round(34 + (239 - 34) * pct)
-    const green = Math.round(197 - (197 - 68) * pct)
-    const blue = Math.round(94 - (94 - 68) * pct)
-    return `rgb(${red}, ${green}, ${blue})`
-  }
+// Discrete color palette for meal groups - high contrast colors
+const groupColors = [
+  "#3B82F6", // Blue
+  "#10B981", // Emerald
+  "#F59E0B", // Amber
+  "#8B5CF6", // Purple
+  "#EC4899", // Pink
+  "#06B6D4", // Cyan
+  "#EF4444", // Red
+  "#14B8A6", // Teal
+]
+
+function getGroupColor(groupId: number): string {
+  return groupColors[groupId % groupColors.length]
 }
 
 export type DayTotals = {
@@ -79,7 +74,7 @@ function CalorieRing({
       const segmentPct = Math.min(group.pct, 1 - currentOffset)
       const segmentDasharray = circumference * segmentPct
       const segmentDashoffset = circumference - circumference * currentOffset - segmentDasharray
-      const ringColor = getGradientColor((group.pct * 100), false)
+      const ringColor = getGroupColor(group.id)
       
       const element = (
         <circle
@@ -93,7 +88,7 @@ function CalorieRing({
           strokeLinecap="round"
           strokeDasharray={segmentDasharray}
           strokeDashoffset={segmentDashoffset}
-          className={cn("transition-opacity duration-200 cursor-pointer", 
+          className={cn("transition-opacity duration-200", 
             hoveredGroup === null || hoveredGroup === group.id ? "opacity-100" : "opacity-30"
           )}
           onMouseEnter={() => setHoveredGroup(group.id)}
@@ -126,7 +121,7 @@ function CalorieRing({
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={getGradientColor((pct * 100), false)}
+            stroke={groupColors[0]}
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -214,10 +209,10 @@ export function DaySummary({
       const element = (
         <div
           key={idx}
-          className={cn("relative h-full transition-all duration-200 cursor-pointer group")}
+          className={cn("relative h-full transition-all duration-200 group")}
           style={{
             width: `${width}%`,
-            backgroundColor: getGradientColor(groupPct, true),
+            backgroundColor: getGroupColor(group.id),
             opacity: hoveredProteinGroup === null || hoveredProteinGroup === group.id ? 1 : 0.3
           }}
           onMouseEnter={() => setHoveredProteinGroup(group.id)}
@@ -267,7 +262,7 @@ export function DaySummary({
                 <div
                   style={{
                     width: `${proteinPct}%`,
-                    backgroundColor: getGradientColor(proteinPct, true),
+                    backgroundColor: groupColors[0],
                     height: "100%",
                     borderRadius: "9999px",
                     transition: "width 500ms, background-color 500ms"

@@ -248,7 +248,6 @@ export function DaySummary({
               <ProteinScoreBadges 
                 proteinG={totals.protein}
                 kcal={caloriesKcal}
-                fontSize="text-[12px]"
               />
               <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${caloriesKcal}g`} />
             </>

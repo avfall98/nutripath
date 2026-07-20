@@ -92,7 +92,7 @@ export function MealSection({
         )}
         {entries.length > 0 && (
           <>
-            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} fontSize="text-[12px]" />
+            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
             <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupCaloriesKcal}g`} />
           </>
         )}

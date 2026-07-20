@@ -1,6 +1,8 @@
 import { Pool } from "pg"
 
-const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL ?? process.env.NEON_DATABASE_URL,
+})
 
 const sql = `
 CREATE TABLE IF NOT EXISTS profile (

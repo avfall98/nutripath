@@ -113,7 +113,14 @@ export function MealSection({
                   </span>
                 )}
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{food?.name || entry.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-medium">{food?.name || entry.name}</p>
+                    {entry.quantity && (
+                      <span className="shrink-0 text-xs font-medium text-muted-foreground">
+                        {entry.quantity % 1 === 0 ? entry.quantity.toFixed(1) : entry.quantity} servings
+                      </span>
+                    )}
+                  </div>
                   {(() => {
                     const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
                     const entryProtein = round(entry.protein * entry.quantity)

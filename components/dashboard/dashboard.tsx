@@ -9,6 +9,7 @@ import { DaySummary } from "@/components/dashboard/day-summary"
 import { DayNavigator } from "@/components/dashboard/day-navigator"
 import { MealSection } from "@/components/dashboard/meal-section"
 import { Skeleton } from "@/components/ui/skeleton"
+import { parseServingWeight } from "@/lib/nutrition"
 
 export function Dashboard({
   profile,
@@ -57,6 +58,21 @@ export function Dashboard({
     )
   }, [list])
 
+  // Total serving weight across the day, summed from each entry's food serving size.
+  const totalServingWeight = useMemo(() => {
+    let sum = 0
+    let hasAny = false
+    for (const e of list) {
+      const food = e.foodId != null ? foods.find((f) => f.id === e.foodId) : null
+      const weight = parseServingWeight(food?.servingSize)
+      if (weight != null) {
+        sum += weight * e.quantity
+        hasAny = true
+      }
+    }
+    return hasAny ? sum : null
+  }, [list, foods])
+
   const mealGroupNutrition = useMemo(() => {
     const result: Array<{ id: number; name: string; calories: number; protein: number }> = []
     for (const group of mealGroups) {
@@ -90,6 +106,7 @@ export function Dashboard({
         targetCalories={profile?.targetCalories ?? null}
         targetProtein={profile?.targetProtein ?? null}
         mealGroups={mealGroupNutrition}
+        servingWeightG={totalServingWeight}
       />
 
       <div className="flex flex-col gap-4">

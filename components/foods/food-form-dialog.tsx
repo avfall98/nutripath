@@ -244,7 +244,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{food ? "Edit food" : "Add a food"}</DialogTitle>
           <DialogDescription>
@@ -641,26 +641,20 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
             {/* Protein Score Preview */}
             <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground">Protein Quality</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground">Food score</h4>
               <div className="flex flex-col gap-2 text-xs">
                 <div>
-                  <p className="text-muted-foreground mb-1">Per serving:</p>
-                  <>
-                    <ProteinScoreBadges 
-                      proteinG={Number(form.protein) || 0}
-                      kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
-                    />
-                    <CalorieDensityBadge
-                      kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
-                      servingSize={form.servingSize ? `${form.servingSize}${servingUnit}` : null}
-                    />
-                  </>
+                  <p className="text-muted-foreground mb-1">Protein Score: per 100kcal and calorie percentage:</p>
+                  <ProteinScoreBadges 
+                    proteinG={Number(form.protein) || 0}
+                    kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
+                  />
                 </div>
                 <div>
-                  <p className="text-muted-foreground mb-1">Per 100{servingUnit}:</p>
-                  <ProteinScoreBadges 
-                    proteinG={Number(form.proteinPerHundred) || 0}
+                  <p className="text-muted-foreground mb-1">Calorie density per 100{servingUnit}:</p>
+                  <CalorieDensityBadge
                     kcal={form.caloriesPerHundred ? Number(form.caloriesPerHundred) / KJ_PER_KCAL : 0}
+                    servingSize="100"
                   />
                 </div>
               </div>

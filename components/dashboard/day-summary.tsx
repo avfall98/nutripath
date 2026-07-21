@@ -157,11 +157,13 @@ export function DaySummary({
   targetCalories,
   targetProtein,
   mealGroups = [],
+  servingWeightG = null,
 }: {
   totals: DayTotals
   targetCalories: number | null
   targetProtein: number | null
   mealGroups?: GroupNutrition[]
+  servingWeightG?: number | null
 }) {
   // Convert kJ to kcal for display (totals.calories is in kJ, targetCalories is already in kcal)
   const caloriesKcal = Math.round(totals.calories / KJ_PER_KCAL)
@@ -244,13 +246,13 @@ export function DaySummary({
                 />
               )}
             </div>
-            <>
-              <ProteinScoreBadges 
-                proteinG={totals.protein}
-                kcal={caloriesKcal}
-              />
-              <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${caloriesKcal}g`} />
-            </>
+            <ProteinScoreBadges 
+              proteinG={totals.protein}
+              kcal={caloriesKcal}
+            />
+            {servingWeightG ? (
+              <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} />
+            ) : null}
           </div>
         </div>
 

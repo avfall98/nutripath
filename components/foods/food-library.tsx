@@ -103,7 +103,12 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
             const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
             return (
             <Card key={food.id} className="relative flex flex-row gap-0 overflow-hidden p-0">
-              <div className="aspect-square w-20 shrink-0 bg-muted">
+              <button
+                type="button"
+                onClick={() => openEdit(food)}
+                className="aspect-square w-20 shrink-0 cursor-pointer bg-muted transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Edit ${food.name}`}
+              >
                 {food.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -116,7 +121,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <Apple className="size-8" />
                   </div>
                 )}
-              </div>
+              </button>
               <div className="absolute right-2 top-2">
                 <DropdownMenu>
                   <DropdownMenuTrigger
@@ -142,7 +147,13 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
               </div>
               <div className="flex flex-1 flex-col gap-2 p-4">
                 <div className="flex flex-wrap items-baseline gap-x-2">
-                  <h3 className="font-medium leading-tight text-balance">{food.name}</h3>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(food)}
+                    className="cursor-pointer rounded font-medium leading-tight text-balance text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    {food.name}
+                  </button>
                   {(food.brand || food.servingSize) && (
                     <p className="text-sm text-muted-foreground">
                       {[food.brand, food.servingSize].filter(Boolean).join(" · ")}

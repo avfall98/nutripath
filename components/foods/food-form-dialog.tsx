@@ -244,7 +244,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{food ? "Edit food" : "Add a food"}</DialogTitle>
           <DialogDescription>

@@ -53,6 +53,21 @@ export function MealSection({
   const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
   
+  // Calculate group serving size from individual entry serving sizes
+  const groupServingSize = entries.length > 0
+    ? entries.map(e => {
+        const food = foods.find(f => f.id === e.foodId)
+        const servingSize = food?.servingSize || null
+        if (!servingSize) return null
+        const match = servingSize.match(/([\d.]+)/)
+        if (!match) return null
+        const value = Number(match[1])
+        return Number.isFinite(value) && value > 0 ? value * e.quantity : null
+      })
+      .filter((v): v is number => v !== null)
+      .reduce((sum, v) => sum + v, 0) || null
+    : null
+  
   const groupCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((groupCaloriesKcal / targetCalories) * 100) : 0
   const groupProteinPct = targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
 
@@ -93,7 +108,7 @@ export function MealSection({
         {entries.length > 0 && (
           <>
             <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
-            <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupCaloriesKcal}g`} />
+            {groupServingSize ? <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} /> : null}
           </>
         )}
       </CardHeader>

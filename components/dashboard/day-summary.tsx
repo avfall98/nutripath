@@ -3,7 +3,6 @@
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
-import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -170,6 +169,9 @@ export function DaySummary({
     targetProtein && targetProtein > 0 ? Math.min((totals.protein / targetProtein) * 100, 100) : 0
   const proteinRemaining = targetProtein != null ? Math.round(targetProtein - totals.protein) : null
   
+  // For day-level, we don't have serving size data, so we can't show calorie density meaningfully
+  // Only show it if we have actual serving size information
+  
   const [hoveredProteinGroup, setHoveredProteinGroup] = useState<number | null>(null)
 
   // Render protein bar segments
@@ -244,13 +246,10 @@ export function DaySummary({
                 />
               )}
             </div>
-            <>
-              <ProteinScoreBadges 
-                proteinG={totals.protein}
-                kcal={caloriesKcal}
-              />
-              <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${caloriesKcal}g`} />
-            </>
+            <ProteinScoreBadges 
+              proteinG={totals.protein}
+              kcal={caloriesKcal}
+            />
           </div>
         </div>
 

@@ -120,7 +120,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add to {group.name}</DialogTitle>
           <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>

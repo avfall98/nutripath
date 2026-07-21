@@ -89,7 +89,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-lg">
+      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Edit entry</DialogTitle>
           <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>

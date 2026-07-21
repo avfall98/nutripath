@@ -12,12 +12,17 @@ const clean = (v?: string) => {
   return t ? t : undefined
 }
 
+// Prefer APP_DATABASE_URL so we can point at a specific Neon database that is
+// not managed (and periodically overwritten) by the Neon integration, which
+// owns DATABASE_URL / POSTGRES_URL / NEON_DATABASE_URL.
 const connectionString =
-  clean(process.env.DATABASE_URL) ?? clean(process.env.NEON_DATABASE_URL)
+  clean(process.env.APP_DATABASE_URL) ??
+  clean(process.env.DATABASE_URL) ??
+  clean(process.env.NEON_DATABASE_URL)
 
 if (!connectionString) {
   throw new Error(
-    "No database connection string found. Set DATABASE_URL or NEON_DATABASE_URL.",
+    "No database connection string found. Set APP_DATABASE_URL, DATABASE_URL, or NEON_DATABASE_URL.",
   )
 }
 

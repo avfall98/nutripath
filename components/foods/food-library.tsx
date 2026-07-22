@@ -7,9 +7,9 @@ import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import {
   DropdownMenu,
@@ -238,17 +238,15 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 <div className="flex flex-wrap items-center gap-1.5">
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                   <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
-                  <Badge variant="secondary" className="text-[13px]">
-                    {caloriesKcal} kcal
-                    {profile?.targetCalories && ` (${caloriesPct}%)`}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[13px]">
-                    {Math.round(food.protein)}g protein
-                    {profile?.targetProtein && ` (${proteinPct}%)`}
-                  </Badge>
-                  {food.carbs != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.carbs)}g carbs</Badge>}
-                  {food.fat != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.fat)}g fat</Badge>}
                 </div>
+                <MacroBadges
+                  kcal={caloriesKcal}
+                  kcalPct={profile?.targetCalories ? caloriesPct : null}
+                  protein={food.protein}
+                  proteinPct={profile?.targetProtein ? proteinPct : null}
+                  carbs={food.carbs}
+                  fat={food.fat}
+                />
                 {food.infoUrl && (
                   <a
                     href={food.infoUrl}

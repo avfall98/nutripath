@@ -38,6 +38,14 @@ export function MacroBadges({
         </span>
         <span className="sr-only">kcal</span>
       </span>
+      <span className="flex items-center gap-1">
+        <MacroLetter label="P" className="bg-orange-500" />
+        <span>
+          {Math.round(protein)}
+          {proteinPct != null && <span className="font-normal text-muted-foreground"> ({proteinPct}%)</span>}
+        </span>
+        <span className="sr-only">g protein</span>
+      </span>
       {carbs != null && (
         <span className="flex items-center gap-1">
           <MacroLetter label="C" className="bg-sky-500" />
@@ -52,14 +60,6 @@ export function MacroBadges({
           <span className="sr-only">g fat</span>
         </span>
       )}
-      <span className="flex items-center gap-1">
-        <MacroLetter label="P" className="bg-orange-500" />
-        <span>
-          {Math.round(protein)}
-          {proteinPct != null && <span className="font-normal text-muted-foreground"> ({proteinPct}%)</span>}
-        </span>
-        <span className="sr-only">g protein</span>
-      </span>
     </div>
   )
 }

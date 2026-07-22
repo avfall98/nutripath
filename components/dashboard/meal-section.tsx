@@ -154,7 +154,6 @@ export function MealSection({
                     return (
                       <>
                         <MacroBadges
-                          className="mt-0.5"
                           kcal={entryCalories}
                           kcalPct={targetCalories ? entryCaloriesPct : null}
                           protein={entryProtein}

@@ -85,6 +85,8 @@ export function Dashboard({
       name: string
       calories: number
       protein: number
+      carbs: number
+      fat: number
       servingWeightG: number | null
     }> = []
     for (const group of mealGroups) {
@@ -93,9 +95,11 @@ export function Dashboard({
         (acc, e) => {
           acc.calories += e.calories * e.quantity
           acc.protein += e.protein * e.quantity
+          acc.carbs += (e.carbs ?? 0) * e.quantity
+          acc.fat += (e.fat ?? 0) * e.quantity
           return acc
         },
-        { calories: 0, protein: 0 },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
       )
       let weightSum = 0
       let hasWeight = false
@@ -113,6 +117,8 @@ export function Dashboard({
           name: group.name,
           calories: groupTotals.calories,
           protein: groupTotals.protein,
+          carbs: groupTotals.carbs,
+          fat: groupTotals.fat,
           servingWeightG: hasWeight ? weightSum : null,
         })
       }

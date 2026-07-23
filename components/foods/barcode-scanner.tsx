@@ -47,6 +47,16 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
   const [status, setStatus] = useState<"starting" | "scanning" | "error">("starting")
   const [errorMsg, setErrorMsg] = useState("")
 
+  // Keep the latest callbacks in refs so the camera effect only depends on `open`.
+  // Otherwise a new callback identity on every parent render would tear down and
+  // re-init the camera in a loop, leaving a black video frame.
+  const onDetectedRef = useRef(onDetected)
+  const onOpenChangeRef = useRef(onOpenChange)
+  useEffect(() => {
+    onDetectedRef.current = onDetected
+    onOpenChangeRef.current = onOpenChange
+  }, [onDetected, onOpenChange])
+
   useEffect(() => {
     if (!open) return
 
@@ -68,8 +78,14 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
     readerRef.current = reader
     let cancelled = false
 
+    // Prefer the rear-facing camera on mobile for scanning product barcodes.
+    const constraints: MediaStreamConstraints = {
+      audio: false,
+      video: { facingMode: { ideal: "environment" } },
+    }
+
     reader
-      .decodeFromVideoDevice(null, videoRef.current!, (result, err) => {
+      .decodeFromConstraints(constraints, videoRef.current!, (result, err) => {
         if (cancelled) return
         setStatus("scanning")
         if (result && !handledRef.current) {
@@ -79,8 +95,8 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
             handledRef.current = true
             playBeep()
             reader.reset()
-            onDetected(text)
-            onOpenChange(false)
+            onDetectedRef.current(text)
+            onOpenChangeRef.current(false)
           }
         }
       })
@@ -100,7 +116,7 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
       readerRef.current?.reset()
       readerRef.current = null
     }
-  }, [open, onDetected, onOpenChange])
+  }, [open])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -117,7 +133,7 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
 
         <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border bg-black">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video ref={videoRef} className="size-full object-cover" playsInline muted />
+          <video ref={videoRef} className="size-full object-cover" autoPlay playsInline muted />
 
           {/* Aiming guide */}
           {status === "scanning" && (

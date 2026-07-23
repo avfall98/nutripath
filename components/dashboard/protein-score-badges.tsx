@@ -1,29 +1,13 @@
-import { proteinPer100Cal } from "@/lib/nutrition"
+import { proteinPer100Cal, type ProteinGrade } from "@/lib/nutrition"
 import { round } from "@/lib/format"
 
-type Tier = {
-  label: string
-  className: string
-}
-
-// Tier the food based on Protein per 100 Calories.
-function getTier(value: number): Tier {
-  if (value >= 10) {
-    return {
-      label: "Elite",
-      className: "bg-green-100 text-green-800",
-    }
-  }
-  if (value >= 8) {
-    return {
-      label: "Target",
-      className: "bg-yellow-100 text-yellow-800",
-    }
-  }
-  return {
-    label: "Poor",
-    className: "bg-red-100 text-red-800",
-  }
+// Soft Pill styling for each 5-level grade: soft (low opacity) background, high-contrast text.
+export const GRADE_PILL_CLASSES: Record<ProteinGrade, string> = {
+  A: "bg-green-100 text-green-800",
+  B: "bg-emerald-100 text-emerald-800",
+  C: "bg-yellow-100 text-yellow-800",
+  D: "bg-orange-100 text-orange-800",
+  F: "bg-red-100 text-red-800",
 }
 
 // proteinG in grams, kcal in kilocalories.
@@ -38,7 +22,7 @@ export function ProteinScoreBadges({
 }) {
   const p100 = proteinPer100Cal(proteinG, kcal)
 
-  if (p100.value == null) {
+  if (p100.value == null || p100.grade == null) {
     return (
       <div className="mt-1 flex flex-wrap items-center gap-1">
         <span
@@ -53,16 +37,15 @@ export function ProteinScoreBadges({
   }
 
   const value = round(p100.value, 1)
-  const tier = getTier(p100.value)
 
   return (
     <div className="mt-1 flex flex-wrap items-center gap-1">
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${tier.className}`}
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${GRADE_PILL_CLASSES[p100.grade]}`}
         title="Protein Score: protein per 100 kcal"
-        aria-label={`Protein Score: ${value.toFixed(1)} ${tier.label}`}
+        aria-label={`Protein Score: ${value.toFixed(1)} grade ${p100.grade}`}
       >
-        {value.toFixed(1)} {tier.label}
+        {value.toFixed(1)} {p100.grade}
       </span>
     </div>
   )

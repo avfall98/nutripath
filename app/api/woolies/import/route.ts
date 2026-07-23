@@ -1,8 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
+export const maxDuration = 30
 
 const KJ_PER_KCAL = 4.184
+
+const UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+
+const BASE_HEADERS: Record<string, string> = {
+  "User-Agent": UA,
+  "Accept-Language": "en-AU,en;q=0.9",
+  "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+  "sec-ch-ua-mobile": "?0",
+  "sec-ch-ua-platform": '"macOS"',
+}
 
 type ImportResult = {
   name: string
@@ -11,7 +23,7 @@ type ImportResult = {
   infoUrl: string
   servingSize: string
   servingUnit: "g" | "ml"
-  // Energy is stored in kJ to match how the app persists it.
+  // Energy is stored in kJ, sodium in mg, everything else in grams to match the app.
   caloriesKj: number | null
   protein: number | null
   fat: number | null
@@ -34,20 +46,14 @@ type ImportResult = {
 function extractStockcode(input: string): string | null {
   const trimmed = input.trim()
   if (!trimmed) return null
-
-  // Direct numeric stockcode
   if (/^\d+$/.test(trimmed)) return trimmed
-
-  // Woolworths product detail URL: /productdetails/{stockcode}/...
   const match = trimmed.match(/\/productdetails\/(\d+)/i)
   if (match) return match[1]
-
-  // Fallback: any run of 5+ digits in the string
   const loose = trimmed.match(/(\d{4,})/)
   return loose ? loose[1] : null
 }
 
-/** Parse a value like "1,234 kJ" or "12.5g" into a float. */
+/** Parse a value like "1,100.0kJ", "23.6g" or "240.0mg" into a float. */
 function parseNumber(value: unknown): number | null {
   if (value == null) return null
   if (typeof value === "number") return Number.isFinite(value) ? value : null
@@ -63,91 +69,114 @@ function round(n: number, digits = 1): number {
   return Math.round(n * f) / f
 }
 
-/** Normalise a nutrient name for matching. */
-function normalizeName(name: string): string {
-  return name.toLowerCase().replace(/[^a-z]/g, "")
+/** A simple cookie jar that captures Set-Cookie headers across requests. */
+class CookieJar {
+  private jar = new Map<string, string>()
+  store(res: Response) {
+    const cookies = res.headers.getSetCookie?.() ?? []
+    for (const c of cookies) {
+      const [kv] = c.split(";")
+      const i = kv.indexOf("=")
+      if (i === -1) continue
+      this.jar.set(kv.slice(0, i).trim(), kv.slice(i + 1))
+    }
+  }
+  header(): string {
+    return [...this.jar.entries()].map(([k, v]) => `${k}=${v}`).join("; ")
+  }
 }
 
-type Nutrient = { perServing: number | null; per100: number | null; unit: string }
+async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), ms)
+  try {
+    return await fetch(url, { ...init, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+type Parsed = {
+  perServe: Record<string, { value: number | null; unit: string }>
+  per100: Record<string, { value: number | null; unit: string }>
+}
+
+const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
+  { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
+  { key: "protein", test: (n) => n.includes("protein") },
+  { key: "satfat", test: (n) => n.includes("fatsaturated") },
+  { key: "fat", test: (n) => n.includes("fattotal") },
+  { key: "carbs", test: (n) => n.includes("carbohydrate") },
+  { key: "sugars", test: (n) => n.includes("sugars") },
+  { key: "fiber", test: (n) => n.includes("dietaryfibre") || n.includes("dietaryfiber") },
+  { key: "sodium", test: (n) => n.includes("sodium") },
+]
 
 /**
- * Woolworths exposes nutrition in a few shapes. This normalises the common ones
- * into a map keyed by a normalised nutrient name.
+ * Woolworths stores nutrition as a JSON string in
+ * AdditionalAttributes.nutritionalinformation with an `Attributes` array whose
+ * entries look like:
+ *   { Name: "Energy kJ Quantity Per Serve - Total - NIP", Value: "1100.0kJ" }
  */
-function parseNutrients(raw: unknown): {
-  nutrients: Record<string, Nutrient>
-  servingSize: string | null
-} {
-  const nutrients: Record<string, Nutrient> = {}
-  let servingSize: string | null = null
-
+function parseNutritionalInformation(raw: unknown): Parsed {
+  const result: Parsed = { perServe: {}, per100: {} }
   let data: any = raw
   if (typeof raw === "string") {
     try {
       data = JSON.parse(raw)
     } catch {
-      data = null
+      return result
     }
   }
-  if (!data || typeof data !== "object") return { nutrients, servingSize }
+  const attributes: any[] = Array.isArray(data?.Attributes)
+    ? data.Attributes
+    : Array.isArray(data)
+      ? data
+      : []
 
-  // Common serving size fields
-  servingSize =
-    data.servingSize ??
-    data.ServingSize ??
-    data.serving_size ??
-    data.servingsize ??
-    null
+  for (const attr of attributes) {
+    const rawName = String(attr?.Name ?? "")
+    if (!rawName) continue
+    const norm = rawName.toLowerCase()
+    // Skip descriptive "ValueWord" duplicates.
+    if (norm.includes("valueword")) continue
 
-  // Find the array of nutrient rows under one of several possible keys.
-  const candidateArrays: any[] = []
-  const arrayKeys = ["nutrients", "Nutrients", "attributes", "Attributes", "rows", "Rows"]
-  for (const key of arrayKeys) {
-    if (Array.isArray(data[key])) candidateArrays.push(...data[key])
+    const isPer100 = norm.includes("per 100")
+    const isPerServe = norm.includes("per serve")
+    if (!isPer100 && !isPerServe) continue
+
+    const flat = norm.replace(/[^a-z]/g, "")
+    const matcher = NUTRIENT_MATCHERS.find((m) => m.test(flat))
+    if (!matcher) continue
+
+    const value = parseNumber(attr?.Value)
+    const unit = String(attr?.Value ?? "").replace(/[\d.,\s]/g, "")
+    const target = isPer100 ? result.per100 : result.perServe
+    if (!(matcher.key in target)) {
+      target[matcher.key] = { value, unit }
+    }
   }
-  // Sometimes the whole payload is an array.
-  if (Array.isArray(data)) candidateArrays.push(...data)
-
-  for (const row of candidateArrays) {
-    if (!row || typeof row !== "object") continue
-    const name =
-      row.Name ?? row.name ?? row.nutrient ?? row.Nutrient ?? row.label ?? row.Label
-    if (!name) continue
-    const key = normalizeName(String(name))
-    const perServing = parseNumber(
-      row.perServing ?? row.PerServing ?? row.perServe ?? row.value ?? row.Value ?? row.qty,
-    )
-    const per100 = parseNumber(
-      row.per100g ?? row.Per100g ?? row.per100 ?? row.Per100 ?? row.per100ml ?? row.Per100ml,
-    )
-    const unit = String(row.unit ?? row.Unit ?? row.uom ?? "")
-    nutrients[key] = { perServing, per100, unit }
-  }
-
-  return { nutrients, servingSize }
+  return result
 }
 
-/** Pick the first nutrient matching any of the provided normalised keys. */
-function pick(nutrients: Record<string, Nutrient>, keys: string[]): Nutrient | null {
-  for (const k of keys) {
-    if (nutrients[k]) return nutrients[k]
-  }
-  // Partial match fallback
-  for (const k of keys) {
-    const found = Object.keys(nutrients).find((n) => n.includes(k))
-    if (found) return nutrients[found]
-  }
-  return null
+function toKj(entry: { value: number | null; unit: string } | undefined): number | null {
+  if (!entry || entry.value == null) return null
+  const unit = entry.unit.toLowerCase()
+  // Matcher only accepts "kj" energy rows, but guard for kcal just in case.
+  if (unit.includes("cal") && !unit.includes("kj")) return round(entry.value * KJ_PER_KCAL, 0)
+  return round(entry.value, 0)
 }
 
-/** Convert an energy nutrient to kJ regardless of whether it's kJ or kcal. */
-function toKj(n: Nutrient | null, field: "perServing" | "per100"): number | null {
-  if (!n) return null
-  const val = n[field]
-  if (val == null) return null
-  const unit = n.unit.toLowerCase()
-  if (unit.includes("cal") || unit === "kcal") return round(val * KJ_PER_KCAL, 0)
-  return round(val, 0)
+function val(entry: { value: number | null } | undefined): number | null {
+  return entry?.value ?? null
+}
+
+/** Derive the numeric serving size from the ratio of per-serve to per-100 energy. */
+function deriveServingSize(perServe: number | null, per100: number | null): number | null {
+  if (perServe == null || per100 == null || per100 === 0) return null
+  const size = (perServe / per100) * 100
+  if (!Number.isFinite(size) || size <= 0) return null
+  return round(size, 0)
 }
 
 export async function POST(request: NextRequest) {
@@ -163,22 +192,55 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const jar = new CookieJar()
+
+    // Step 1: prime Akamai bot-protection cookies via a homepage GET.
+    try {
+      const home = await fetchWithTimeout(
+        "https://www.woolworths.com.au/",
+        {
+          headers: {
+            ...BASE_HEADERS,
+            Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "sec-fetch-dest": "document",
+            "sec-fetch-mode": "navigate",
+            "sec-fetch-site": "none",
+          },
+          cache: "no-store",
+        },
+        15000,
+      )
+      jar.store(home)
+      // Drain the body so the connection is released.
+      await home.text().catch(() => {})
+    } catch (e) {
+      console.log("[v0] Woolworths cookie prime failed:", e)
+    }
+
+    // Step 2: call the product detail API with the primed session cookies.
     const apiUrl = `https://www.woolworths.com.au/apis/ui/product/detail/${stockcode}`
-    const res = await fetch(apiUrl, {
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        Accept: "application/json, text/plain, */*",
-        "Accept-Language": "en-AU,en;q=0.9",
-        Referer: "https://www.woolworths.com.au/",
+    const res = await fetchWithTimeout(
+      apiUrl,
+      {
+        headers: {
+          ...BASE_HEADERS,
+          Accept: "application/json, text/plain, */*",
+          Referer: `https://www.woolworths.com.au/shop/productdetails/${stockcode}`,
+          "x-requested-with": "OnlineShopping.WebApp",
+          "sec-fetch-dest": "empty",
+          "sec-fetch-mode": "cors",
+          "sec-fetch-site": "same-origin",
+          Cookie: jar.header(),
+        },
+        cache: "no-store",
       },
-      cache: "no-store",
-    })
+      20000,
+    )
 
     if (!res.ok) {
       console.log("[v0] Woolworths fetch failed:", res.status, res.statusText)
       return NextResponse.json(
-        { error: `Woolworths returned ${res.status}. The product may be unavailable.` },
+        { error: `Woolworths returned ${res.status}. Please try again in a moment.` },
         { status: 502 },
       )
     }
@@ -195,34 +257,23 @@ export async function POST(request: NextRequest) {
     const image: string | null =
       product.LargeImageFile ?? product.MediumImageFile ?? product.SmallImageFile ?? null
 
-    // Nutrition can live in a few spots.
-    const rawNutrition =
-      product.AdditionalAttributes?.nutritionalinformation ??
-      product.AdditionalAttributes?.NutritionalInformation ??
-      product.NutritionInformation ??
-      product.NutritionalInformation ??
-      null
+    const aa = product.AdditionalAttributes ?? {}
+    const { perServe, per100 } = parseNutritionalInformation(
+      aa.nutritionalinformation ?? aa.NutritionalInformation ?? null,
+    )
 
-    const { nutrients, servingSize: parsedServing } = parseNutrients(rawNutrition)
+    const caloriesKj = toKj(perServe.energy)
+    const caloriesKjPer100 = toKj(per100.energy)
 
-    const energy = pick(nutrients, ["energy"])
-    const protein = pick(nutrients, ["protein"])
-    const fat = pick(nutrients, ["fattotal", "totalfat", "fat"])
-    const satFat = pick(nutrients, ["fatsaturated", "saturatedfat", "saturated"])
-    const carbs = pick(nutrients, ["carbohydrate", "carbohydratetotal", "carbs", "carbstotal"])
-    const sugars = pick(nutrients, ["sugars", "sugar"])
-    const fiber = pick(nutrients, ["dietaryfibre", "dietaryfiber", "fibre", "fiber"])
-    const sodium = pick(nutrients, ["sodium"])
+    // Serving size: explicit attribute if present, else derived from energy ratio.
+    const explicitServing = parseNumber(aa["servingsize-total-nip"] ?? aa.servingsize ?? null)
+    const derivedServing = deriveServingSize(caloriesKj, caloriesKjPer100)
+    const servingNum = explicitServing ?? derivedServing
 
-    // Serving size: prefer parsed nutrition serving size, else product servingsize attribute.
-    const servingRaw =
-      parsedServing ??
-      product.AdditionalAttributes?.servingsize ??
-      product.AdditionalAttributes?.ServingSize ??
-      null
-    const servingNum = parseNumber(servingRaw)
-    const servingUnit: "g" | "ml" =
-      servingRaw && /ml/i.test(String(servingRaw)) ? "ml" : "g"
+    // Serving unit: infer from PackageSize / Unit (mL / L => ml, else g).
+    const packageSize = String(product.PackageSize ?? product.Unit ?? "").toLowerCase()
+    const isLiquid = packageSize.includes("ml") || packageSize.includes("litre") || /\d\s*l\b/.test(packageSize)
+    const servingUnit: "g" | "ml" = isLiquid ? "ml" : "g"
 
     const result: ImportResult = {
       name,
@@ -231,22 +282,22 @@ export async function POST(request: NextRequest) {
       infoUrl: `https://www.woolworths.com.au/shop/productdetails/${stockcode}`,
       servingSize: servingNum != null ? String(servingNum) : "",
       servingUnit,
-      caloriesKj: toKj(energy, "perServing"),
-      protein: protein?.perServing ?? null,
-      fat: fat?.perServing ?? null,
-      saturatedFat: satFat?.perServing ?? null,
-      carbs: carbs?.perServing ?? null,
-      sugars: sugars?.perServing ?? null,
-      dietaryFiber: fiber?.perServing ?? null,
-      sodium: sodium?.perServing ?? null,
-      caloriesKjPer100: toKj(energy, "per100"),
-      proteinPer100: protein?.per100 ?? null,
-      fatPer100: fat?.per100 ?? null,
-      saturatedFatPer100: satFat?.per100 ?? null,
-      carbsPer100: carbs?.per100 ?? null,
-      sugarsPer100: sugars?.per100 ?? null,
-      dietaryFiberPer100: fiber?.per100 ?? null,
-      sodiumPer100: sodium?.per100 ?? null,
+      caloriesKj,
+      protein: val(perServe.protein),
+      fat: val(perServe.fat),
+      saturatedFat: val(perServe.satfat),
+      carbs: val(perServe.carbs),
+      sugars: val(perServe.sugars),
+      dietaryFiber: val(perServe.fiber),
+      sodium: val(perServe.sodium),
+      caloriesKjPer100,
+      proteinPer100: val(per100.protein),
+      fatPer100: val(per100.fat),
+      saturatedFatPer100: val(per100.satfat),
+      carbsPer100: val(per100.carbs),
+      sugarsPer100: val(per100.sugars),
+      dietaryFiberPer100: val(per100.fiber),
+      sodiumPer100: val(per100.sodium),
     }
 
     if (!result.name) {
@@ -257,7 +308,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.log("[v0] Woolworths import error:", error)
     return NextResponse.json(
-      { error: "Failed to fetch Woolworths product. Please check the URL." },
+      { error: "Failed to fetch Woolworths product. Please check the URL and try again." },
       { status: 500 },
     )
   }

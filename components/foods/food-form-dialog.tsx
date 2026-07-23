@@ -20,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { ImagePlus, Link2, Loader2, X } from "lucide-react"
+import { Download, ImagePlus, Link2, Loader2, X } from "lucide-react"
 
 const KJ_PER_KCAL = 4.184
 type ServingUnit = "g" | "ml"
@@ -58,6 +58,8 @@ const empty = {
 export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
+  const [importing, setImporting] = useState(false)
+  const [importQuery, setImportQuery] = useState("")
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [form, setForm] = useState(empty)
@@ -103,6 +105,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       })
       setImageUrl(food?.imageUrl ?? null)
       setServingUnit(unit)
+      setImportQuery("")
     }
   }, [open, food])
 
@@ -199,6 +202,88 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     }
   }
 
+  async function handleImport() {
+    const query = importQuery.trim()
+    if (!query) {
+      toast.error("Paste a Woolworths product URL or stockcode.")
+      return
+    }
+    setImporting(true)
+    try {
+      const res = await fetch("/api/woolies/import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Import failed")
+      }
+      const p = data.product as {
+        name: string
+        brand: string
+        imageUrl: string | null
+        infoUrl: string
+        servingSize: string
+        servingUnit: ServingUnit
+        caloriesKj: number | null
+        protein: number | null
+        fat: number | null
+        saturatedFat: number | null
+        carbs: number | null
+        sugars: number | null
+        dietaryFiber: number | null
+        sodium: number | null
+        caloriesKjPer100: number | null
+        proteinPer100: number | null
+        fatPer100: number | null
+        saturatedFatPer100: number | null
+        carbsPer100: number | null
+        sugarsPer100: number | null
+        dietaryFiberPer100: number | null
+        sodiumPer100: number | null
+      }
+
+      const s = (v: number | null | undefined) => (v != null ? String(v) : "")
+
+      setForm((f) => ({
+        ...f,
+        name: p.name || f.name,
+        brand: p.brand || f.brand,
+        servingSize: p.servingSize || f.servingSize,
+        calories: s(p.caloriesKj),
+        protein: s(p.protein),
+        fat: s(p.fat),
+        saturatedFat: s(p.saturatedFat),
+        carbs: s(p.carbs),
+        sugars: s(p.sugars),
+        dietaryFiber: s(p.dietaryFiber),
+        sodium: s(p.sodium),
+        caloriesPerHundred: s(p.caloriesKjPer100),
+        proteinPerHundred: s(p.proteinPer100),
+        fatPerHundred: s(p.fatPer100),
+        saturatedFatPerHundred: s(p.saturatedFatPer100),
+        carbsPerHundred: s(p.carbsPer100),
+        sugarsPerHundred: s(p.sugarsPer100),
+        dietaryFiberPerHundred: s(p.dietaryFiberPer100),
+        sodiumPerHundred: s(p.sodiumPer100),
+        infoUrl: p.infoUrl || f.infoUrl,
+      }))
+      if (p.servingUnit) setServingUnit(p.servingUnit)
+      if (p.imageUrl) setImageUrl(p.imageUrl)
+      toast.success("Product details imported successfully!")
+    } catch (err) {
+      console.log("[v0] Woolworths import failed:", err)
+      toast.error(
+        err instanceof Error && err.message !== "Import failed"
+          ? err.message
+          : "Failed to fetch Woolworths product. Please check the URL.",
+      )
+    } finally {
+      setImporting(false)
+    }
+  }
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.name.trim()) {
@@ -253,6 +338,42 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+
+
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <FieldLabel htmlFor="woolies-import" className="mb-2 flex items-center gap-1.5">
+                <Download className="size-3.5" />
+                Import from Woolworths
+              </FieldLabel>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="woolies-import"
+                  value={importQuery}
+                  onChange={(e) => setImportQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                      e.preventDefault()
+                      handleImport()
+                    }
+                  }}
+                  placeholder="Woolworths Product URL or Stockcode"
+                  disabled={importing}
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary" onClick={handleImport} disabled={importing}>
+                  {importing ? (
+                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <Download data-icon="inline-start" />
+                  )}
+                  {importing ? "Importing..." : "Import Item"}
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Paste a product link like woolworths.com.au/shop/productdetails/863919/... or enter a stockcode.
+              </p>
+            </div>
+
           <div className="flex items-start gap-4">
             <div className="relative size-24 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
               {imageUrl ? (
@@ -374,6 +495,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
             </div>
+
+            <Field>
+              <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
+              <div className="relative">
+                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="food-url"
+                  type="url"
+                  className="pl-9"
+                  value={form.infoUrl}
+                  onChange={(e) => set("infoUrl", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </Field>
+
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Nutrition Information</h3>
               
@@ -660,20 +797,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               </div>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
-              <div className="relative">
-                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="food-url"
-                  type="url"
-                  className="pl-9"
-                  value={form.infoUrl}
-                  onChange={(e) => set("infoUrl", e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
-            </Field>
           </FieldGroup>
 
           <DialogFooter>

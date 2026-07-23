@@ -20,7 +20,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { Download, ImagePlus, Link2, Loader2, X } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { BarcodeScanner } from "@/components/foods/barcode-scanner"
+import { Download, ImagePlus, Link2, Loader2, ScanBarcode, Sparkles, X } from "lucide-react"
+
+type ImportedProduct = {
+  name: string
+  brand: string
+  imageUrl: string | null
+  infoUrl: string
+  servingSize: string
+  servingUnit: ServingUnit
+  caloriesKj: number | null
+  protein: number | null
+  fat: number | null
+  saturatedFat: number | null
+  carbs: number | null
+  sugars: number | null
+  dietaryFiber: number | null
+  sodium: number | null
+  caloriesKjPer100: number | null
+  proteinPer100: number | null
+  fatPer100: number | null
+  saturatedFatPer100: number | null
+  carbsPer100: number | null
+  sugarsPer100: number | null
+  dietaryFiberPer100: number | null
+  sodiumPer100: number | null
+}
+
+type LookupSource = "woolworths" | "openfoodfacts"
 
 const KJ_PER_KCAL = 4.184
 type ServingUnit = "g" | "ml"
@@ -60,6 +89,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [uploading, setUploading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [importQuery, setImportQuery] = useState("")
+  const [scannerOpen, setScannerOpen] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [source, setSource] = useState<LookupSource | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [form, setForm] = useState(empty)
@@ -106,6 +138,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setImageUrl(food?.imageUrl ?? null)
       setServingUnit(unit)
       setImportQuery("")
+      setSource(null)
     }
   }, [open, food])
 
@@ -202,6 +235,38 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     }
   }
 
+  /** Populate the form from a looked-up product payload. */
+  function applyProduct(p: ImportedProduct, foundSource: LookupSource | null) {
+    const s = (v: number | null | undefined) => (v != null ? String(v) : "")
+
+    setForm((f) => ({
+      ...f,
+      name: p.name || f.name,
+      brand: p.brand || f.brand,
+      servingSize: p.servingSize || f.servingSize,
+      calories: s(p.caloriesKj),
+      protein: s(p.protein),
+      fat: s(p.fat),
+      saturatedFat: s(p.saturatedFat),
+      carbs: s(p.carbs),
+      sugars: s(p.sugars),
+      dietaryFiber: s(p.dietaryFiber),
+      sodium: s(p.sodium),
+      caloriesPerHundred: s(p.caloriesKjPer100),
+      proteinPerHundred: s(p.proteinPer100),
+      fatPerHundred: s(p.fatPer100),
+      saturatedFatPerHundred: s(p.saturatedFatPer100),
+      carbsPerHundred: s(p.carbsPer100),
+      sugarsPerHundred: s(p.sugarsPer100),
+      dietaryFiberPerHundred: s(p.dietaryFiberPer100),
+      sodiumPerHundred: s(p.sodiumPer100),
+      infoUrl: p.infoUrl || f.infoUrl,
+    }))
+    if (p.servingUnit) setServingUnit(p.servingUnit)
+    if (p.imageUrl) setImageUrl(p.imageUrl)
+    setSource(foundSource)
+  }
+
   async function handleImport() {
     const query = importQuery.trim()
     if (!query) {
@@ -219,58 +284,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       if (!res.ok) {
         throw new Error(data?.error ?? "Import failed")
       }
-      const p = data.product as {
-        name: string
-        brand: string
-        imageUrl: string | null
-        infoUrl: string
-        servingSize: string
-        servingUnit: ServingUnit
-        caloriesKj: number | null
-        protein: number | null
-        fat: number | null
-        saturatedFat: number | null
-        carbs: number | null
-        sugars: number | null
-        dietaryFiber: number | null
-        sodium: number | null
-        caloriesKjPer100: number | null
-        proteinPer100: number | null
-        fatPer100: number | null
-        saturatedFatPer100: number | null
-        carbsPer100: number | null
-        sugarsPer100: number | null
-        dietaryFiberPer100: number | null
-        sodiumPer100: number | null
-      }
-
-      const s = (v: number | null | undefined) => (v != null ? String(v) : "")
-
-      setForm((f) => ({
-        ...f,
-        name: p.name || f.name,
-        brand: p.brand || f.brand,
-        servingSize: p.servingSize || f.servingSize,
-        calories: s(p.caloriesKj),
-        protein: s(p.protein),
-        fat: s(p.fat),
-        saturatedFat: s(p.saturatedFat),
-        carbs: s(p.carbs),
-        sugars: s(p.sugars),
-        dietaryFiber: s(p.dietaryFiber),
-        sodium: s(p.sodium),
-        caloriesPerHundred: s(p.caloriesKjPer100),
-        proteinPerHundred: s(p.proteinPer100),
-        fatPerHundred: s(p.fatPer100),
-        saturatedFatPerHundred: s(p.saturatedFatPer100),
-        carbsPerHundred: s(p.carbsPer100),
-        sugarsPerHundred: s(p.sugarsPer100),
-        dietaryFiberPerHundred: s(p.dietaryFiberPer100),
-        sodiumPerHundred: s(p.sodiumPer100),
-        infoUrl: p.infoUrl || f.infoUrl,
-      }))
-      if (p.servingUnit) setServingUnit(p.servingUnit)
-      if (p.imageUrl) setImageUrl(p.imageUrl)
+      applyProduct(data.product as ImportedProduct, "woolworths")
       toast.success("Product details imported successfully!")
     } catch (err) {
       console.log("[v0] Woolworths import failed:", err)
@@ -281,6 +295,40 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       )
     } finally {
       setImporting(false)
+    }
+  }
+
+  async function handleBarcodeDetected(barcode: string) {
+    setScanning(true)
+    const pending = toast.loading(`Looking up barcode ${barcode}...`)
+    try {
+      const res = await fetch("/api/food/lookup-barcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ barcode }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        throw new Error(data?.error ?? "Barcode lookup failed")
+      }
+      const product = data.product as ImportedProduct & { source: LookupSource }
+      applyProduct(product, product.source)
+      toast.success(
+        product.source === "woolworths"
+          ? "Found on Woolworths and filled in the details."
+          : "Found on Open Food Facts and filled in the details.",
+        { id: pending },
+      )
+    } catch (err) {
+      console.log("[v0] Barcode lookup failed:", err)
+      toast.error(
+        err instanceof Error && err.message !== "Barcode lookup failed"
+          ? err.message
+          : "Product barcode not found. Try entering URL or manual entry.",
+        { id: pending },
+      )
+    } finally {
+      setScanning(false)
     }
   }
 
@@ -328,6 +376,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
@@ -341,10 +390,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
 
             <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <FieldLabel htmlFor="woolies-import" className="mb-2 flex items-center gap-1.5">
-                <Download className="size-3.5" />
-                Import from Woolworths
-              </FieldLabel>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <FieldLabel htmlFor="woolies-import" className="flex items-center gap-1.5">
+                  <Download className="size-3.5" />
+                  Import from Woolworths
+                </FieldLabel>
+                {source && (
+                  <Badge variant="secondary" className="gap-1">
+                    <Sparkles className="size-3" />
+                    {source === "woolworths" ? "Sourced from Woolworths" : "Sourced from Open Food Facts"}
+                  </Badge>
+                )}
+              </div>
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Input
                   id="woolies-import"
@@ -357,20 +414,40 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     }
                   }}
                   placeholder="Woolworths Product URL or Stockcode"
-                  disabled={importing}
+                  disabled={importing || scanning}
                   className="flex-1"
                 />
-                <Button type="button" variant="secondary" onClick={handleImport} disabled={importing}>
-                  {importing ? (
-                    <Loader2 data-icon="inline-start" className="animate-spin" />
-                  ) : (
-                    <Download data-icon="inline-start" />
-                  )}
-                  {importing ? "Importing..." : "Import Item"}
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleImport}
+                    disabled={importing || scanning}
+                  >
+                    {importing ? (
+                      <Loader2 data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <Download data-icon="inline-start" />
+                    )}
+                    {importing ? "Importing..." : "Import Item"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setScannerOpen(true)}
+                    disabled={importing || scanning}
+                  >
+                    {scanning ? (
+                      <Loader2 data-icon="inline-start" className="animate-spin" />
+                    ) : (
+                      <ScanBarcode data-icon="inline-start" />
+                    )}
+                    {scanning ? "Looking up..." : "Scan Barcode"}
+                  </Button>
+                </div>
               </div>
               <p className="mt-2 text-xs text-muted-foreground">
-                Paste a product link like woolworths.com.au/shop/productdetails/863919/... or enter a stockcode.
+                Paste a product link, enter a stockcode, or scan a barcode to look up nutrition automatically.
               </p>
             </div>
 
@@ -810,5 +887,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         </form>
       </DialogContent>
     </Dialog>
+    <BarcodeScanner open={scannerOpen} onOpenChange={setScannerOpen} onDetected={handleBarcodeDetected} />
+    </>
   )
 }

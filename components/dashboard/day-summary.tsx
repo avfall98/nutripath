@@ -78,7 +78,7 @@ function CalorieBar({
           title={group.name}
         >
           {hoveredCalorieGroup === group.id && (
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none">
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none z-50">
               {group.name}
             </div>
           )}
@@ -108,7 +108,7 @@ function CalorieBar({
           )}
         </span>
       </div>
-      <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+      <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
         {groups.length > 0 ? (
           renderCalorieSegments()
         ) : (
@@ -194,7 +194,7 @@ export function DaySummary({
           title={group.name}
         >
           {hoveredProteinGroup === group.id && (
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none">
+            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none z-50">
               {group.name}
             </div>
           )}
@@ -231,7 +231,7 @@ export function DaySummary({
                 )}
               </span>
             </div>
-            <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+            <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
               {mealGroups.length > 0 ? (
                 renderProteinSegments()
               ) : (

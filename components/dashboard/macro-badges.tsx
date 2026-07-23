@@ -11,6 +11,21 @@ function MacroLetter({ label, className }: { label: string; className: string })
   )
 }
 
+// Shared macro icon (flame for calories, colored letter badge for macros) so the
+// today totals, group totals, and hover tooltips all use the same visual language.
+export function MacroIcon({ macro }: { macro: "calories" | "protein" | "carbs" | "fat" }) {
+  if (macro === "calories") {
+    return <Flame className="size-4 shrink-0 fill-red-500 text-red-500" aria-hidden="true" />
+  }
+  const map = {
+    protein: { label: "P", className: "bg-orange-500" },
+    carbs: { label: "C", className: "bg-sky-500" },
+    fat: { label: "F", className: "bg-green-500" },
+  } as const
+  const { label, className } = map[macro]
+  return <MacroLetter label={label} className={className} />
+}
+
 export function MacroBadges({
   kcal,
   kcalPct,

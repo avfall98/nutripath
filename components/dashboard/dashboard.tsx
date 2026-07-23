@@ -80,28 +80,51 @@ export function Dashboard({
   }, [list, foods])
 
   const mealGroupNutrition = useMemo(() => {
-    const result: Array<{ id: number; name: string; calories: number; protein: number }> = []
+    const result: Array<{
+      id: number
+      name: string
+      calories: number
+      protein: number
+      carbs: number
+      fat: number
+      servingWeightG: number | null
+    }> = []
     for (const group of mealGroups) {
       const entries = grouped.byGroup.get(group.id) ?? []
       const groupTotals = entries.reduce(
         (acc, e) => {
           acc.calories += e.calories * e.quantity
           acc.protein += e.protein * e.quantity
+          acc.carbs += (e.carbs ?? 0) * e.quantity
+          acc.fat += (e.fat ?? 0) * e.quantity
           return acc
         },
-        { calories: 0, protein: 0 },
+        { calories: 0, protein: 0, carbs: 0, fat: 0 },
       )
+      let weightSum = 0
+      let hasWeight = false
+      for (const e of entries) {
+        const food = e.foodId != null ? foods.find((f) => f.id === e.foodId) : null
+        const weight = parseServingWeight(food?.servingSize)
+        if (weight != null) {
+          weightSum += weight * e.quantity
+          hasWeight = true
+        }
+      }
       if (groupTotals.calories > 0 || groupTotals.protein > 0) {
         result.push({
           id: group.id,
           name: group.name,
           calories: groupTotals.calories,
           protein: groupTotals.protein,
+          carbs: groupTotals.carbs,
+          fat: groupTotals.fat,
+          servingWeightG: hasWeight ? weightSum : null,
         })
       }
     }
     return result
-  }, [grouped, mealGroups])
+  }, [grouped, mealGroups, foods])
 
   if (!dateKey) {
     return (

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -37,15 +38,59 @@ export type GroupNutrition = {
   name: string
   calories: number
   protein: number
+  carbs?: number | null
+  fat?: number | null
+  servingWeightG?: number | null
+}
+
+// Rich hover popup mirroring the group totals shown in the meals list:
+// a "kcal (%) · protein (%)" line plus protein-score and calorie-density badges.
+function GroupTooltip({
+  group,
+  targetCalories,
+  targetProtein,
+}: {
+  group: GroupNutrition
+  targetCalories: number | null
+  targetProtein: number | null
+}) {
+  const kcal = Math.round(group.calories / KJ_PER_KCAL)
+  const kcalPct =
+    targetCalories && targetCalories > 0 ? Math.round((kcal / targetCalories) * 100) : null
+  const proteinPct =
+    targetProtein && targetProtein > 0 ? Math.round((group.protein / targetProtein) * 100) : null
+
+  return (
+    <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 flex -translate-x-1/2 flex-col gap-1.5 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-2 text-popover-foreground shadow-md">
+      <p className="text-xs font-semibold">{group.name}</p>
+      <MacroBadges
+        kcal={kcal}
+        kcalPct={kcalPct}
+        protein={group.protein}
+        proteinPct={proteinPct}
+        carbs={group.carbs ?? null}
+        fat={group.fat ?? null}
+      />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <ProteinScoreBadges proteinG={group.protein} kcal={kcal} />
+        <CalorieDensityBadge
+          kcal={kcal}
+          servingSize={group.servingWeightG ? `${group.servingWeightG}g` : null}
+        />
+      </div>
+    </div>
+  )
 }
 
 function CalorieBar({ 
   consumed, 
   target,
+  targetProtein = null,
   groups = []
 }: { 
   consumed: number
   target: number | null
+  targetProtein?: number | null
   groups?: GroupNutrition[]
 }) {
   // Convert kJ to kcal for display (consumed is in kJ, target is already in kcal)
@@ -78,9 +123,7 @@ function CalorieBar({
           title={group.name}
         >
           {hoveredCalorieGroup === group.id && (
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none">
-              {group.name}
-            </div>
+            <GroupTooltip group={group} targetCalories={target} targetProtein={targetProtein} />
           )}
         </div>
       )
@@ -108,7 +151,7 @@ function CalorieBar({
           )}
         </span>
       </div>
-      <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+      <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
         {groups.length > 0 ? (
           renderCalorieSegments()
         ) : (
@@ -128,11 +171,13 @@ function CalorieBar({
 }
 
 function MacroStat({
+  macro,
   label,
   value,
   target,
   unit,
 }: {
+  macro: "calories" | "protein" | "carbs" | "fat"
   label: string
   value: number
   target?: number | null
@@ -140,7 +185,10 @@ function MacroStat({
 }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-lg bg-secondary/60 p-3">
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        <MacroIcon macro={macro} />
+        {label}
+      </span>
       <span className="text-lg font-semibold tabular-nums">
         {round(value)}
         <span className="ml-0.5 text-xs font-normal text-muted-foreground">{unit}</span>
@@ -194,9 +242,7 @@ export function DaySummary({
           title={group.name}
         >
           {hoveredProteinGroup === group.id && (
-            <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap text-xs font-medium text-primary bg-background/80 px-2 py-1 rounded border border-border pointer-events-none">
-              {group.name}
-            </div>
+            <GroupTooltip group={group} targetCalories={targetCalories} targetProtein={targetProtein} />
           )}
         </div>
       )
@@ -206,11 +252,11 @@ export function DaySummary({
   }
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardContent className="flex flex-col gap-6 py-6">
         <div className="flex w-full flex-col gap-5">
           {/* Calorie Bar */}
-          <CalorieBar consumed={totals.calories} target={targetCalories} groups={mealGroups} />
+          <CalorieBar consumed={totals.calories} target={targetCalories} targetProtein={targetProtein} groups={mealGroups} />
 
           {/* Protein Bar */}
           <div>
@@ -231,7 +277,7 @@ export function DaySummary({
                 )}
               </span>
             </div>
-            <div className="relative flex items-center overflow-x-hidden rounded-full bg-muted" style={{ height: "14px" }}>
+            <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
               {mealGroups.length > 0 ? (
                 renderProteinSegments()
               ) : (
@@ -260,10 +306,10 @@ export function DaySummary({
 
         {/* Macro Statistics */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MacroStat label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
-          <MacroStat label="Protein" value={totals.protein} target={targetProtein} unit="g" />
-          <MacroStat label="Carbs" value={totals.carbs} unit="g" />
-          <MacroStat label="Fat" value={totals.fat} unit="g" />
+          <MacroStat macro="calories" label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
+          <MacroStat macro="protein" label="Protein" value={totals.protein} target={targetProtein} unit="g" />
+          <MacroStat macro="carbs" label="Carbs" value={totals.carbs} unit="g" />
+          <MacroStat macro="fat" label="Fat" value={totals.fat} unit="g" />
         </div>
       </CardContent>
     </Card>

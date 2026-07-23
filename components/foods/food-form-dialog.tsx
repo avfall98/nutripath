@@ -338,40 +338,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="rounded-lg border border-border bg-muted/30 p-3">
-            <FieldLabel htmlFor="woolies-import" className="mb-2 flex items-center gap-1.5">
-              <Download className="size-3.5" />
-              Import from Woolworths
-            </FieldLabel>
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Input
-                id="woolies-import"
-                value={importQuery}
-                onChange={(e) => setImportQuery(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
-                    e.preventDefault()
-                    handleImport()
-                  }
-                }}
-                placeholder="Woolworths Product URL or Stockcode"
-                disabled={importing}
-                className="flex-1"
-              />
-              <Button type="button" variant="secondary" onClick={handleImport} disabled={importing}>
-                {importing ? (
-                  <Loader2 data-icon="inline-start" className="animate-spin" />
-                ) : (
-                  <Download data-icon="inline-start" />
-                )}
-                {importing ? "Importing..." : "Import Item"}
-              </Button>
-            </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Paste a product link like woolworths.com.au/shop/productdetails/863919/... or enter a stockcode.
-            </p>
-          </div>
-
           <div className="flex items-start gap-4">
             <div className="relative size-24 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
               {imageUrl ? (
@@ -493,6 +459,41 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </Field>
             </div>
+
+            <div className="rounded-lg border border-border bg-muted/30 p-3">
+              <FieldLabel htmlFor="woolies-import" className="mb-2 flex items-center gap-1.5">
+                <Download className="size-3.5" />
+                Import from Woolworths
+              </FieldLabel>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Input
+                  id="woolies-import"
+                  value={importQuery}
+                  onChange={(e) => setImportQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.nativeEvent.isComposing && e.keyCode !== 229) {
+                      e.preventDefault()
+                      handleImport()
+                    }
+                  }}
+                  placeholder="Woolworths Product URL or Stockcode"
+                  disabled={importing}
+                  className="flex-1"
+                />
+                <Button type="button" variant="secondary" onClick={handleImport} disabled={importing}>
+                  {importing ? (
+                    <Loader2 data-icon="inline-start" className="animate-spin" />
+                  ) : (
+                    <Download data-icon="inline-start" />
+                  )}
+                  {importing ? "Importing..." : "Import Item"}
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Paste a product link like woolworths.com.au/shop/productdetails/863919/... or enter a stockcode.
+              </p>
+            </div>
+
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Nutrition Information</h3>
               

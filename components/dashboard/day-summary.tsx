@@ -241,7 +241,7 @@ export function DaySummary({
   }
 
   return (
-    <Card>
+    <Card className="overflow-visible">
       <CardContent className="flex flex-col gap-6 py-6">
         <div className="flex w-full flex-col gap-5">
           {/* Calorie Bar */}

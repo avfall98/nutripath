@@ -246,13 +246,15 @@ export function DaySummary({
                 />
               )}
             </div>
-            <ProteinScoreBadges 
-              proteinG={totals.protein}
-              kcal={caloriesKcal}
-            />
-            {servingWeightG ? (
-              <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} />
-            ) : null}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <ProteinScoreBadges 
+                proteinG={totals.protein}
+                kcal={caloriesKcal}
+              />
+              {servingWeightG ? (
+                <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} />
+              ) : null}
+            </div>
           </div>
         </div>
 

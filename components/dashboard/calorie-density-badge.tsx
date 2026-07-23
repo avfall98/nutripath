@@ -34,7 +34,7 @@ export function CalorieDensityBadge({
     <div className="mt-1 flex flex-wrap items-center gap-1">
       <span
         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${GRADE_PILL_CLASSES[density.grade]}`}
-        title={`Calorie Density: ${density.grade} • ${density.label}`}
+        title={`Calories per 100g/ml: ${density.grade} • ${density.label}`}
         aria-label={`Calorie Density: grade ${density.grade}, ${value} kcal per 100g`}
       >
         {density.grade} - {value}

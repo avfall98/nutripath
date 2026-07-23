@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import useSWR from "swr"
 import { format } from "date-fns"
 import { getEntriesByDate } from "@/app/actions/entries"
@@ -20,11 +20,17 @@ export function Dashboard({
   mealGroups: MealGroupDTO[]
   foods: FoodDTO[]
 }) {
-  const [dateKey, setDateKey] = useState(() => format(new Date(), "yyyy-MM-dd"))
+  // Compute "today" only on the client to avoid SSR/client timezone mismatches
+  // (the server may be in UTC while the browser is in a different timezone).
+  const [dateKey, setDateKey] = useState<string | null>(null)
+
+  useEffect(() => {
+    setDateKey(format(new Date(), "yyyy-MM-dd"))
+  }, [])
 
   const { data: entries, isLoading, mutate } = useSWR<EntryDTO[]>(
-    ["entries", dateKey],
-    () => getEntriesByDate(dateKey),
+    dateKey ? ["entries", dateKey] : null,
+    () => getEntriesByDate(dateKey!),
     { keepPreviousData: true },
   )
 
@@ -96,6 +102,19 @@ export function Dashboard({
     }
     return result
   }, [grouped, mealGroups])
+
+  if (!dateKey) {
+    return (
+      <div className="flex flex-col gap-6">
+        <Skeleton className="h-16 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <div className="flex flex-col gap-4">
+          <Skeleton className="h-32 w-full rounded-xl" />
+          <Skeleton className="h-32 w-full rounded-xl" />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

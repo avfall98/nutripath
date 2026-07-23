@@ -18,6 +18,7 @@ import {
 import { round } from "@/lib/format"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges } from "@/components/dashboard/macro-badges"
 import { toast } from "sonner"
 import { Apple, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
 
@@ -106,10 +107,10 @@ export function MealSection({
           </Button>
         )}
         {entries.length > 0 && (
-          <>
+          <div className="flex flex-wrap items-center gap-1.5">
             <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
             {groupServingSize ? <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} /> : null}
-          </>
+          </div>
         )}
       </CardHeader>
       <CardContent className="pt-0">
@@ -146,17 +147,24 @@ export function MealSection({
                   {(() => {
                     const entryCalories = round(entry.calories * entry.quantity / KJ_PER_KCAL, 0)
                     const entryProtein = round(entry.protein * entry.quantity)
+                    const entryCarbs = entry.carbs != null ? round(entry.carbs * entry.quantity) : null
+                    const entryFat = entry.fat != null ? round(entry.fat * entry.quantity) : null
                     const entryCaloriesPct = targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
                     const entryProteinPct = targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
                     return (
                       <>
-                        <p className="text-xs tabular-nums text-muted-foreground">
-                          {entryCalories} kcal{targetCalories ? ` (${entryCaloriesPct}%)` : ""} · {entryProtein}g protein{targetProtein ? ` (${entryProteinPct}%)` : ""}
-                        </p>
-                        <>
+                        <MacroBadges
+                          kcal={entryCalories}
+                          kcalPct={targetCalories ? entryCaloriesPct : null}
+                          protein={entryProtein}
+                          proteinPct={targetProtein ? entryProteinPct : null}
+                          carbs={entryCarbs}
+                          fat={entryFat}
+                        />
+                        <div className="flex flex-wrap items-center gap-1.5">
                           <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                           <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
-                        </>
+                        </div>
                       </>
                     )
                   })()}

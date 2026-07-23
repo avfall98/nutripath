@@ -7,9 +7,9 @@ import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Card } from "@/components/ui/card"
 import {
   DropdownMenu,
@@ -20,22 +20,58 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { toast } from "sonner"
-import { Apple, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
+import { Apple, ArrowUpDown, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
+
+type SortKey = "name-asc" | "name-desc" | "kcal" | "protein" | "protein-score" | "kcal-score"
 
 export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: ProfileDTO | null }) {
   const router = useRouter()
   const [query, setQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<FoodDTO | null>(null)
+  const [sortKey, setSortKey] = useState<SortKey>("name-asc")
   const [, startTransition] = useTransition()
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return foods
-    return foods.filter(
-      (f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q),
-    )
-  }, [foods, query])
+    let result = foods
+    if (q) {
+      result = foods.filter(
+        (f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q),
+      )
+    }
+
+    // Apply sorting
+    const KJ_PER_KCAL = 4.184
+    const sorted = [...result].sort((a, b) => {
+      switch (sortKey) {
+        case "name-asc":
+          return a.name.localeCompare(b.name)
+        case "name-desc":
+          return b.name.localeCompare(a.name)
+        case "kcal": {
+          const aKcal = a.calories / KJ_PER_KCAL
+          const bKcal = b.calories / KJ_PER_KCAL
+          return bKcal - aKcal
+        }
+        case "protein":
+          return b.protein - a.protein
+        case "protein-score": {
+          const aScore = Math.max(0, Math.min(100, (a.protein / (Math.round(a.calories / KJ_PER_KCAL) * 0.1)) * 100))
+          const bScore = Math.max(0, Math.min(100, (b.protein / (Math.round(b.calories / KJ_PER_KCAL) * 0.1)) * 100))
+          return bScore - aScore
+        }
+        case "kcal-score": {
+          const aScore = Math.max(0, Math.min(100, (Math.round(a.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)) * 100))
+          const bScore = Math.max(0, Math.min(100, (Math.round(b.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)) * 100))
+          return bScore - aScore
+        }
+        default:
+          return 0
+      }
+    })
+    return sorted
+  }, [foods, query, sortKey, profile])
 
   function openNew() {
     setEditing(null)
@@ -73,6 +109,45 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           Add food
         </Button>
       </div>
+
+      {foods.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground">
+              {filtered.length} of {foods.length} {foods.length === 1 ? "food" : "foods"}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button size="sm" variant="outline"><ArrowUpDown className="size-3.5" />Sort</Button>} />
+                <DropdownMenuContent align="end">
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => setSortKey("name-asc")} className={sortKey === "name-asc" ? "bg-accent" : ""}>
+                      Name (A-Z)
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortKey("name-desc")} className={sortKey === "name-desc" ? "bg-accent" : ""}>
+                      Name (Z-A)
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => setSortKey("kcal")} className={sortKey === "kcal" ? "bg-accent" : ""}>
+                      Highest kcal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortKey("protein")} className={sortKey === "protein" ? "bg-accent" : ""}>
+                      Most protein
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortKey("protein-score")} className={sortKey === "protein-score" ? "bg-accent" : ""}>
+                      Protein score
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setSortKey("kcal-score")} className={sortKey === "kcal-score" ? "bg-accent" : ""}>
+                      Kcal score
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      )}
 
       {foods.length === 0 ? (
         <Empty className="border border-dashed">
@@ -160,19 +235,17 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     </p>
                   )}
                 </div>
+                <MacroBadges
+                  kcal={caloriesKcal}
+                  kcalPct={profile?.targetCalories ? caloriesPct : null}
+                  protein={food.protein}
+                  proteinPct={profile?.targetProtein ? proteinPct : null}
+                  carbs={food.carbs}
+                  fat={food.fat}
+                />
                 <div className="flex flex-wrap items-center gap-1.5">
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                   <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
-                  <Badge variant="secondary" className="text-[13px]">
-                    {caloriesKcal} kcal
-                    {profile?.targetCalories && ` (${caloriesPct}%)`}
-                  </Badge>
-                  <Badge variant="secondary" className="text-[13px]">
-                    {Math.round(food.protein)}g protein
-                    {profile?.targetProtein && ` (${proteinPct}%)`}
-                  </Badge>
-                  {food.carbs != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.carbs)}g carbs</Badge>}
-                  {food.fat != null && <Badge variant="outline" className="text-[13px]">{Math.round(food.fat)}g fat</Badge>}
                 </div>
                 {food.infoUrl && (
                   <a

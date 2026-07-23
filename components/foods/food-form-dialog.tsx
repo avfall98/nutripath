@@ -496,6 +496,21 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               </Field>
             </div>
 
+            <Field>
+              <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
+              <div className="relative">
+                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="food-url"
+                  type="url"
+                  className="pl-9"
+                  value={form.infoUrl}
+                  onChange={(e) => set("infoUrl", e.target.value)}
+                  placeholder="https://..."
+                />
+              </div>
+            </Field>
+
             <div className="space-y-3">
               <h3 className="text-sm font-semibold">Nutrition Information</h3>
               
@@ -782,20 +797,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               </div>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
-              <div className="relative">
-                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  id="food-url"
-                  type="url"
-                  className="pl-9"
-                  value={form.infoUrl}
-                  onChange={(e) => set("infoUrl", e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
-            </Field>
           </FieldGroup>
 
           <DialogFooter>

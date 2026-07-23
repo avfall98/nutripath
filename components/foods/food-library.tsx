@@ -220,6 +220,17 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
+              {food.infoUrl && (
+                <a
+                  href={food.infoUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="absolute right-2 top-12 inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                >
+                  <ExternalLink className="size-3.5" />
+                  More info
+                </a>
+              )}
               <div className="flex flex-1 flex-col gap-2 p-4">
                 <div className="flex flex-wrap items-baseline gap-x-2">
                   <button
@@ -233,17 +244,6 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <p className="text-sm text-muted-foreground">
                       {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
                     </p>
-                  )}
-                  {food.infoUrl && (
-                    <a
-                      href={food.infoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                    >
-                      <ExternalLink className="size-3.5" />
-                      More info
-                    </a>
                   )}
                 </div>
                 <MacroBadges

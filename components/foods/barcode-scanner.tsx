@@ -41,15 +41,19 @@ function playBeep() {
 }
 
 export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
-  const videoRef = useRef<HTMLVideoElement>(null)
   const readerRef = useRef<BrowserMultiFormatReader | null>(null)
   const handledRef = useRef(false)
+  // Backed by state (not a plain ref) so the camera effect only runs once the
+  // real <video> node is mounted in the DOM. The Dialog is a portal with an
+  // entry animation, so a plain ref can still be null when `open` flips true —
+  // in that case zxing silently spins up its own detached video element (the
+  // decode loop runs but the on-screen video stays black).
+  const [videoEl, setVideoEl] = useState<HTMLVideoElement | null>(null)
   const [status, setStatus] = useState<"starting" | "scanning" | "error">("starting")
   const [errorMsg, setErrorMsg] = useState("")
 
-  // Keep the latest callbacks in refs so the camera effect only depends on `open`.
-  // Otherwise a new callback identity on every parent render would tear down and
-  // re-init the camera in a loop, leaving a black video frame.
+  // Keep the latest callbacks in refs so the camera effect doesn't restart when
+  // the parent passes new callback identities on every render.
   const onDetectedRef = useRef(onDetected)
   const onOpenChangeRef = useRef(onOpenChange)
   useEffect(() => {
@@ -58,7 +62,7 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
   }, [onDetected, onOpenChange])
 
   useEffect(() => {
-    if (!open) return
+    if (!open || !videoEl) return
 
     handledRef.current = false
     setStatus("starting")
@@ -77,30 +81,41 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
     const reader = new BrowserMultiFormatReader(hints as Map<DecodeHintType, any>, 300)
     readerRef.current = reader
     let cancelled = false
+    let stream: MediaStream | null = null
 
-    // Prefer the rear-facing camera on mobile for scanning product barcodes.
-    const constraints: MediaStreamConstraints = {
-      audio: false,
-      video: { facingMode: { ideal: "environment" } },
-    }
-
-    reader
-      .decodeFromConstraints(constraints, videoRef.current!, (result, err) => {
+    async function start() {
+      try {
+        // Acquire the stream ourselves and bind it to the visible <video> so we
+        // are certain the on-screen element is the one showing the camera.
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: "environment" } },
+        })
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop())
+          return
+        }
+        videoEl!.srcObject = stream
+        videoEl!.setAttribute("playsinline", "true")
+        await videoEl!.play().catch(() => {})
         if (cancelled) return
         setStatus("scanning")
-        if (result && !handledRef.current) {
-          const text = result.getText().replace(/\D/g, "")
-          // Accept standard 8/12/13-digit retail barcodes.
-          if (text.length >= 8 && text.length <= 14) {
-            handledRef.current = true
-            playBeep()
-            reader.reset()
-            onDetectedRef.current(text)
-            onOpenChangeRef.current(false)
+
+        // zxing just reads frames from the element we already set up and play.
+        reader.decodeContinuously(videoEl!, (result) => {
+          if (cancelled || handledRef.current) return
+          if (result) {
+            const text = result.getText().replace(/\D/g, "")
+            // Accept standard 8/12/13-digit retail barcodes.
+            if (text.length >= 8 && text.length <= 14) {
+              handledRef.current = true
+              playBeep()
+              onDetectedRef.current(text)
+              onOpenChangeRef.current(false)
+            }
           }
-        }
-      })
-      .catch((e: any) => {
+        })
+      } catch (e: any) {
         if (cancelled) return
         console.log("[v0] Barcode scanner init failed:", e)
         setStatus("error")
@@ -109,14 +124,19 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
             ? "Camera access was denied. Enable camera permissions and try again."
             : "Could not start the camera. Check that a camera is available.",
         )
-      })
+      }
+    }
+
+    start()
 
     return () => {
       cancelled = true
       readerRef.current?.reset()
       readerRef.current = null
+      stream?.getTracks().forEach((t) => t.stop())
+      if (videoEl) videoEl.srcObject = null
     }
-  }, [open])
+  }, [open, videoEl])
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -133,7 +153,7 @@ export function BarcodeScanner({ open, onOpenChange, onDetected }: Props) {
 
         <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border bg-black">
           {/* eslint-disable-next-line jsx-a11y/media-has-caption */}
-          <video ref={videoRef} className="size-full object-cover" autoPlay playsInline muted />
+          <video ref={setVideoEl} className="size-full object-cover" autoPlay playsInline muted />
 
           {/* Aiming guide */}
           {status === "scanning" && (

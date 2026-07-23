@@ -234,6 +234,17 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                       {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
                     </p>
                   )}
+                  {food.infoUrl && (
+                    <a
+                      href={food.infoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+                    >
+                      <ExternalLink className="size-3.5" />
+                      More info
+                    </a>
+                  )}
                 </div>
                 <MacroBadges
                   kcal={caloriesKcal}
@@ -247,17 +258,6 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                   <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                 </div>
-                {food.infoUrl && (
-                  <a
-                    href={food.infoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-auto ml-auto inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
-                  >
-                    <ExternalLink className="size-3.5" />
-                    More info
-                  </a>
-                )}
               </div>
             </Card>
             )

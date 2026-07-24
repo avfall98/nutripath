@@ -28,7 +28,7 @@ export function DayNavigator({
         <ChevronLeft className="size-5" />
       </button>
       <div className="flex items-center gap-2 text-sm font-semibold">
-        <span>{format(parsed, "EEEE, MMM d")}</span>
+        <span>{format(parsed, "EEE, MMM d")}</span>
         {today ? (
           <span className="text-primary">Today</span>
         ) : (

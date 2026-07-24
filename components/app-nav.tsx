@@ -21,15 +21,15 @@ export function AppNav() {
 
   return (
     <>
-      {/* Desktop fixed left sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[220px] flex-col bg-sidebar px-3 py-5 md:flex">
-        <Link href="/" className="mb-6 flex items-center gap-2.5 px-3">
+      {/* Desktop fixed top bar */}
+      <header className="fixed inset-x-0 top-0 z-40 hidden h-16 items-center justify-between bg-sidebar px-6 md:flex">
+        <Link href="/" className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Salad className="size-5" />
           </span>
           <span className="text-lg font-bold tracking-tight text-white">NutriTrack</span>
         </Link>
-        <nav className="flex flex-col gap-1">
+        <nav className="flex items-center gap-1">
           {links.map(({ href, label }) => {
             const active = isActive(href, pathname)
             return (
@@ -37,7 +37,7 @@ export function AppNav() {
                 key={href}
                 href={href}
                 className={cn(
-                  "rounded-md px-3 py-2.5 text-sm font-bold transition-colors",
+                  "rounded-md px-3 py-2 text-sm font-bold transition-colors",
                   active
                     ? "bg-sidebar-accent text-white"
                     : "text-sidebar-foreground hover:text-white",
@@ -48,7 +48,7 @@ export function AppNav() {
             )
           })}
         </nav>
-      </aside>
+      </header>
 
       {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 bg-black md:hidden">

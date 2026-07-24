@@ -4,7 +4,7 @@ import type React from "react"
 import { useState, useTransition } from "react"
 import { saveProfile } from "@/app/actions/profile"
 import type { ProfileDTO } from "@/lib/types"
-import { ACTIVITY_LEVELS, SEXES, suggestTargets } from "@/lib/nutrition"
+import { ACTIVITY_LEVELS, SEXES } from "@/lib/nutrition"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Sparkles } from "lucide-react"
 
 type FormState = {
   age: string
@@ -87,27 +86,6 @@ export function ProfileForm({
 
   function set<K extends keyof FormState>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }))
-  }
-
-  function handleSuggest() {
-    const sex = form.sex
-    const weightKg = toNum(form.weightKg)
-    const heightCm = toNum(form.heightCm)
-    const age = toNum(form.age)
-    if (!sex || !weightKg || !heightCm || !age) {
-      toast.error("Enter sex, age, height, and weight first to get a suggestion.")
-      return
-    }
-    const { calories, protein } = suggestTargets({
-      sex,
-      weightKg,
-      heightCm,
-      age,
-      activityLevel: form.activityLevel || null,
-      targetWeightKg: toNum(form.targetWeightKg),
-    })
-    setForm((f) => ({ ...f, targetCalories: String(calories), targetProtein: String(protein) }))
-    toast.success(`Suggested ${calories} kcal and ${protein}g protein per day.`)
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -224,20 +202,8 @@ export function ProfileForm({
 
       <Card className="p-6 sm:p-7">
         <CardHeader className="p-0">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <CardTitle className="text-xl font-bold">Daily targets</CardTitle>
-              <CardDescription>Set your daily calorie and protein goals.</CardDescription>
-            </div>
-            <button
-              type="button"
-              onClick={handleSuggest}
-              className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
-            >
-              <Sparkles className="size-3.5" />
-              Suggest
-            </button>
-          </div>
+          <CardTitle className="text-xl font-bold">Daily targets</CardTitle>
+          <CardDescription>Set your daily calorie and protein goals.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
           <div className="grid grid-cols-2 gap-4 sm:gap-5">

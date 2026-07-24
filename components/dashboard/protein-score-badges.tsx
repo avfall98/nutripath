@@ -1,52 +1,86 @@
+import { Flame } from "lucide-react"
 import { proteinPer100Cal, type ProteinGrade } from "@/lib/nutrition"
 import { round } from "@/lib/format"
 
-// High-contrast pill styling for each 5-level grade: saturated dark background, light text.
-export const GRADE_PILL_CLASSES: Record<ProteinGrade, string> = {
-  A: "bg-green-600 text-white",
-  B: "bg-emerald-600 text-white",
-  C: "bg-yellow-500 text-yellow-950",
-  D: "bg-orange-600 text-white",
-  F: "bg-red-600 text-white",
+// 5-step grade scale — translucent background + colored text (see DESIGN-SPEC.md).
+export const GRADE_STYLES: Record<ProteinGrade, { backgroundColor: string; color: string }> = {
+  A: { backgroundColor: "rgba(74,222,128,.16)", color: "#4ade80" },
+  B: { backgroundColor: "rgba(163,230,53,.12)", color: "#a3e635" },
+  C: { backgroundColor: "rgba(250,204,21,.12)", color: "#facc15" },
+  D: { backgroundColor: "rgba(251,146,60,.12)", color: "#fb923c" },
+  F: { backgroundColor: "rgba(244,63,94,.14)", color: "#fb7185" },
 }
 
-// proteinG in grams, kcal in kilocalories.
-export function ProteinScoreBadges({
-  proteinG,
-  kcal,
-}: {
-  proteinG: number
-  kcal: number
-  // Accepted for backwards compatibility with existing call sites; no longer used.
-  fontSize?: string
-}) {
-  const p100 = proteinPer100Cal(proteinG, kcal)
+// Orange "P" circle used to mark the protein score.
+function ProteinGlyph() {
+  return (
+    <span
+      className="flex size-3 shrink-0 items-center justify-center rounded-full bg-macro-protein text-[7px] font-bold leading-none text-white"
+      aria-hidden="true"
+    >
+      P
+    </span>
+  )
+}
 
-  if (p100.value == null || p100.grade == null) {
+type PillKind = "protein" | "density"
+
+export function ScorePill({
+  kind,
+  grade,
+  value,
+  title,
+  ariaLabel,
+}: {
+  kind: PillKind
+  grade: ProteinGrade | null
+  value: string | null
+  title?: string
+  ariaLabel?: string
+}) {
+  if (grade == null || value == null) {
     return (
-      <div className="mt-1 flex flex-wrap items-center gap-1">
-        <span
-          className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-muted text-muted-foreground tabular-nums"
-          title="Protein Score: protein per 100 kcal"
-          aria-label="Protein Score: not available"
-        >
-          N/A
-        </span>
-      </div>
+      <span
+        className="inline-flex min-w-14 items-center justify-center gap-1 rounded-full bg-muted px-2 py-1 text-[10.5px] font-semibold tabular-nums text-muted-foreground"
+        title={title}
+        aria-label={ariaLabel}
+      >
+        {kind === "protein" ? <ProteinGlyph /> : <Flame className="size-3 shrink-0" aria-hidden="true" />}
+        N/A
+      </span>
     )
   }
 
-  const value = round(p100.value, 1)
-
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-1">
-      <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium tabular-nums ${GRADE_PILL_CLASSES[p100.grade]}`}
-        title="Protein Score: protein per 100 kcal"
-        aria-label={`Protein Score: grade ${p100.grade}, ${value.toFixed(1)}`}
-      >
-        {p100.grade} - {value.toFixed(1)}
-      </span>
-    </div>
+    <span
+      className="inline-flex min-w-14 items-center justify-center gap-1 rounded-full px-2 py-1 text-[10.5px] font-semibold tabular-nums"
+      style={GRADE_STYLES[grade]}
+      title={title}
+      aria-label={ariaLabel}
+    >
+      {kind === "protein" ? (
+        <ProteinGlyph />
+      ) : (
+        <Flame className="size-3 shrink-0" style={{ color: GRADE_STYLES[grade].color }} aria-hidden="true" />
+      )}
+      {grade} · {value}
+    </span>
+  )
+}
+
+// proteinG in grams, kcal in kilocalories.
+export function ProteinScoreBadges({ proteinG, kcal }: { proteinG: number; kcal: number; fontSize?: string }) {
+  const p100 = proteinPer100Cal(proteinG, kcal)
+  const value = p100.value != null ? round(p100.value, 1).toFixed(1) : null
+  return (
+    <ScorePill
+      kind="protein"
+      grade={p100.grade}
+      value={value}
+      title="Protein score: protein per 100 kcal"
+      ariaLabel={
+        p100.grade ? `Protein score: grade ${p100.grade}, ${value}` : "Protein score: not available"
+      }
+    />
   )
 }

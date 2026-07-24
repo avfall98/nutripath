@@ -15,14 +15,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { Download, ImagePlus, Link2, Loader2, ScanBarcode, Sparkles, X } from "lucide-react"
+import { ArrowDown, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -94,6 +91,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [source, setSource] = useState<LookupSource | null>(null)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
+  const [photoMode, setPhotoMode] = useState<"upload" | "url">("upload")
   const [form, setForm] = useState(empty)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -375,34 +373,70 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     })
   }
 
+  const fieldInput =
+    "h-11 rounded-xl border-0 bg-muted/50 px-3.5 text-sm shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+  const cellInput =
+    "h-10 rounded-lg border-0 bg-muted/50 px-3 text-right text-sm tabular-nums shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+  const labelClass = "text-sm font-semibold text-foreground"
+  const gridCols =
+    "grid grid-cols-[1fr_minmax(0,6rem)_minmax(0,6rem)] gap-3 sm:grid-cols-[1fr_minmax(0,9rem)_minmax(0,9rem)] sm:gap-4"
+
+  type NutrientKey = keyof typeof empty
+  const renderNutrientRow = (
+    label: string,
+    servingKey: NutrientKey,
+    hundredKey: NutrientKey,
+    indent = false,
+  ) => (
+    <div key={label} className={cn(gridCols, "items-center border-t border-border/40 py-2.5")}>
+      <span className={cn("text-sm", indent ? "pl-4 text-muted-foreground" : "font-medium text-foreground")}>
+        {label}
+      </span>
+      <Input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        step="any"
+        value={form[servingKey]}
+        onChange={(e) => set(servingKey, e.target.value)}
+        placeholder="0"
+        className={cellInput}
+      />
+      <Input
+        type="number"
+        inputMode="decimal"
+        min={0}
+        step="any"
+        value={form[hundredKey]}
+        onChange={(e) => set(hundredKey, e.target.value)}
+        placeholder="0"
+        className={cellInput}
+      />
+    </div>
+  )
+
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
-        <DialogHeader>
-          <DialogTitle>{food ? "Edit food" : "Add a food"}</DialogTitle>
+      <DialogContent className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8">
+        <DialogHeader className="mb-6">
+          <DialogTitle className="text-2xl font-bold tracking-tight">
+            {food ? "Edit food" : "Add a food"}
+          </DialogTitle>
           <DialogDescription>
             Save foods you eat often with their nutrition, a photo, and a reference link.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
 
-            <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <FieldLabel htmlFor="woolies-import" className="flex items-center gap-1.5">
-                  <Download className="size-3.5" />
-                  Import from Woolworths
-                </FieldLabel>
-                {source && (
-                  <Badge variant="secondary" className="gap-1">
-                    <Sparkles className="size-3" />
-                    {source === "woolworths" ? "Sourced from Woolworths" : "Sourced from Open Food Facts"}
-                  </Badge>
-                )}
-              </div>
-              <div className="flex flex-col gap-2 sm:flex-row">
+            <div className="rounded-2xl bg-muted/40 p-4 sm:p-5">
+              <p className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
+                <ArrowDown className="size-4" />
+                Import from Woolworths
+              </p>
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
                 <Input
                   id="woolies-import"
                   value={importQuery}
@@ -413,27 +447,24 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                       handleImport()
                     }
                   }}
-                  placeholder="Woolworths Product URL or Stockcode"
+                  placeholder="Woolworths product URL or stockcode"
                   disabled={importing || scanning}
-                  className="flex-1"
+                  className={cn(fieldInput, "flex-1 bg-background/60")}
                 />
-                <div className="flex gap-2">
+                <div className="flex gap-2.5">
                   <Button
                     type="button"
-                    variant="secondary"
+                    className="h-11 flex-1 rounded-xl px-5 font-semibold sm:flex-none"
                     onClick={handleImport}
                     disabled={importing || scanning}
                   >
-                    {importing ? (
-                      <Loader2 data-icon="inline-start" className="animate-spin" />
-                    ) : (
-                      <Download data-icon="inline-start" />
-                    )}
-                    {importing ? "Importing..." : "Import Item"}
+                    {importing ? <Loader2 data-icon="inline-start" className="animate-spin" /> : null}
+                    {importing ? "Importing..." : "Import"}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
+                    className="h-11 flex-1 rounded-xl border-border/70 px-5 font-semibold sm:flex-none"
                     onClick={() => setScannerOpen(true)}
                     disabled={importing || scanning}
                   >
@@ -442,23 +473,28 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     ) : (
                       <ScanBarcode data-icon="inline-start" />
                     )}
-                    {scanning ? "Looking up..." : "Scan Barcode"}
+                    {scanning ? "Looking up..." : "Scan barcode"}
                   </Button>
                 </div>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
+              <p className="mt-3 text-xs text-faint">
                 Paste a product link, enter a stockcode, or scan a barcode to look up nutrition automatically.
               </p>
             </div>
 
           <div className="flex items-start gap-4">
-            <div className="relative size-24 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
+            <div
+              className={cn(
+                "relative size-24 shrink-0 overflow-hidden rounded-2xl",
+                imageUrl ? "bg-muted" : "border-2 border-dashed border-border/70 bg-transparent",
+              )}
+            >
               {imageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl || "/placeholder.svg"} alt="Food preview" className="size-full object-cover" />
               ) : (
-                <div className="flex size-full items-center justify-center text-muted-foreground">
-                  <ImagePlus className="size-6" />
+                <div className="flex size-full items-center justify-center text-faint">
+                  <Plus className="size-6" />
                 </div>
               )}
               {imageUrl && (
@@ -473,92 +509,121 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               )}
             </div>
             <div className="flex-1">
-              <Tabs defaultValue="upload">
-                <TabsList className="w-full">
-                  <TabsTrigger value="upload" className="flex-1">
-                    Upload
-                  </TabsTrigger>
-                  <TabsTrigger value="url" className="flex-1">
-                    Image URL
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="upload" className="mt-3">
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFile}
-                    className="hidden"
-                    id="food-photo"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    {uploading ? (
-                      <Loader2 data-icon="inline-start" className="animate-spin" />
-                    ) : (
-                      <ImagePlus data-icon="inline-start" />
-                    )}
-                    {uploading ? "Uploading..." : "Choose photo"}
-                  </Button>
-                </TabsContent>
-                <TabsContent value="url" className="mt-3">
+              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                <button
+                  type="button"
+                  onClick={() => setPhotoMode("upload")}
+                  className={cn(
+                    "h-9 rounded-lg text-sm font-semibold transition-colors",
+                    photoMode === "upload"
+                      ? "bg-muted text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Upload
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPhotoMode("url")}
+                  className={cn(
+                    "h-9 rounded-lg text-sm font-semibold transition-colors",
+                    photoMode === "url"
+                      ? "bg-muted text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  Image URL
+                </button>
+              </div>
+              <div className="mt-2.5">
+                {photoMode === "upload" ? (
+                  <>
+                    <input
+                      ref={fileRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFile}
+                      className="hidden"
+                      id="food-photo"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 w-full rounded-xl border-border/70 font-semibold"
+                      disabled={uploading}
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      {uploading ? (
+                        <Loader2 data-icon="inline-start" className="animate-spin" />
+                      ) : (
+                        <ImagePlus data-icon="inline-start" />
+                      )}
+                      {uploading ? "Uploading..." : "Choose photo"}
+                    </Button>
+                  </>
+                ) : (
                   <Input
                     type="url"
                     placeholder="https://example.com/food.jpg"
                     value={imageUrl ?? ""}
                     onChange={(e) => setImageUrl(e.target.value || null)}
+                    className={fieldInput}
                   />
-                </TabsContent>
-              </Tabs>
+                )}
+              </div>
             </div>
           </div>
 
-          <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor="food-name">Name</FieldLabel>
+          <div className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="food-name" className={labelClass}>
+                Name
+              </label>
               <Input
                 id="food-name"
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="e.g. Greek yogurt"
                 autoFocus
+                className={fieldInput}
               />
-            </Field>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="food-brand">Brand (optional)</FieldLabel>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-brand" className={labelClass}>
+                  Brand <span className="font-normal text-faint">(optional)</span>
+                </label>
                 <Input
                   id="food-brand"
                   value={form.brand}
                   onChange={(e) => set("brand", e.target.value)}
                   placeholder="e.g. Chobani"
+                  className={fieldInput}
                 />
-              </Field>
-              <Field>
+              </div>
+              <div className="flex flex-col gap-2">
                 <div className="flex items-center justify-between gap-2">
-                  <FieldLabel htmlFor="food-serving">Serving size</FieldLabel>
-                  <ToggleGroup
-                    value={[servingUnit]}
-                    onValueChange={(v) => {
-                      const next = v[0] as ServingUnit | undefined
-                      if (next) setServingUnit(next)
-                    }}
-                    size="sm"
-                    variant="outline"
-                    spacing={0}
-                  >
-                    <ToggleGroupItem value="g" aria-label="Grams">
-                      g
-                    </ToggleGroupItem>
-                    <ToggleGroupItem value="ml" aria-label="Milliliters">
-                      ml
-                    </ToggleGroupItem>
-                  </ToggleGroup>
+                  <label htmlFor="food-serving" className={labelClass}>
+                    Serving size
+                  </label>
+                  <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
+                    {(["g", "ml"] as ServingUnit[]).map((u) => (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => setServingUnit(u)}
+                        aria-pressed={servingUnit === u}
+                        className={cn(
+                          "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                          servingUnit === u
+                            ? "bg-primary text-primary-foreground"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        {u}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <Input
                   id="food-serving"
@@ -569,319 +634,99 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   value={form.servingSize}
                   onChange={(e) => set("servingSize", e.target.value)}
                   placeholder="e.g. 100"
+                  className={fieldInput}
                 />
-              </Field>
+              </div>
             </div>
 
-            <Field>
-              <FieldLabel htmlFor="food-url">Reference link (optional)</FieldLabel>
+            <div className="flex flex-col gap-2">
+              <label htmlFor="food-url" className={labelClass}>
+                Reference link <span className="font-normal text-faint">(optional)</span>
+              </label>
               <div className="relative">
-                <Link2 className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Link2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" />
                 <Input
                   id="food-url"
                   type="url"
-                  className="pl-9"
+                  className={cn(fieldInput, "pl-10")}
                   value={form.infoUrl}
                   onChange={(e) => set("infoUrl", e.target.value)}
                   placeholder="https://..."
                 />
               </div>
-            </Field>
-
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold">Nutrition Information</h3>
-              
-              {/* Nutrition table */}
-              <div className="overflow-x-auto border border-border rounded-lg">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="px-3 py-2 text-left text-sm font-semibold text-foreground bg-muted/30">Nutrient</th>
-                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per serving</th>
-                      <th className="px-3 py-2 text-center text-sm font-semibold text-foreground bg-muted/30">Per 100{servingUnit}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {/* Energy */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Energy (kJ)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.calories}
-                          onChange={(e) => set("calories", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.caloriesPerHundred}
-                          onChange={(e) => set("caloriesPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Calories (read-only, auto-calculated from kJ) */}
-                    <tr className="border-b border-border bg-muted/20">
-                      <td className="px-3 py-2 text-sm text-muted-foreground">Calories (kcal)</td>
-                      <td className="px-3 py-2">
-                        <div className="h-8 flex items-center justify-center text-sm text-muted-foreground">
-                          {form.calories ? round(Number(form.calories) / KJ_PER_KCAL, 1) : "—"}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2">
-                        <div className="h-8 flex items-center justify-center text-sm text-muted-foreground">
-                          {form.caloriesPerHundred ? round(Number(form.caloriesPerHundred) / KJ_PER_KCAL, 1) : "—"}
-                        </div>
-                      </td>
-                    </tr>
-                    
-                    {/* Protein */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Protein (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.protein}
-                          onChange={(e) => set("protein", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.proteinPerHundred}
-                          onChange={(e) => set("proteinPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Fat */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Fat (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.fat}
-                          onChange={(e) => set("fat", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.fatPerHundred}
-                          onChange={(e) => set("fatPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Saturated Fat (child of Fat) */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm text-foreground pl-8">— Saturated (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.saturatedFat}
-                          onChange={(e) => set("saturatedFat", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.saturatedFatPerHundred}
-                          onChange={(e) => set("saturatedFatPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Carbs */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Carbs (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.carbs}
-                          onChange={(e) => set("carbs", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.carbsPerHundred}
-                          onChange={(e) => set("carbsPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Sugars (child of Carbs) */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm text-foreground pl-8">— Sugars (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.sugars}
-                          onChange={(e) => set("sugars", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.sugarsPerHundred}
-                          onChange={(e) => set("sugarsPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Dietary Fibre */}
-                    <tr className="border-b border-border">
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Dietary Fibre (g)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.dietaryFiber}
-                          onChange={(e) => set("dietaryFiber", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.dietaryFiberPerHundred}
-                          onChange={(e) => set("dietaryFiberPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                    
-                    {/* Sodium */}
-                    <tr>
-                      <td className="px-3 py-2 text-sm font-medium text-foreground">Sodium (mg)</td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.sodium}
-                          onChange={(e) => set("sodium", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          value={form.sodiumPerHundred}
-                          onChange={(e) => set("sodiumPerHundred", e.target.value)}
-                          placeholder="0"
-                          className="h-8 text-center text-sm"
-                        />
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
             </div>
 
-            {/* Protein Score Preview */}
-            <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground">Food score</h4>
-              <div className="flex flex-col gap-2 text-xs">
-                <div>
-                  <p className="text-muted-foreground mb-1">Protein Score: per 100kcal and calorie percentage:</p>
-                  <ProteinScoreBadges 
-                    proteinG={Number(form.protein) || 0}
-                    kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
-                  />
+            <div className="flex flex-col">
+              <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                Nutrition information
+              </h3>
+              <div className={cn(gridCols, "pb-1")}>
+                <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-faint">Nutrient</span>
+                <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                  Per serving
+                </span>
+                <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                  Per 100{servingUnit}
+                </span>
+              </div>
+
+              {renderNutrientRow("Energy (kJ)", "calories", "caloriesPerHundred")}
+
+              {/* Calories (read-only, auto-calculated from kJ) */}
+              <div className={cn(gridCols, "items-center border-t border-border/40 py-2.5")}>
+                <span className="text-sm text-faint">Calories (kcal)</span>
+                <div className="flex h-10 items-center justify-end px-3 text-sm text-faint">
+                  {form.calories ? round(Number(form.calories) / KJ_PER_KCAL, 1) : "—"}
                 </div>
-                <div>
-                  <p className="text-muted-foreground mb-1">Calorie density per 100{servingUnit}:</p>
-                  <CalorieDensityBadge
-                    kcal={form.caloriesPerHundred ? Number(form.caloriesPerHundred) / KJ_PER_KCAL : 0}
-                    servingSize="100"
-                  />
+                <div className="flex h-10 items-center justify-end px-3 text-sm text-faint">
+                  {form.caloriesPerHundred ? round(Number(form.caloriesPerHundred) / KJ_PER_KCAL, 1) : "—"}
                 </div>
               </div>
+
+              {renderNutrientRow("Protein (g)", "protein", "proteinPerHundred")}
+              {renderNutrientRow("Fat (g)", "fat", "fatPerHundred")}
+              {renderNutrientRow("— Saturated (g)", "saturatedFat", "saturatedFatPerHundred", true)}
+              {renderNutrientRow("Carbs (g)", "carbs", "carbsPerHundred")}
+              {renderNutrientRow("— Sugars (g)", "sugars", "sugarsPerHundred", true)}
+              {renderNutrientRow("Dietary fibre (g)", "dietaryFiber", "dietaryFiberPerHundred")}
+              {renderNutrientRow("Sodium (mg)", "sodium", "sodiumPerHundred")}
             </div>
 
-          </FieldGroup>
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            {/* Food score */}
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/40 p-4 sm:p-5">
+              <div>
+                <p className="text-sm font-bold text-foreground">Food score</p>
+                <p className="text-xs text-faint">Protein score per 100 kcal · calorie density per 100g</p>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <ProteinScoreBadges
+                  proteinG={Number(form.protein) || 0}
+                  kcal={form.calories ? Number(form.calories) / KJ_PER_KCAL : 0}
+                />
+                <CalorieDensityBadge
+                  kcal={form.caloriesPerHundred ? Number(form.caloriesPerHundred) / KJ_PER_KCAL : 0}
+                  servingSize="100"
+                />
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter className="mx-0 mb-0 mt-2 border-0 bg-transparent p-0">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-11 rounded-full px-6 font-semibold"
+              onClick={() => onOpenChange(false)}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={pending || uploading}>
-              {pending ? "Saving..." : food ? "Save changes" : "Add food"}
+            <Button
+              type="submit"
+              className="h-11 rounded-full px-7 font-semibold"
+              disabled={pending || uploading}
+            >
+              {pending ? "Saving..." : food ? "Save changes" : "Save food"}
             </Button>
           </DialogFooter>
         </form>

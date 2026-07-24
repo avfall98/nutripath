@@ -242,40 +242,45 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                 <p className="py-8 text-center text-sm text-muted-foreground">No matches for "{query}".</p>
               ) : (
                 <ul className="flex flex-col gap-1.5">
-                  {filtered.map((food) => (
-                    <li key={food.id}>
-                      <button
-                        type="button"
-                        disabled={pending}
-                        onClick={() => addFromLibrary(food)}
-                        className="flex w-full items-center gap-3 rounded-lg border border-border p-2 text-left transition-colors hover:bg-accent disabled:opacity-50"
-                      >
-                        <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
-                          {food.imageUrl ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                          ) : (
-                            <Apple className="size-5 text-muted-foreground" />
-                          )}
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-medium">{food.name}</span>
-                          <span className="block truncate text-xs text-muted-foreground">
-                            {Math.round(food.calories)} kj · {Math.round(food.calories / KJ_PER_KCAL)} kcal · {Math.round(food.protein)}g protein
-                            {food.servingSize ? ` · ${food.servingSize}` : ""}
+                  {filtered.map((food) => {
+                    const kcal = Math.round(food.calories / KJ_PER_KCAL)
+                    return (
+                      <li key={food.id}>
+                        <button
+                          type="button"
+                          disabled={pending}
+                          onClick={() => addFromLibrary(food)}
+                          className="flex w-full items-center gap-3 rounded-xl bg-muted/40 p-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                        >
+                          <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                            {food.imageUrl ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                            ) : (
+                              <Apple className="size-5 text-faint" />
+                            )}
                           </span>
-                          <>
-                            <ProteinScoreBadges proteinG={food.protein} kcal={Math.round(food.calories / KJ_PER_KCAL)} />
-                            <CalorieDensityBadge
-                              kcal={Math.round(food.calories / KJ_PER_KCAL)}
-                              servingSize={food.servingSize}
-                            />
-                          </>
-                        </span>
-                        <Plus className="size-4 shrink-0 text-muted-foreground" />
-                      </button>
-                    </li>
-                  ))}
+                          <span className="min-w-0 flex-1">
+                            <span className="flex items-baseline justify-between gap-2">
+                              <span className="truncate font-medium">{food.name}</span>
+                              <span className="shrink-0 text-sm font-semibold tabular-nums">
+                                {Math.round(food.calories)}
+                                <span className="ml-0.5 text-xs font-normal text-faint">kj</span>
+                              </span>
+                            </span>
+                            <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                              <ProteinScoreBadges proteinG={food.protein} kcal={kcal} />
+                              <CalorieDensityBadge kcal={kcal} servingSize={food.servingSize} />
+                              {food.servingSize ? (
+                                <span className="text-xs text-faint">{food.servingSize}</span>
+                              ) : null}
+                            </span>
+                          </span>
+                          <Plus className="size-4 shrink-0 text-faint" />
+                        </button>
+                      </li>
+                    )
+                  })}
                 </ul>
               )}
             </div>

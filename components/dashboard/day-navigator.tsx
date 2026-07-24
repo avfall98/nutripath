@@ -1,8 +1,7 @@
 "use client"
 
 import { addDays, format, isToday, parseISO } from "date-fns"
-import { ChevronLeft, ChevronRight, CalendarDays } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export function DayNavigator({
   date,
@@ -19,41 +18,37 @@ export function DayNavigator({
   }
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border bg-card p-2">
-      <Button
-        variant="ghost"
-        size="icon"
+    <div className="flex items-center justify-between gap-2 rounded-2xl bg-card p-2">
+      <button
+        type="button"
         onClick={() => shift(-1)}
         aria-label="Previous day"
+        className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
       >
-        <ChevronLeft />
-      </Button>
-      <div className="flex flex-col items-center gap-1">
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <CalendarDays className="size-4 text-muted-foreground" />
-          {format(parsed, "EEEE, MMM d")}
-        </div>
-        {!today && (
+        <ChevronLeft className="size-5" />
+      </button>
+      <div className="flex items-center gap-2 text-sm font-semibold">
+        <span>{format(parsed, "EEE, MMM d")}</span>
+        {today ? (
+          <span className="text-primary">Today</span>
+        ) : (
           <button
             type="button"
             onClick={() => onDateChange(format(new Date(), "yyyy-MM-dd"))}
-            className="text-xs text-primary underline-offset-2 hover:underline"
+            className="text-primary underline-offset-2 hover:underline"
           >
             Jump to today
           </button>
         )}
-        {today && (
-          <span className="text-xs text-muted-foreground">Today</span>
-        )}
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
+      <button
+        type="button"
         onClick={() => shift(1)}
         aria-label="Next day"
+        className="flex size-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
       >
-        <ChevronRight />
-      </Button>
+        <ChevronRight className="size-5" />
+      </button>
     </div>
   )
 }

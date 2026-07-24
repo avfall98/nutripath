@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { useState, useTransition } from "react"
 import { saveProfile } from "@/app/actions/profile"
 import type { ProfileDTO } from "@/lib/types"
@@ -8,14 +9,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldSet,
-  FieldLegend,
-} from "@/components/ui/field"
-import {
   Select,
   SelectContent,
   SelectGroup,
@@ -23,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Sparkles } from "lucide-react"
 
@@ -47,7 +41,38 @@ function toNum(v: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-export function ProfileForm({ profile }: { profile: ProfileDTO | null }) {
+const fieldInput =
+  "h-12 w-full rounded-xl border-0 bg-muted/50 px-3.5 text-base shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40 md:text-sm"
+const selectTrigger =
+  "h-12 w-full rounded-xl border-0 bg-muted/50 px-3.5 text-sm shadow-none data-placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+const labelClass = "text-sm font-semibold text-foreground"
+
+function FieldBlock({
+  label,
+  htmlFor,
+  children,
+}: {
+  label: React.ReactNode
+  htmlFor?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      <label htmlFor={htmlFor} className={labelClass}>
+        {label}
+      </label>
+      {children}
+    </div>
+  )
+}
+
+export function ProfileForm({
+  profile,
+  children,
+}: {
+  profile: ProfileDTO | null
+  children?: React.ReactNode
+}) {
   const [pending, startTransition] = useTransition()
   const [form, setForm] = useState<FormState>({
     age: toStr(profile?.age ?? null),
@@ -103,153 +128,156 @@ export function ProfileForm({ profile }: { profile: ProfileDTO | null }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Your details</CardTitle>
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      <Card className="p-6 sm:p-7">
+        <CardHeader className="p-0">
+          <CardTitle className="text-lg font-bold">Your details</CardTitle>
           <CardDescription>Used to personalize your daily targets. Units are metric.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field>
-                <FieldLabel htmlFor="age">Age</FieldLabel>
-                <Input
-                  id="age"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  value={form.age}
-                  onChange={(e) => set("age", e.target.value)}
-                  placeholder="e.g. 30"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="sex">Sex</FieldLabel>
-                <Select value={form.sex} onValueChange={(v) => set("sex", v)}>
-                  <SelectTrigger id="sex">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {SEXES.map((s) => (
-                        <SelectItem key={s.value} value={s.value}>
-                          {s.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="height">Height (cm)</FieldLabel>
-                <Input
-                  id="height"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  value={form.heightCm}
-                  onChange={(e) => set("heightCm", e.target.value)}
-                  placeholder="e.g. 175"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="weight">Current weight (kg)</FieldLabel>
-                <Input
-                  id="weight"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.1"
-                  value={form.weightKg}
-                  onChange={(e) => set("weightKg", e.target.value)}
-                  placeholder="e.g. 72.5"
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="activity">Activity level</FieldLabel>
-                <Select value={form.activityLevel} onValueChange={(v) => set("activityLevel", v)}>
-                  <SelectTrigger id="activity">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectGroup>
-                      {ACTIVITY_LEVELS.map((l) => (
-                        <SelectItem key={l.value} value={l.value}>
-                          {l.label}
-                        </SelectItem>
-                      ))}
-                    </SelectGroup>
-                  </SelectContent>
-                </Select>
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="targetWeight">Target weight (kg)</FieldLabel>
-                <Input
-                  id="targetWeight"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="0.1"
-                  value={form.targetWeightKg}
-                  onChange={(e) => set("targetWeightKg", e.target.value)}
-                  placeholder="e.g. 68"
-                />
-              </Field>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5">
+            <FieldBlock label="Age" htmlFor="age">
+              <Input
+                id="age"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={form.age}
+                onChange={(e) => set("age", e.target.value)}
+                placeholder="e.g. 30"
+                className={fieldInput}
+              />
+            </FieldBlock>
+            <FieldBlock label="Sex" htmlFor="sex">
+              <Select value={form.sex} onValueChange={(v) => set("sex", v)}>
+                <SelectTrigger id="sex" className={selectTrigger}>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {SEXES.map((s) => (
+                      <SelectItem key={s.value} value={s.value}>
+                        {s.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FieldBlock>
+            <FieldBlock label="Height (cm)" htmlFor="height">
+              <Input
+                id="height"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={form.heightCm}
+                onChange={(e) => set("heightCm", e.target.value)}
+                placeholder="e.g. 175"
+                className={fieldInput}
+              />
+            </FieldBlock>
+            <FieldBlock label="Current weight (kg)" htmlFor="weight">
+              <Input
+                id="weight"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.1"
+                value={form.weightKg}
+                onChange={(e) => set("weightKg", e.target.value)}
+                placeholder="e.g. 72.5"
+                className={fieldInput}
+              />
+            </FieldBlock>
+            <FieldBlock label="Activity level" htmlFor="activity">
+              <Select value={form.activityLevel} onValueChange={(v) => set("activityLevel", v)}>
+                <SelectTrigger id="activity" className={selectTrigger}>
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {ACTIVITY_LEVELS.map((l) => (
+                      <SelectItem key={l.value} value={l.value}>
+                        {l.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </FieldBlock>
+            <FieldBlock label="Target weight (kg)" htmlFor="targetWeight">
+              <Input
+                id="targetWeight"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="0.1"
+                value={form.targetWeightKg}
+                onChange={(e) => set("targetWeightKg", e.target.value)}
+                placeholder="e.g. 68"
+                className={fieldInput}
+              />
+            </FieldBlock>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="p-6 sm:p-7">
+        <CardHeader className="p-0">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg font-bold">Daily targets</CardTitle>
+              <CardDescription>Set your daily calorie and protein goals.</CardDescription>
             </div>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Daily targets</CardTitle>
-          <CardDescription>
-            Set your daily calorie and protein goals, or generate a suggestion from your details.
-          </CardDescription>
+            <button
+              type="button"
+              onClick={handleSuggest}
+              className="flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+            >
+              <Sparkles className="size-3.5" />
+              Suggest
+            </button>
+          </div>
         </CardHeader>
-        <CardContent>
-          <FieldSet>
-            <FieldLegend className="sr-only">Daily targets</FieldLegend>
-            <FieldGroup>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field>
-                  <FieldLabel htmlFor="calories">Target calories (kcal)</FieldLabel>
-                  <Input
-                    id="calories"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={form.targetCalories}
-                    onChange={(e) => set("targetCalories", e.target.value)}
-                    placeholder="e.g. 2000"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="protein">Target protein (g)</FieldLabel>
-                  <Input
-                    id="protein"
-                    type="number"
-                    inputMode="numeric"
-                    min={0}
-                    value={form.targetProtein}
-                    onChange={(e) => set("targetProtein", e.target.value)}
-                    placeholder="e.g. 140"
-                  />
-                  <FieldDescription>Aim for enough protein to preserve muscle.</FieldDescription>
-                </Field>
-              </div>
-              <Button type="button" variant="outline" onClick={handleSuggest} className="w-fit">
-                <Sparkles data-icon="inline-start" />
-                Suggest targets for me
-              </Button>
-            </FieldGroup>
-          </FieldSet>
+        <CardContent className="p-0">
+          <div className="grid grid-cols-2 gap-4 sm:gap-5">
+            <FieldBlock label="Target calories (kcal)" htmlFor="calories">
+              <Input
+                id="calories"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={form.targetCalories}
+                onChange={(e) => set("targetCalories", e.target.value)}
+                placeholder="e.g. 2000"
+                className={fieldInput}
+              />
+            </FieldBlock>
+            <FieldBlock label="Target protein (g)" htmlFor="protein">
+              <Input
+                id="protein"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={form.targetProtein}
+                onChange={(e) => set("targetProtein", e.target.value)}
+                placeholder="e.g. 140"
+                className={fieldInput}
+              />
+              <p className="text-xs text-faint">Aim for enough protein to preserve muscle.</p>
+            </FieldBlock>
+          </div>
         </CardContent>
       </Card>
 
-      <div className="flex justify-end">
-        <Button type="submit" disabled={pending}>
+      {children}
+
+      <div className="flex justify-end pt-1">
+        <Button
+          type="submit"
+          disabled={pending}
+          className={cn("h-12 rounded-full px-7 text-sm font-bold", pending && "opacity-70")}
+        >
           {pending ? "Saving..." : "Save profile"}
         </Button>
       </div>

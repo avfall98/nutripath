@@ -52,4 +52,5 @@ export type EntryDTO = {
   carbs: number | null
   fat: number | null
   quantity: number
+  servingWeightG?: number | null
 }

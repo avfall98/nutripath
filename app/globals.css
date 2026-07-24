@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -38,6 +38,35 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+
+  /* App-specific tokens (see DESIGN-SPEC.md) */
+  --color-inset: var(--inset);
+  --color-track: var(--track);
+  --color-faint: var(--faint);
+
+  /* Macro icon colors (constant across themes) */
+  --color-macro-protein: var(--macro-protein);
+  --color-macro-carbs: var(--macro-carbs);
+  --color-macro-fat: var(--macro-fat);
+  --color-macro-calories: var(--macro-calories);
+
+  /* Stat-card label tints */
+  --color-stat-calories: var(--stat-calories);
+  --color-stat-protein: var(--stat-protein);
+  --color-stat-carbs: var(--stat-carbs);
+  --color-stat-fat: var(--stat-fat);
+
+  /* Progress / chart accents */
+  --color-cal-over: var(--cal-over);
+  --color-protein-bar: var(--protein-bar);
+
+  /* Semantic macro + status aliases used across components */
+  --color-protein: var(--macro-protein);
+  --color-carbs: var(--macro-carbs);
+  --color-fat: var(--macro-fat);
+  --color-calories: var(--macro-calories);
+  --color-warning: var(--cal-over);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -47,112 +76,104 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* ---------- Dark theme: "Quiet Elevation" (default) ---------- */
 :root {
-  color-scheme: light;
-  --background: oklch(0.99 0.005 145);
-  --foreground: oklch(0.2 0.02 155);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 155);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 155);
-  --primary: oklch(0.55 0.13 152);
-  --primary-foreground: oklch(0.99 0.01 145);
-  --secondary: oklch(0.96 0.01 150);
-  --secondary-foreground: oklch(0.3 0.03 155);
-  --muted: oklch(0.96 0.01 150);
-  --muted-foreground: oklch(0.52 0.02 155);
-  --accent: oklch(0.94 0.04 150);
-  --accent-foreground: oklch(0.3 0.05 155);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.91 0.01 150);
-  --input: oklch(0.91 0.01 150);
-  --ring: oklch(0.55 0.13 152);
-  --chart-1: oklch(0.55 0.13 152);
-  --chart-2: oklch(0.7 0.12 75);
-  --chart-3: oklch(0.6 0.11 220);
-  --chart-4: oklch(0.65 0.15 25);
-  --chart-5: oklch(0.5 0.08 300);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.98 0.01 150);
-  --sidebar-foreground: oklch(0.2 0.02 155);
-  --sidebar-primary: oklch(0.55 0.13 152);
-  --sidebar-primary-foreground: oklch(0.99 0.01 145);
-  --sidebar-accent: oklch(0.94 0.04 150);
-  --sidebar-accent-foreground: oklch(0.3 0.05 155);
-  --sidebar-border: oklch(0.91 0.01 150);
-  --sidebar-ring: oklch(0.55 0.13 152);
-}
-
-.dark {
   color-scheme: dark;
-  --background: oklch(0.17 0.015 155);
-  --foreground: oklch(0.96 0.01 145);
-  --card: oklch(0.22 0.018 155);
-  --card-foreground: oklch(0.96 0.01 145);
-  --popover: oklch(0.22 0.018 155);
-  --popover-foreground: oklch(0.96 0.01 145);
-  --primary: oklch(0.7 0.14 150);
-  --primary-foreground: oklch(0.17 0.02 155);
-  --secondary: oklch(0.27 0.02 155);
-  --secondary-foreground: oklch(0.96 0.01 145);
-  --muted: oklch(0.27 0.02 155);
-  --muted-foreground: oklch(0.7 0.02 150);
-  --accent: oklch(0.32 0.04 152);
-  --accent-foreground: oklch(0.96 0.01 145);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 12%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.7 0.14 150);
-  --chart-1: oklch(0.7 0.14 150);
-  --chart-2: oklch(0.75 0.13 75);
-  --chart-3: oklch(0.68 0.12 220);
-  --chart-4: oklch(0.7 0.15 25);
-  --chart-5: oklch(0.65 0.1 300);
-  --sidebar: oklch(0.22 0.018 155);
-  --sidebar-foreground: oklch(0.96 0.01 145);
-  --sidebar-primary: oklch(0.7 0.14 150);
-  --sidebar-primary-foreground: oklch(0.17 0.02 155);
-  --sidebar-accent: oklch(0.32 0.04 152);
-  --sidebar-accent-foreground: oklch(0.96 0.01 145);
-  --sidebar-border: oklch(1 0 0 / 12%);
-  --sidebar-ring: oklch(0.7 0.14 150);
+  --background: #101311;
+  --foreground: #e8ece8;
+  --card: #171c18;
+  --card-foreground: #e8ece8;
+  --popover: #171c18;
+  --popover-foreground: #e8ece8;
+  --primary: #4ade80;
+  --primary-foreground: #0c2010;
+  --secondary: #232a24;
+  --secondary-foreground: #e8ece8;
+  --muted: #232a24;
+  --muted-foreground: #8b948c;
+  --accent: rgba(74, 222, 128, 0.1);
+  --accent-foreground: #4ade80;
+  --destructive: #fb7185;
+  --border: rgba(255, 255, 255, 0.05);
+  --input: rgba(255, 255, 255, 0.08);
+  --ring: #4ade80;
+  --radius: 1rem;
+
+  --inset: #10150f;
+  --track: #232a24;
+  --faint: #5f6a61;
+
+  --macro-protein: #f97316;
+  --macro-carbs: #3b82f6;
+  --macro-fat: #a855f7;
+  --macro-calories: #f87171;
+
+  --stat-calories: #f87171;
+  --stat-protein: #fb923c;
+  --stat-carbs: #60a5fa;
+  --stat-fat: #c084fc;
+
+  --cal-over: #fb7185;
+  --protein-bar: #fb923c;
+
+  --chart-1: #4ade80;
+  --chart-2: #fb923c;
+  --chart-3: #3b82f6;
+  --chart-4: #a855f7;
+  --chart-5: #f87171;
+
+  --sidebar: #171c18;
+  --sidebar-foreground: #e8ece8;
+  --sidebar-primary: #4ade80;
+  --sidebar-primary-foreground: #0c2010;
+  --sidebar-accent: rgba(74, 222, 128, 0.1);
+  --sidebar-accent-foreground: #4ade80;
+  --sidebar-border: rgba(255, 255, 255, 0.05);
+  --sidebar-ring: #4ade80;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    color-scheme: dark;
-    --background: oklch(0.17 0.015 155);
-    --foreground: oklch(0.96 0.01 145);
-    --card: oklch(0.22 0.018 155);
-    --card-foreground: oklch(0.96 0.01 145);
-    --popover: oklch(0.22 0.018 155);
-    --popover-foreground: oklch(0.96 0.01 145);
-    --primary: oklch(0.7 0.14 150);
-    --primary-foreground: oklch(0.17 0.02 155);
-    --secondary: oklch(0.27 0.02 155);
-    --secondary-foreground: oklch(0.96 0.01 145);
-    --muted: oklch(0.27 0.02 155);
-    --muted-foreground: oklch(0.7 0.02 150);
-    --accent: oklch(0.32 0.04 152);
-    --accent-foreground: oklch(0.96 0.01 145);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 12%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.7 0.14 150);
-    --chart-1: oklch(0.7 0.14 150);
-    --chart-2: oklch(0.75 0.13 75);
-    --chart-3: oklch(0.68 0.12 220);
-    --chart-4: oklch(0.7 0.15 25);
-    --chart-5: oklch(0.65 0.1 300);
-    --sidebar: oklch(0.22 0.018 155);
-    --sidebar-foreground: oklch(0.96 0.01 145);
-    --sidebar-primary: oklch(0.7 0.14 150);
-    --sidebar-primary-foreground: oklch(0.17 0.02 155);
-    --sidebar-accent: oklch(0.32 0.04 152);
-    --sidebar-accent-foreground: oklch(0.96 0.01 145);
-    --sidebar-border: oklch(1 0 0 / 12%);
-    --sidebar-ring: oklch(0.7 0.14 150);
-  }
+/* ---------- Light mode (optional, per spec) ---------- */
+.light {
+  color-scheme: light;
+  --background: #f4f5f1;
+  --foreground: #1b201c;
+  --card: #ffffff;
+  --card-foreground: #1b201c;
+  --popover: #ffffff;
+  --popover-foreground: #1b201c;
+  --primary: #16a34a;
+  --primary-foreground: #ffffff;
+  --secondary: #eceee8;
+  --secondary-foreground: #1b201c;
+  --muted: #eceee8;
+  --muted-foreground: #6b746c;
+  --accent: rgba(22, 163, 74, 0.1);
+  --accent-foreground: #15803d;
+  --destructive: #e11d48;
+  --border: rgba(20, 30, 20, 0.1);
+  --input: rgba(20, 30, 20, 0.12);
+  --ring: #16a34a;
+
+  --inset: #f4f5f1;
+  --track: #e4e7e0;
+  --faint: #9aa39b;
+
+  --stat-calories: #dc2626;
+  --stat-protein: #ea580c;
+  --stat-carbs: #2563eb;
+  --stat-fat: #9333ea;
+
+  --cal-over: #e11d48;
+  --protein-bar: #ea580c;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1b201c;
+  --sidebar-primary: #16a34a;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(22, 163, 74, 0.1);
+  --sidebar-accent-foreground: #15803d;
+  --sidebar-border: rgba(20, 30, 20, 0.1);
+  --sidebar-ring: #16a34a;
 }
 
 @layer base {

@@ -141,7 +141,17 @@ export function Dashboard({
 
   return (
     <div className="flex flex-col gap-6">
-      <DayNavigator date={dateKey} onDateChange={setDateKey} />
+      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <h1 className="text-[21px] font-bold tracking-tight text-balance">Today&apos;s Nutrition</h1>
+          <p className="hidden text-sm text-muted-foreground md:block">
+            Log your meals and track progress toward your goals.
+          </p>
+        </div>
+        <div className="md:w-[280px]">
+          <DayNavigator date={dateKey} onDateChange={setDateKey} />
+        </div>
+      </header>
 
       <DaySummary
         totals={totals}
@@ -152,7 +162,7 @@ export function Dashboard({
       />
 
       <div className="flex flex-col gap-4">
-        <h2 className="text-sm font-semibold text-muted-foreground">Meals</h2>
+        <h2 className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Meals</h2>
         {isLoading && !entries ? (
           <div className="flex flex-col gap-4">
             <Skeleton className="h-32 w-full rounded-xl" />

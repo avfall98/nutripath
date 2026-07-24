@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark bg-background ${instrumentSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased pb-20 md:pb-0 md:pl-[220px]">
+      <body className="font-sans antialiased pb-20 md:pb-0 md:pl-0 md:pt-16">
         <AppNav />
         {children}
         <Toaster position="top-center" richColors />

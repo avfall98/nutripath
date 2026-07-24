@@ -120,13 +120,13 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-3xl">
+      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Add to {group.name}</DialogTitle>
           <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="library" className="min-h-0">
+        <Tabs defaultValue="library" className="flex min-h-0 flex-1 flex-col">
           <TabsList className="w-full">
             <TabsTrigger value="library" className="flex-1">
               From library
@@ -136,7 +136,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="library" className="mt-4 flex flex-col gap-3">
+          <TabsContent value="library" className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
             <div className="flex items-end gap-3">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -233,7 +233,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
               )}
             </div>
 
-            <div className="-mx-1 max-h-72 overflow-y-auto px-1">
+            <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
               {foods.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   No foods saved yet. Add some in the Foods tab, or use Quick add.

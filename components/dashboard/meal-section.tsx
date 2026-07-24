@@ -28,7 +28,7 @@ const KJ_PER_KCAL = 4.184
 
 // Shared grid template so header + rows align vertically.
 const ROW_GRID =
-  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_auto_32px]"
+  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_132px_32px]"
 
 export function MealSection({
   group,
@@ -265,9 +265,8 @@ export function MealSection({
                       </p>
                       <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                       <MacroBadges
-                        variant="columns"
                         kcal={entryCalories}
                         kcalPct={targetCalories ? entryCaloriesPct : null}
                         protein={entryProtein}
@@ -275,7 +274,7 @@ export function MealSection({
                         carbs={entryCarbs}
                         fat={entryFat}
                       />
-                      <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                      <div className="flex shrink-0 items-center gap-1.5">
                         <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                         <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
                       </div>

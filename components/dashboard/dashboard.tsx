@@ -198,7 +198,7 @@ export function Dashboard({
             <Skeleton className="h-32 w-full rounded-xl" />
           </div>
         ) : (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-7">
             {mealGroups.map((g) => (
               <MealSection
                 key={g.id}

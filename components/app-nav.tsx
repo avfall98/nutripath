@@ -21,39 +21,37 @@ export function AppNav() {
 
   return (
     <>
-      {/* Desktop / tablet top bar */}
-      <header className="sticky top-0 z-40 hidden bg-background/85 backdrop-blur md:block">
-        <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-4">
-          <Link href="/" className="mr-2 flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Salad className="size-5" />
-            </span>
-            <span className="text-lg font-bold tracking-tight">NutriTrack</span>
-          </Link>
-          <nav className="ml-auto flex items-center gap-1">
-            {links.map(({ href, label }) => {
-              const active = isActive(href, pathname)
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-                    active
-                      ? "bg-accent text-accent-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {label}
-                </Link>
-              )
-            })}
-          </nav>
-        </div>
-      </header>
+      {/* Desktop fixed left sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[220px] flex-col bg-sidebar px-3 py-5 md:flex">
+        <Link href="/" className="mb-6 flex items-center gap-2.5 px-3">
+          <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <Salad className="size-5" />
+          </span>
+          <span className="text-lg font-bold tracking-tight text-white">NutriTrack</span>
+        </Link>
+        <nav className="flex flex-col gap-1">
+          {links.map(({ href, label }) => {
+            const active = isActive(href, pathname)
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "rounded-md px-3 py-2.5 text-sm font-bold transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-white"
+                    : "text-sidebar-foreground hover:text-white",
+                )}
+              >
+                {label}
+              </Link>
+            )
+          })}
+        </nav>
+      </aside>
 
       {/* Mobile bottom tab bar */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur md:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 bg-black md:hidden">
         <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
           {links.map(({ href, label, icon: Icon }) => {
             const active = isActive(href, pathname)
@@ -62,7 +60,7 @@ export function AppNav() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-semibold transition-colors",
+                  "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-bold transition-colors",
                   active ? "text-primary" : "text-muted-foreground",
                 )}
               >

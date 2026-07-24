@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import useSWR from "swr"
-import { format } from "date-fns"
+import { addDays, format, isToday, parseISO } from "date-fns"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getEntriesByDate } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
 import { DaySummary } from "@/components/dashboard/day-summary"
@@ -139,16 +140,44 @@ export function Dashboard({
     )
   }
 
+  const parsed = parseISO(dateKey)
+  const eyebrow = `${format(parsed, "EEEE, MMM d").toUpperCase()} · ${isToday(parsed) ? "TODAY" : format(parsed, "yyyy").toUpperCase()}`
+
+  function shiftDay(days: number) {
+    setDateKey(format(addDays(parsed, days), "yyyy-MM-dd"))
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-        <div>
-          <h1 className="text-[21px] font-bold tracking-tight text-balance">Today&apos;s Nutrition</h1>
-          <p className="hidden text-sm text-muted-foreground md:block">
-            Log your meals and track progress toward your goals.
-          </p>
+      <header>
+        {/* Desktop: eyebrow + title + round nav arrows */}
+        <div className="hidden items-start justify-between gap-4 md:flex">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-faint">{eyebrow}</p>
+            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => shiftDay(-1)}
+              aria-label="Previous day"
+              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => shiftDay(1)}
+              aria-label="Next day"
+              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
         </div>
-        <div className="md:w-[280px]">
+        {/* Mobile: title + day navigator pill */}
+        <div className="flex flex-col gap-4 md:hidden">
+          <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
           <DayNavigator date={dateKey} onDateChange={setDateKey} />
         </div>
       </header>

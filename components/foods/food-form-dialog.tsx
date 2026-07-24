@@ -374,9 +374,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   }
 
   const fieldInput =
-    "h-11 rounded-xl border-0 bg-muted/50 px-3.5 text-sm shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+    "h-11 rounded-md border-0 bg-inset px-3.5 text-sm shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
   const cellInput =
-    "h-10 rounded-lg border-0 bg-muted/50 px-3 text-right text-sm tabular-nums shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+    "h-10 rounded-md border-0 bg-inset px-3 text-right text-sm tabular-nums shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
   const labelClass = "text-sm font-semibold text-foreground"
   const gridCols =
     "grid grid-cols-[1fr_minmax(0,6rem)_minmax(0,6rem)] gap-3 sm:grid-cols-[1fr_minmax(0,9rem)_minmax(0,9rem)] sm:gap-4"
@@ -431,7 +431,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
 
-            <div className="rounded-2xl bg-muted/40 p-4 sm:p-5">
+            <div className="rounded-lg bg-inset p-4 sm:p-5">
               <p className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
                 <ArrowDown className="size-4" />
                 Import from Woolworths
@@ -694,7 +694,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
 
             {/* Food score */}
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-muted/40 p-4 sm:p-5">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-inset p-4 sm:p-5">
               <div>
                 <p className="text-sm font-bold text-foreground">Food score</p>
                 <p className="text-xs text-faint">Protein score per 100 kcal · calorie density per 100g</p>

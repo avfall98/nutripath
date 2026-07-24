@@ -11,7 +11,7 @@ export default async function HomePage() {
   ])
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pb-16 pt-6">
+    <main className="mx-auto w-full max-w-[1100px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
       <Dashboard profile={profile} mealGroups={mealGroups} foods={foods} />
     </main>
   )

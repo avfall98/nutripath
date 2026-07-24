@@ -16,7 +16,7 @@ import { toast } from "sonner"
 import { ArrowDown, ArrowUp, Check, Pencil, Plus, Trash2, X } from "lucide-react"
 
 const fieldInput =
-  "h-12 w-full rounded-xl border-0 bg-muted/50 px-3.5 text-base shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40 md:text-sm"
+  "h-12 w-full rounded-md border-0 bg-inset px-3.5 text-base shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40 md:text-sm"
 
 export function MealGroupsManager({ initialGroups }: { initialGroups: MealGroupDTO[] }) {
   const router = useRouter()
@@ -77,7 +77,7 @@ export function MealGroupsManager({ initialGroups }: { initialGroups: MealGroupD
   return (
     <Card className="p-6 sm:p-7">
       <CardHeader className="p-0">
-        <CardTitle className="text-lg font-bold">Meal groups</CardTitle>
+        <CardTitle className="text-xl font-bold">Meal groups</CardTitle>
         <CardDescription>Customize how your day is divided. Reorder, rename, or add your own.</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2 p-0">
@@ -98,7 +98,7 @@ export function MealGroupsManager({ initialGroups }: { initialGroups: MealGroupD
             type="button"
             onClick={add}
             disabled={!newName.trim()}
-            className="flex h-12 shrink-0 items-center gap-1.5 rounded-xl border-2 border-dashed border-border/70 px-5 text-sm font-bold text-foreground transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-40"
+            className="flex h-12 shrink-0 items-center gap-1.5 rounded-full border-2 border-dashed border-border/70 px-5 text-sm font-bold text-foreground transition-colors hover:border-border hover:bg-muted/40 disabled:opacity-40"
           >
             <Plus className="size-4" />
             Add

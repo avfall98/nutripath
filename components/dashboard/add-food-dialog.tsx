@@ -250,7 +250,7 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                           type="button"
                           disabled={pending}
                           onClick={() => addFromLibrary(food)}
-                          className="flex w-full items-center gap-3 rounded-xl bg-muted/40 p-2.5 text-left transition-colors hover:bg-muted disabled:opacity-50"
+                          className="flex w-full items-center gap-3 rounded-lg bg-inset p-2.5 text-left transition-colors hover:bg-inset-hover disabled:opacity-50"
                         >
                           <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
                             {food.imageUrl ? (

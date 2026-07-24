@@ -42,9 +42,9 @@ function toNum(v: string): number | null {
 }
 
 const fieldInput =
-  "h-12 w-full rounded-xl border-0 bg-muted/50 px-3.5 text-base shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40 md:text-sm"
+  "h-12 w-full rounded-md border-0 bg-inset px-3.5 text-base shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40 md:text-sm"
 const selectTrigger =
-  "h-12 w-full rounded-xl border-0 bg-muted/50 px-3.5 text-sm shadow-none data-placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+  "h-12 w-full rounded-md border-0 bg-inset px-3.5 text-sm shadow-none data-placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
 const labelClass = "text-sm font-semibold text-foreground"
 
 function FieldBlock({
@@ -131,7 +131,7 @@ export function ProfileForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <Card className="p-6 sm:p-7">
         <CardHeader className="p-0">
-          <CardTitle className="text-lg font-bold">Your details</CardTitle>
+          <CardTitle className="text-xl font-bold">Your details</CardTitle>
           <CardDescription>Used to personalize your daily targets. Units are metric.</CardDescription>
         </CardHeader>
         <CardContent className="p-0">
@@ -226,7 +226,7 @@ export function ProfileForm({
         <CardHeader className="p-0">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle className="text-lg font-bold">Daily targets</CardTitle>
+              <CardTitle className="text-xl font-bold">Daily targets</CardTitle>
               <CardDescription>Set your daily calorie and protein goals.</CardDescription>
             </div>
             <button

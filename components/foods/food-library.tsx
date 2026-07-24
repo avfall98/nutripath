@@ -396,9 +396,8 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                           </p>
                           <div className="-mt-1">{foodMenu(food)}</div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                           <MacroBadges
-                            variant="columns"
                             kcal={caloriesKcal}
                             kcalPct={profile?.targetCalories ? caloriesPct : null}
                             protein={food.protein}
@@ -406,7 +405,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                             carbs={food.carbs}
                             fat={food.fat}
                           />
-                          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                          <div className="flex shrink-0 items-center gap-1.5">
                             <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                             <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                           </div>

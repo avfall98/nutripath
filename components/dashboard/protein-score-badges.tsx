@@ -41,7 +41,7 @@ export function ScorePill({
   if (grade == null || value == null) {
     return (
       <span
-        className="inline-flex min-w-14 items-center justify-center gap-1 rounded-full bg-muted px-2 py-1 text-[10.5px] font-semibold tabular-nums text-muted-foreground"
+        className="inline-flex min-w-14 items-center justify-center gap-1 whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[10.5px] font-semibold tabular-nums text-muted-foreground"
         title={title}
         aria-label={ariaLabel}
       >
@@ -53,7 +53,7 @@ export function ScorePill({
 
   return (
     <span
-      className="inline-flex min-w-14 items-center justify-center gap-1 rounded-full px-2 py-1 text-[10.5px] font-semibold tabular-nums"
+      className="inline-flex min-w-14 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[10.5px] font-semibold tabular-nums"
       style={GRADE_STYLES[grade]}
       title={title}
       aria-label={ariaLabel}

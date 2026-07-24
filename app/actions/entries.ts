@@ -2,7 +2,7 @@
 
 import { db } from "@/lib/db"
 import { entries, foods } from "@/lib/db/schema"
-import { and, asc, eq } from "drizzle-orm"
+import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
 import type { EntryDTO } from "@/lib/types"
@@ -29,6 +29,15 @@ export async function getEntriesByDate(dateKey: string): Promise<EntryDTO[]> {
     .from(entries)
     .where(eq(entries.entryDate, dateKey))
     .orderBy(asc(entries.createdAt))
+  return rows.map(serialize)
+}
+
+export async function getEntriesInRange(startKey: string, endKey: string): Promise<EntryDTO[]> {
+  const rows = await db
+    .select()
+    .from(entries)
+    .where(and(gte(entries.entryDate, startKey), lte(entries.entryDate, endKey)))
+    .orderBy(asc(entries.entryDate), asc(entries.createdAt))
   return rows.map(serialize)
 }
 

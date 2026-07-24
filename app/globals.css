@@ -60,6 +60,13 @@
   --color-cal-over: var(--cal-over);
   --color-protein-bar: var(--protein-bar);
 
+  /* Semantic macro + status aliases used across components */
+  --color-protein: var(--macro-protein);
+  --color-carbs: var(--macro-carbs);
+  --color-fat: var(--macro-fat);
+  --color-calories: var(--macro-calories);
+  --color-warning: var(--cal-over);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

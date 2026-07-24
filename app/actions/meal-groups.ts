@@ -22,7 +22,7 @@ export async function createMealGroup(name: string) {
     .from(mealGroups)
   await db.insert(mealGroups).values({ name: clean, sortOrder: (max ?? -1) + 1 })
   revalidatePath("/")
-  revalidatePath("/meals")
+  revalidatePath("/profile")
 }
 
 export async function renameMealGroup(id: number, name: string) {
@@ -30,7 +30,7 @@ export async function renameMealGroup(id: number, name: string) {
   if (!clean) return
   await db.update(mealGroups).set({ name: clean }).where(eq(mealGroups.id, id))
   revalidatePath("/")
-  revalidatePath("/meals")
+  revalidatePath("/profile")
 }
 
 export async function deleteMealGroup(id: number) {
@@ -38,7 +38,7 @@ export async function deleteMealGroup(id: number) {
   // Detach existing entries so historical logs remain intact.
   await db.update(entries).set({ mealGroupId: null }).where(eq(entries.mealGroupId, id))
   revalidatePath("/")
-  revalidatePath("/meals")
+  revalidatePath("/profile")
 }
 
 export async function reorderMealGroups(orderedIds: number[]) {
@@ -48,5 +48,5 @@ export async function reorderMealGroups(orderedIds: number[]) {
     ),
   )
   revalidatePath("/")
-  revalidatePath("/meals")
+  revalidatePath("/profile")
 }

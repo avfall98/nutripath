@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   colorScheme: "dark",
-  themeColor: "#101311",
+  themeColor: "#121212",
 }
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`dark bg-background ${instrumentSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased pb-20 md:pb-0">
+      <body className="font-sans antialiased pb-20 md:pb-0 md:pl-[220px]">
         <AppNav />
         {children}
         <Toaster position="top-center" richColors />

@@ -6,7 +6,6 @@ import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { EditEntryDialog } from "@/components/dashboard/edit-entry-dialog"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,13 +17,18 @@ import {
 import { round } from "@/lib/format"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
-import { MacroBadges } from "@/components/dashboard/macro-badges"
+import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Apple, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
 
 type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
 const KJ_PER_KCAL = 4.184
+
+// Shared grid template so header + rows align vertically.
+const ROW_GRID =
+  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_auto_32px]"
 
 export function MealSection({
   group,
@@ -73,8 +77,7 @@ export function MealSection({
 
   const groupCaloriesPct =
     targetCalories && targetCalories > 0 ? Math.round((groupCaloriesKcal / targetCalories) * 100) : 0
-  const groupProteinPct =
-    targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
+  const groupProteinPct = targetProtein && targetProtein > 0 ? Math.round((groupProtein / targetProtein) * 100) : 0
 
   function remove(entry: EntryDTO) {
     startTransition(async () => {
@@ -91,63 +94,168 @@ export function MealSection({
     })
   }
 
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-1">
-        {/* Header: name + summary + meal-level score pills */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 pb-1">
-          <h3 className="text-sm font-semibold">{group.name}</h3>
-          {entries.length > 0 ? (
-            <span className="text-[13px] tabular-nums text-muted-foreground">
-              {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g
-              protein{targetProtein ? ` (${groupProteinPct}%)` : ""}
-            </span>
-          ) : (
-            <span className="text-[13px] text-faint">Nothing logged yet</span>
-          )}
-          {entries.length > 0 && (
-            <div className="ml-auto flex items-center gap-1.5">
-              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
-              {groupServingSize ? (
-                <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
-              ) : null}
-            </div>
-          )}
-        </div>
+  function entryMenu(entry: EntryDTO) {
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button size="icon" variant="ghost" className="size-7 text-muted-foreground" aria-label="Item options" />
+          }
+        >
+          <MoreVertical />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              onClick={() => {
+                setSelectedEntry(entry)
+                setEditOpen(true)
+              }}
+            >
+              <Edit data-icon="inline-start" />
+              Edit entry
+            </DropdownMenuItem>
+            {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
+              <>
+                <DropdownMenuLabel>Move to</DropdownMenuLabel>
+                {allGroups
+                  .filter((g) => g.id !== entry.mealGroupId)
+                  .map((g) => (
+                    <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
+                      {g.name}
+                    </DropdownMenuItem>
+                  ))}
+              </>
+            )}
+            <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
+              <Trash2 data-icon="inline-start" />
+              Remove
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    )
+  }
 
-        {/* Food rows */}
+  function thumb(food: FoodDTO | null | undefined) {
+    return food?.imageUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-10 shrink-0 rounded-[4px] object-cover" />
+    ) : (
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[4px] bg-track text-faint">
+        <Apple className="size-4" />
+      </span>
+    )
+  }
+
+  return (
+    <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
+      {/* Header: name + summary + meal score pills + add-food text button */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <h3 className="text-lg font-extrabold tracking-[-0.3px]">{group.name}</h3>
+        {entries.length > 0 ? (
+          <span className="text-[13px] tabular-nums text-muted-foreground">
+            {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein
+            {targetProtein ? ` (${groupProteinPct}%)` : ""}
+          </span>
+        ) : (
+          <span className="text-[13px] text-faint">Nothing logged yet</span>
+        )}
         {entries.length > 0 && (
-          <ul className="flex flex-col">
-            {entries.map((entry) => {
-              const food = entry.foodId ? foods.find((f) => f.id === entry.foodId) : null
-              const entryCalories = round((entry.calories * entry.quantity) / KJ_PER_KCAL, 0)
-              const entryProtein = round(entry.protein * entry.quantity)
-              const entryCarbs = entry.carbs != null ? round(entry.carbs * entry.quantity) : null
-              const entryFat = entry.fat != null ? round(entry.fat * entry.quantity) : null
-              const entryCaloriesPct =
-                targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
-              const entryProteinPct =
-                targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
-              const qtyLabel = entry.quantity % 1 === 0 ? entry.quantity.toFixed(1) : String(entry.quantity)
-              return (
-                <li
-                  key={entry.id}
-                  className="flex gap-3 border-t border-border py-3 first:border-t-0 first:pt-1"
-                >
-                  {food?.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={food.imageUrl || "/placeholder.svg"}
-                      alt=""
-                      className="size-10 shrink-0 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-track text-faint">
-                      <Apple className="size-4" />
-                    </span>
-                  )}
+          <div className="flex items-center gap-1.5">
+            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+            {groupServingSize ? (
+              <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
+            ) : null}
+          </div>
+        )}
+        {isReal && (
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="ml-auto hidden items-center gap-1.5 text-[13px] font-bold text-muted-foreground transition-colors hover:text-white md:flex"
+          >
+            <Plus className="size-4" />
+            Add food
+          </button>
+        )}
+      </div>
+
+      {/* Desktop column header */}
+      {entries.length > 0 && (
+        <div
+          className={cn(
+            ROW_GRID,
+            "hidden border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint md:grid",
+          )}
+        >
+          <span className="text-right">#</span>
+          <span />
+          <span>Food</span>
+          <span>Kcal</span>
+          <span>Protein</span>
+          <span>Carbs</span>
+          <span>Fat</span>
+          <span className="text-right">Scores</span>
+          <span />
+        </div>
+      )}
+
+      {/* Rows */}
+      {entries.length > 0 && (
+        <ul className="flex flex-col">
+          {entries.map((entry, i) => {
+            const food = entry.foodId ? foods.find((f) => f.id === entry.foodId) : null
+            const entryCalories = round((entry.calories * entry.quantity) / KJ_PER_KCAL, 0)
+            const entryProtein = round(entry.protein * entry.quantity)
+            const entryCarbs = entry.carbs != null ? round(entry.carbs * entry.quantity) : null
+            const entryFat = entry.fat != null ? round(entry.fat * entry.quantity) : null
+            const entryCaloriesPct =
+              targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
+            const entryProteinPct =
+              targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
+            const qtyLabel = entry.quantity % 1 === 0 ? entry.quantity.toFixed(1) : String(entry.quantity)
+            return (
+              <li key={entry.id}>
+                {/* Desktop table row */}
+                <div className={cn(ROW_GRID, "hidden rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08] md:grid")}>
+                  <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
+                  {thumb(food)}
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
+                    <p className="text-[11.5px] text-faint">
+                      {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="calories" />
+                    {entryCalories}
+                    {targetCalories ? <span className="font-normal text-faint">({entryCaloriesPct}%)</span> : null}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="protein" />
+                    {entryProtein}
+                    {targetProtein ? <span className="font-normal text-faint">({entryProteinPct}%)</span> : null}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="carbs" />
+                    {entryCarbs ?? "—"}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="fat" />
+                    {entryFat ?? "—"}
+                  </span>
+                  <div className="flex items-center justify-end gap-1.5">
+                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                  </div>
+                  <div className="flex justify-end">{entryMenu(entry)}</div>
+                </div>
+
+                {/* Mobile stacked row */}
+                <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
+                  {thumb(food)}
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    {/* Line 1: name / brand / menu */}
                     <div className="flex items-start gap-2">
                       <p className="min-w-0 flex-1 text-[13.5px] font-semibold leading-tight text-pretty">
                         {food?.name || entry.name}
@@ -155,51 +263,8 @@ export function MealSection({
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
                         </span>
                       </p>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger
-                          render={
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="-mt-1 -mr-1 size-7 text-muted-foreground"
-                              aria-label="Item options"
-                            />
-                          }
-                        >
-                          <MoreVertical />
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuGroup>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                setSelectedEntry(entry)
-                                setEditOpen(true)
-                              }}
-                            >
-                              <Edit data-icon="inline-start" />
-                              Edit entry
-                            </DropdownMenuItem>
-                            {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
-                              <>
-                                <DropdownMenuLabel>Move to</DropdownMenuLabel>
-                                {allGroups
-                                  .filter((g) => g.id !== entry.mealGroupId)
-                                  .map((g) => (
-                                    <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
-                                      {g.name}
-                                    </DropdownMenuItem>
-                                  ))}
-                              </>
-                            )}
-                            <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
-                              <Trash2 data-icon="inline-start" />
-                              Remove
-                            </DropdownMenuItem>
-                          </DropdownMenuGroup>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                      <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
                     </div>
-                    {/* Line 2: macro columns + score pills */}
                     <div className="flex items-center gap-3">
                       <MacroBadges
                         variant="columns"
@@ -212,37 +277,32 @@ export function MealSection({
                       />
                       <div className="ml-auto flex shrink-0 items-center gap-1.5">
                         <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                        <CalorieDensityBadge
-                          kcal={round(entry.calories / KJ_PER_KCAL)}
-                          servingSize={food?.servingSize || null}
-                        />
+                        <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
                       </div>
                     </div>
                   </div>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      )}
 
-        {/* Footer: centered dashed "+ Add food" ghost pill */}
-        {isReal ? (
-          <div className={entries.length > 0 ? "mt-1 border-t border-border pt-3" : "pt-1"}>
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              className="mx-auto flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
-            >
-              <Plus className="size-4" />
-              Add food
-            </button>
-          </div>
-        ) : (
-          entries.length === 0 && (
-            <p className="py-2 text-[13px] text-faint">Items whose meal group was removed.</p>
-          )
-        )}
-      </CardContent>
+      {/* Mobile add-food dashed pill (kept from existing structure) */}
+      {isReal ? (
+        <div className={cn("md:hidden", entries.length > 0 ? "mt-1 border-t border-border pt-3" : "pt-1")}>
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="mx-auto flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <Plus className="size-4" />
+            Add food
+          </button>
+        </div>
+      ) : (
+        entries.length === 0 && <p className="py-2 text-[13px] text-faint">Items whose meal group was removed.</p>
+      )}
 
       {isReal && (
         <>
@@ -265,6 +325,6 @@ export function MealSection({
           )}
         </>
       )}
-    </Card>
+    </section>
   )
 }

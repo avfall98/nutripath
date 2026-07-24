@@ -5,6 +5,7 @@ import { entries, foods } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
+import { parseServingWeight } from "@/lib/nutrition"
 import type { EntryDTO } from "@/lib/types"
 
 function serialize(r: typeof entries.$inferSelect): EntryDTO {
@@ -34,11 +35,15 @@ export async function getEntriesByDate(dateKey: string): Promise<EntryDTO[]> {
 
 export async function getEntriesInRange(startKey: string, endKey: string): Promise<EntryDTO[]> {
   const rows = await db
-    .select()
+    .select({ entry: entries, servingSize: foods.servingSize })
     .from(entries)
+    .leftJoin(foods, eq(entries.foodId, foods.id))
     .where(and(gte(entries.entryDate, startKey), lte(entries.entryDate, endKey)))
     .orderBy(asc(entries.entryDate), asc(entries.createdAt))
-  return rows.map(serialize)
+  return rows.map(({ entry, servingSize }) => ({
+    ...serialize(entry),
+    servingWeightG: parseServingWeight(servingSize),
+  }))
 }
 
 // Add an entry from an existing reusable food.

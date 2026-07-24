@@ -5,7 +5,7 @@ export default async function WeekPage() {
   const profile = await getProfile()
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 pb-16 pt-6">
+    <main className="mx-auto w-full max-w-5xl px-4 pb-16 pt-6">
       <WeekView profile={profile} />
     </main>
   )

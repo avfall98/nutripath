@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Apple, CalendarDays, CalendarRange, UserRound } from "lucide-react"
+import { Apple, CalendarDays, CalendarRange, Salad, UserRound } from "lucide-react"
 
 const links = [
   { href: "/", label: "Today", icon: CalendarDays },
@@ -25,8 +25,8 @@ export function AppNav() {
       <header className="sticky top-0 z-40 hidden bg-background/85 backdrop-blur md:block">
         <div className="mx-auto flex h-16 max-w-5xl items-center gap-2 px-4">
           <Link href="/" className="mr-2 flex items-center gap-2.5">
-            <span className="flex size-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-              <span className="size-3 rounded-full bg-primary-foreground/90" />
+            <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Salad className="size-5" />
             </span>
             <span className="text-lg font-bold tracking-tight">NutriTrack</span>
           </Link>

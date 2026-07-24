@@ -28,7 +28,7 @@ const KJ_PER_KCAL = 4.184
 
 // Shared grid template so header + rows align vertically.
 const ROW_GRID =
-  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_auto_32px]"
+  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_132px_32px]"
 
 export function MealSection({
   group,

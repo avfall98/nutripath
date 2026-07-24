@@ -29,7 +29,7 @@ type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores"
 const KJ_PER_KCAL = 4.184
 
 const ROW_GRID =
-  "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_auto_32px] items-center gap-x-3"
+  "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_132px_32px] items-center gap-x-3"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },

@@ -1,11 +1,11 @@
 import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Instrument_Sans, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { AppNav } from "@/components/app-nav"
 import "./globals.css"
 
-const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" })
+const instrumentSans = Instrument_Sans({ subsets: ["latin"], variable: "--font-instrument-sans" })
 const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" })
 
 export const metadata: Metadata = {
@@ -16,11 +16,8 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1a1f1c" },
-  ],
+  colorScheme: "dark",
+  themeColor: "#101311",
 }
 
 export default function RootLayout({
@@ -29,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className={`bg-background ${geistSans.variable} ${geistMono.variable}`}>
-      <body className="font-sans antialiased">
+    <html lang="en" className={`dark bg-background ${instrumentSans.variable} ${geistMono.variable}`}>
+      <body className="font-sans antialiased pb-20 md:pb-0">
         <AppNav />
         {children}
         <Toaster position="top-center" richColors />

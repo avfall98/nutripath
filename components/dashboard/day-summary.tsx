@@ -1,30 +1,12 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
-import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
 const KJ_PER_KCAL = 4.184
-
-// Discrete color palette for meal groups - high contrast colors
-const groupColors = [
-  "#3B82F6", // Blue
-  "#10B981", // Emerald
-  "#F59E0B", // Amber
-  "#8B5CF6", // Purple
-  "#EC4899", // Pink
-  "#06B6D4", // Cyan
-  "#EF4444", // Red
-  "#14B8A6", // Teal
-]
-
-function getGroupColor(groupId: number): string {
-  return groupColors[groupId % groupColors.length]
-}
 
 export type DayTotals = {
   calories: number
@@ -43,159 +25,76 @@ export type GroupNutrition = {
   servingWeightG?: number | null
 }
 
-// Rich hover popup mirroring the group totals shown in the meals list:
-// a "kcal (%) · protein (%)" line plus protein-score and calorie-density badges.
-function GroupTooltip({
-  group,
-  targetCalories,
-  targetProtein,
+// Single-color segmented progress bar: one meal = one segment, 2px gaps.
+function SegmentedBar({
+  segments,
+  totalPct,
+  color,
 }: {
-  group: GroupNutrition
-  targetCalories: number | null
-  targetProtein: number | null
+  segments: { key: number; pct: number; name: string }[]
+  totalPct: number
+  color: string
 }) {
-  const kcal = Math.round(group.calories / KJ_PER_KCAL)
-  const kcalPct =
-    targetCalories && targetCalories > 0 ? Math.round((kcal / targetCalories) * 100) : null
-  const proteinPct =
-    targetProtein && targetProtein > 0 ? Math.round((group.protein / targetProtein) * 100) : null
-
   return (
-    <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 flex -translate-x-1/2 flex-col gap-1.5 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-2 text-popover-foreground shadow-md">
-      <p className="text-xs font-semibold">{group.name}</p>
-      <MacroBadges
-        kcal={kcal}
-        kcalPct={kcalPct}
-        protein={group.protein}
-        proteinPct={proteinPct}
-        carbs={group.carbs ?? null}
-        fat={group.fat ?? null}
-      />
-      <div className="flex flex-wrap items-center gap-1.5">
-        <ProteinScoreBadges proteinG={group.protein} kcal={kcal} />
-        <CalorieDensityBadge
-          kcal={kcal}
-          servingSize={group.servingWeightG ? `${group.servingWeightG}g` : null}
-        />
-      </div>
-    </div>
-  )
-}
-
-function CalorieBar({ 
-  consumed, 
-  target,
-  targetProtein = null,
-  groups = []
-}: { 
-  consumed: number
-  target: number | null
-  targetProtein?: number | null
-  groups?: GroupNutrition[]
-}) {
-  // Convert kJ to kcal for display (consumed is in kJ, target is already in kcal)
-  const consumedKcal = Math.round(consumed / KJ_PER_KCAL)
-  const targetKcal = target
-  const pct = targetKcal && targetKcal > 0 ? Math.min(consumedKcal / targetKcal, 1) : 0
-  const over = targetKcal != null && consumedKcal > targetKcal
-  const remaining = targetKcal != null ? Math.round(targetKcal - consumedKcal) : null
-
-  const [hoveredCalorieGroup, setHoveredCalorieGroup] = useState<number | null>(null)
-
-  // Render calorie bar segments
-  const renderCalorieSegments = () => {
-    let currentPosition = 0
-    return groups.map((group, idx) => {
-      const groupKcal = Math.round(group.calories / KJ_PER_KCAL)
-      const groupPct = targetKcal && targetKcal > 0 ? (groupKcal / targetKcal) * 100 : 0
-      const width = Math.min(groupPct, 100 - currentPosition)
-      const element = (
-        <div
-          key={idx}
-          className={cn("relative h-full transition-all duration-200 group")}
-          style={{
-            width: `${width}%`,
-            backgroundColor: getGroupColor(group.id),
-            opacity: hoveredCalorieGroup === null || hoveredCalorieGroup === group.id ? 1 : 0.3
-          }}
-          onMouseEnter={() => setHoveredCalorieGroup(group.id)}
-          onMouseLeave={() => setHoveredCalorieGroup(null)}
-          title={group.name}
-        >
-          {hoveredCalorieGroup === group.id && (
-            <GroupTooltip group={group} targetCalories={target} targetProtein={targetProtein} />
-          )}
+    <div className="h-1.5 w-full overflow-hidden rounded-[3px] bg-track">
+      {segments.length > 0 ? (
+        <div className="flex h-full w-full gap-[2px]">
+          {segments.map((s) => (
+            <div
+              key={s.key}
+              title={s.name}
+              style={{ width: `${s.pct}%`, backgroundColor: color }}
+              className="h-full rounded-[2px] transition-all"
+            />
+          ))}
         </div>
-      )
-      currentPosition += width
-      return element
-    })
-  }
-
-  return (
-    <div>
-      <div className="mb-1.5 flex items-baseline justify-between">
-        <span className="text-sm font-medium">Calories</span>
-        <span className="flex items-baseline gap-2 text-sm tabular-nums text-muted-foreground">
-          <span>
-            {consumedKcal}
-            {targetKcal != null ? ` / ${Math.round(targetKcal)}` : ""} kcal
-          </span>
-          {remaining != null && (
-            <span className={cn("text-xs font-medium", over ? "text-destructive" : "text-primary")}>
-              {over ? `${Math.abs(remaining)} over` : `${remaining} left`}
-            </span>
-          )}
-          {targetKcal != null && (
-            <span className="ml-2 font-medium text-primary">{Math.round(pct * 100)}%</span>
-          )}
-        </span>
-      </div>
-      <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
-        {groups.length > 0 ? (
-          renderCalorieSegments()
-        ) : (
-          <div
-            style={{
-              width: `${pct * 100}%`,
-              backgroundColor: groupColors[0],
-              height: "100%",
-              borderRadius: "9999px",
-              transition: "width 500ms, background-color 500ms"
-            }}
-          />
-        )}
-      </div>
+      ) : (
+        <div style={{ width: `${totalPct}%`, backgroundColor: color }} className="h-full rounded-[3px] transition-all" />
+      )}
     </div>
   )
 }
 
-function MacroStat({
-  macro,
+function StatCell({
   label,
+  labelColor,
   value,
   target,
   unit,
+  index,
 }: {
-  macro: "calories" | "protein" | "carbs" | "fat"
   label: string
+  labelColor: string
   value: number
   target?: number | null
   unit: string
+  index: number
 }) {
   return (
-    <div className="flex flex-col gap-0.5 rounded-lg bg-secondary/60 p-3">
-      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-        <MacroIcon macro={macro} />
+    <div
+      className={cn(
+        "flex flex-col gap-1",
+        index % 2 === 1 && "border-l border-border pl-4",
+        index > 0 && "sm:border-l sm:border-border sm:pl-4",
+      )}
+    >
+      <span
+        className="text-[11px] font-semibold uppercase tracking-[.07em]"
+        style={{ color: labelColor }}
+      >
         {label}
       </span>
-      <span className="text-lg font-semibold tabular-nums">
-        {round(value)}
-        <span className="ml-0.5 text-xs font-normal text-muted-foreground">{unit}</span>
+      <span className="text-xl font-bold tabular-nums leading-none">
+        {round(value).toLocaleString()}
+        {target != null && target > 0 ? (
+          <span className="ml-1 text-xs font-normal text-faint">
+            / {Math.round(target).toLocaleString()}
+            {unit === "g" ? "g" : ""}
+          </span>
+        ) : (
+          <span className="ml-0.5 text-xs font-normal text-faint">{unit}</span>
+        )}
       </span>
-      {target != null && target > 0 && (
-        <span className="text-xs text-muted-foreground">of {Math.round(target)}{unit}</span>
-      )}
     </div>
   )
 }
@@ -213,103 +112,91 @@ export function DaySummary({
   mealGroups?: GroupNutrition[]
   servingWeightG?: number | null
 }) {
-  // Convert kJ to kcal for display (totals.calories is in kJ, targetCalories is already in kcal)
   const caloriesKcal = Math.round(totals.calories / KJ_PER_KCAL)
-  const targetCaloriesKcal = targetCalories
-  const proteinPct =
-    targetProtein && targetProtein > 0 ? Math.min((totals.protein / targetProtein) * 100, 100) : 0
-  const proteinRemaining = targetProtein != null ? Math.round(targetProtein - totals.protein) : null
-  
-  const [hoveredProteinGroup, setHoveredProteinGroup] = useState<number | null>(null)
+  const calPct = targetCalories && targetCalories > 0 ? (caloriesKcal / targetCalories) * 100 : 0
+  const calOver = targetCalories != null && caloriesKcal > targetCalories
+  const calRemaining = targetCalories != null ? Math.round(targetCalories - caloriesKcal) : null
+  const calColor = calOver ? "var(--cal-over)" : "var(--primary)"
 
-  // Render protein bar segments
-  const renderProteinSegments = () => {
-    let currentPosition = 0
-    return mealGroups.map((group, idx) => {
-      const groupPct = targetProtein && targetProtein > 0 ? (group.protein / targetProtein) * 100 : 0
-      const width = Math.min(groupPct, 100 - currentPosition)
-      const element = (
-        <div
-          key={idx}
-          className={cn("relative h-full transition-all duration-200 group")}
-          style={{
-            width: `${width}%`,
-            backgroundColor: getGroupColor(group.id),
-            opacity: hoveredProteinGroup === null || hoveredProteinGroup === group.id ? 1 : 0.3
-          }}
-          onMouseEnter={() => setHoveredProteinGroup(group.id)}
-          onMouseLeave={() => setHoveredProteinGroup(null)}
-          title={group.name}
-        >
-          {hoveredProteinGroup === group.id && (
-            <GroupTooltip group={group} targetCalories={targetCalories} targetProtein={targetProtein} />
-          )}
-        </div>
-      )
-      currentPosition += width
-      return element
-    })
-  }
+  const proteinPct = targetProtein && targetProtein > 0 ? (totals.protein / targetProtein) * 100 : 0
+  const proteinOver = targetProtein != null && totals.protein > targetProtein
+  const proteinRemaining = targetProtein != null ? Math.round(targetProtein - totals.protein) : null
+
+  const calSegments = mealGroups.map((g) => ({
+    key: g.id,
+    name: g.name,
+    pct: targetCalories && targetCalories > 0 ? Math.round(g.calories / KJ_PER_KCAL) / targetCalories * 100 : 0,
+  }))
+  const proteinSegments = mealGroups.map((g) => ({
+    key: g.id,
+    name: g.name,
+    pct: targetProtein && targetProtein > 0 ? (g.protein / targetProtein) * 100 : 0,
+  }))
 
   return (
-    <Card className="overflow-visible">
-      <CardContent className="flex flex-col gap-6 py-6">
-        <div className="flex w-full flex-col gap-5">
-          {/* Calorie Bar */}
-          <CalorieBar consumed={totals.calories} target={targetCalories} targetProtein={targetProtein} groups={mealGroups} />
-
-          {/* Protein Bar */}
-          <div>
-            <div className="mb-1.5 flex items-baseline justify-between">
-              <span className="text-sm font-medium">Protein</span>
-              <span className="flex items-baseline gap-2 text-sm tabular-nums text-muted-foreground">
-                <span>
-                  {round(totals.protein)}
-                  {targetProtein != null ? ` / ${Math.round(targetProtein)}` : ""} g
-                </span>
-                {proteinRemaining != null && (
-                  <span className={cn("text-xs font-medium", proteinRemaining < 0 ? "text-destructive" : "text-primary")}>
-                    {proteinRemaining < 0 ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`}
-                  </span>
+    <Card>
+      <CardContent className="flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
+          {/* Calories */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm font-semibold">Calories</span>
+              <span className="flex items-baseline gap-1.5 text-[13px] tabular-nums text-faint">
+                <span className="text-foreground font-semibold">{caloriesKcal.toLocaleString()}</span>
+                <span>/ {targetCalories != null ? targetCalories.toLocaleString() : "—"} kcal</span>
+                {calRemaining != null && (
+                  <span>· {calOver ? `${Math.abs(calRemaining)} over` : `${calRemaining} left`}</span>
                 )}
-                {targetProtein != null && (
-                  <span className="ml-2 font-medium text-primary">{Math.round(proteinPct)}%</span>
+                {targetCalories != null && (
+                  <span
+                    className="font-semibold"
+                    style={{ color: calOver ? "var(--cal-over)" : "var(--primary)" }}
+                  >
+                    · {Math.round(calPct)}%
+                  </span>
                 )}
               </span>
             </div>
-            <div className="relative flex items-center overflow-visible rounded-full bg-muted" style={{ height: "14px" }}>
-              {mealGroups.length > 0 ? (
-                renderProteinSegments()
-              ) : (
-                <div
-                  style={{
-                    width: `${proteinPct}%`,
-                    backgroundColor: groupColors[0],
-                    height: "100%",
-                    borderRadius: "9999px",
-                    transition: "width 500ms, background-color 500ms"
-                  }}
-                />
-              )}
+            <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} />
+          </div>
+
+          {/* Protein */}
+          <div className="flex flex-col gap-2">
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="text-sm font-semibold">Protein</span>
+              <span className="flex items-baseline gap-1.5 text-[13px] tabular-nums text-faint">
+                <span className="text-foreground font-semibold">{round(totals.protein)}</span>
+                <span>/ {targetProtein != null ? targetProtein : "—"} g</span>
+                {proteinRemaining != null && (
+                  <span>· {proteinOver ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`}</span>
+                )}
+                {targetProtein != null && (
+                  <span className="font-semibold" style={{ color: "var(--primary)" }}>
+                    · {Math.round(proteinPct)}%
+                  </span>
+                )}
+              </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              <ProteinScoreBadges 
-                proteinG={totals.protein}
-                kcal={caloriesKcal}
-              />
-              {servingWeightG ? (
-                <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} />
-              ) : null}
-            </div>
+            <SegmentedBar
+              segments={proteinSegments}
+              totalPct={Math.min(proteinPct, 100)}
+              color="var(--protein-bar)"
+            />
           </div>
         </div>
 
-        {/* Macro Statistics */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MacroStat macro="calories" label="Calories" value={caloriesKcal} target={targetCaloriesKcal} unit=" kcal" />
-          <MacroStat macro="protein" label="Protein" value={totals.protein} target={targetProtein} unit="g" />
-          <MacroStat macro="carbs" label="Carbs" value={totals.carbs} unit="g" />
-          <MacroStat macro="fat" label="Fat" value={totals.fat} unit="g" />
+        {/* Day-level score pills */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <ProteinScoreBadges proteinG={totals.protein} kcal={caloriesKcal} />
+          {servingWeightG ? <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} /> : null}
+        </div>
+
+        {/* Macro strip */}
+        <div className="grid grid-cols-2 gap-y-4 border-t border-border pt-4 sm:grid-cols-4">
+          <StatCell index={0} label="Calories" labelColor="var(--stat-calories)" value={caloriesKcal} target={targetCalories} unit=" kcal" />
+          <StatCell index={1} label="Protein" labelColor="var(--stat-protein)" value={totals.protein} target={targetProtein} unit="g" />
+          <StatCell index={2} label="Carbs" labelColor="var(--stat-carbs)" value={totals.carbs} unit="g" />
+          <StatCell index={3} label="Fat" labelColor="var(--stat-fat)" value={totals.fat} unit="g" />
         </div>
       </CardContent>
     </Card>

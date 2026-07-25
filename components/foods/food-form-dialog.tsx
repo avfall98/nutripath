@@ -587,7 +587,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 value={form.name}
                 onChange={(e) => set("name", e.target.value)}
                 placeholder="e.g. Greek yogurt"
-                autoFocus
                 className={fieldInput}
               />
             </div>

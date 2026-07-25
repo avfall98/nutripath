@@ -5,9 +5,9 @@ import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
 import type { FoodDTO, MealGroupDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import {
   Dialog,
   DialogContent,
@@ -16,10 +16,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Apple, Plus, Search } from "lucide-react"
+import { Plus, Search, UtensilsCrossed } from "lucide-react"
 
 type Props = {
   open: boolean
@@ -27,19 +26,34 @@ type Props = {
   group: MealGroupDTO
   dateKey: string
   foods: FoodDTO[]
+  targetCalories?: number | null
+  targetProtein?: number | null
   onAdded: () => void
 }
 
 type QuantityMode = "servings" | "weight"
+type TabKey = "library" | "quick"
 
-export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdded }: Props) {
-  const KJ_PER_KCAL = 4.184
+const KJ_PER_KCAL = 4.184
+
+const ROW_GRID = "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+
+export function AddFoodDialog({
+  open,
+  onOpenChange,
+  group,
+  dateKey,
+  foods,
+  targetCalories,
+  targetProtein,
+  onAdded,
+}: Props) {
   const [pending, startTransition] = useTransition()
+  const [tab, setTab] = useState<TabKey>("library")
   const [query, setQuery] = useState("")
   const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
   const [servings, setServings] = useState("1")
   const [weight, setWeight] = useState("")
-  const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
   const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
 
   const filtered = useMemo(() => {
@@ -57,29 +71,24 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
 
   function addFromLibrary(food: FoodDTO) {
     let quantity = 1
-    
+
     if (qtyMode === "servings") {
       quantity = num(servings, 1) || 1
     } else {
-      // weight mode: convert weight to servings based on serving size
       const weightValue = num(weight, 0)
       if (!food.servingSize || weightValue <= 0) {
         toast.error("Enter a weight and ensure the food has a serving size defined.")
         return
       }
-      
-      // Parse serving size (e.g., "100g" -> 100)
       const servingSizeMatch = food.servingSize.match(/^([\d.]+)/)
-      const servingSizeValue = servingSizeMatch ? parseFloat(servingSizeMatch[1]) : null
-      
+      const servingSizeValue = servingSizeMatch ? Number.parseFloat(servingSizeMatch[1]) : null
       if (servingSizeValue === null || servingSizeValue <= 0) {
         toast.error("Food serving size is not properly defined.")
         return
       }
-      
       quantity = weightValue / servingSizeValue
     }
-    
+
     startTransition(async () => {
       await addEntryFromFood({
         dateKey,
@@ -120,173 +129,260 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-3xl">
+      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
         <DialogHeader>
-          <DialogTitle>Add to {group.name}</DialogTitle>
+          <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
           <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="library" className="flex min-h-0 flex-1 flex-col">
-          <TabsList className="w-full">
-            <TabsTrigger value="library" className="flex-1">
-              From library
-            </TabsTrigger>
-            <TabsTrigger value="quick" className="flex-1">
-              Quick add
-            </TabsTrigger>
-          </TabsList>
+        {/* Pill tabs */}
+        <div className="flex items-center gap-2">
+          {(
+            [
+              { key: "library", label: "From library" },
+              { key: "quick", label: "Quick add" },
+            ] as { key: TabKey; label: string }[]
+          ).map((t) => {
+            const active = tab === t.key
+            return (
+              <button
+                key={t.key}
+                type="button"
+                onClick={() => setTab(t.key)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                  active ? "bg-white text-black" : "bg-[#232323] text-white hover:bg-[#2a2a2a]",
+                )}
+              >
+                {t.label}
+              </button>
+            )
+          })}
+        </div>
 
-          <TabsContent value="library" className="mt-4 flex min-h-0 flex-1 flex-col gap-3">
-            <div className="flex items-end gap-3">
+        {tab === "library" ? (
+          <div className="flex min-h-0 flex-1 flex-col gap-4">
+            {/* Search + servings/weight toggle + quantity */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  className="pl-9"
+                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
                   placeholder="Search foods..."
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {qtyMode === "servings" ? "Servings" : "Weight"}
-                </label>
-                <ToggleGroup
-                  value={[qtyMode]}
-                  onValueChange={(v) => {
-                    const mode = v[0] as QuantityMode | undefined
-                    if (mode) setQtyMode(mode)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  spacing={0}
-                >
-                  <ToggleGroupItem value="servings" aria-label="Servings">
-                    Servings
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="weight" aria-label="Weight">
-                    Weight
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-            </div>
-            
-            <div className="flex items-end gap-3">
-              {qtyMode === "servings" ? (
-                <div className="flex-1">
-                  <label htmlFor="lib-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Servings
-                  </label>
+              <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                  {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+                    const active = qtyMode === mode
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setQtyMode(mode)}
+                        className={cn(
+                          "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
+                          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                        )}
+                      >
+                        {mode}
+                      </button>
+                    )
+                  })}
+                </div>
+                {qtyMode === "servings" ? (
                   <Input
-                    id="lib-servings"
                     type="number"
                     inputMode="decimal"
                     min={0}
                     step="0.5"
+                    aria-label="Servings"
                     value={servings}
                     onChange={(e) => setServings(e.target.value)}
-                    placeholder="1.0"
+                    className="h-11 w-24 rounded-full text-center"
+                    placeholder="1"
                   />
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <label htmlFor="lib-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
-                      Weight
-                    </label>
-                    <Input
-                      id="lib-weight"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                      placeholder="e.g. 150"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("g")}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "g"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      g
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("ml")}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "ml"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      ml
-                    </button>
-                  </div>
-                </>
-              )}
+                ) : (
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    aria-label="Weight in grams"
+                    value={weight}
+                    onChange={(e) => setWeight(e.target.value)}
+                    className="h-11 w-24 rounded-full text-center"
+                    placeholder="g"
+                  />
+                )}
+              </div>
             </div>
 
+            {/* List */}
             <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
               {foods.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
                   No foods saved yet. Add some in the Foods tab, or use Quick add.
                 </p>
               ) : filtered.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No matches for "{query}".</p>
+                <p className="py-8 text-center text-sm text-muted-foreground">No matches for &quot;{query}&quot;.</p>
               ) : (
-                <ul className="flex flex-col gap-1.5">
-                  {filtered.map((food) => {
-                    const kcal = Math.round(food.calories / KJ_PER_KCAL)
-                    return (
-                      <li key={food.id}>
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() => addFromLibrary(food)}
-                          className="flex w-full items-center gap-3 rounded-lg bg-inset p-2.5 text-left transition-colors hover:bg-inset-hover disabled:opacity-50"
-                        >
-                          <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted">
+                <>
+                  {/* Desktop table */}
+                  <div className="hidden flex-col md:flex">
+                    <div
+                      className={cn(
+                        ROW_GRID,
+                        "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
+                      )}
+                    >
+                      <span className="text-right">#</span>
+                      <span />
+                      <span>Food</span>
+                      <span>Kcal</span>
+                      <span>Protein</span>
+                      <span>Carbs</span>
+                      <span>Fat</span>
+                      <span className="text-right">Kcal score</span>
+                      <span className="text-right">P score</span>
+                      <span />
+                    </div>
+                    <ul className="mt-1 flex flex-col">
+                      {filtered.map((food, i) => {
+                        const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
+                        const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
+                        const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+                        return (
+                          <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
+                            <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
+                            <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                              {food.imageUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                              ) : (
+                                <span className="flex size-full items-center justify-center text-faint">
+                                  <UtensilsCrossed className="size-4" />
+                                </span>
+                              )}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{food.name}</p>
+                              {(food.brand || food.servingSize) && (
+                                <p className="truncate text-[11.5px] text-faint">
+                                  {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                                </p>
+                              )}
+                            </div>
+                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                              <MacroIcon macro="calories" />
+                              {caloriesKcal}
+                              {targetCalories ? <span className="font-normal text-faint">({caloriesPct}%)</span> : null}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                              <MacroIcon macro="protein" />
+                              {Math.round(food.protein)}
+                              {targetProtein ? <span className="font-normal text-faint">({proteinPct}%)</span> : null}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                              <MacroIcon macro="carbs" />
+                              {food.carbs != null ? Math.round(food.carbs) : "—"}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                              <MacroIcon macro="fat" />
+                              {food.fat != null ? Math.round(food.fat) : "—"}
+                            </span>
+                            <div className="flex items-center justify-end">
+                              <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                            </div>
+                            <div className="flex items-center justify-end">
+                              <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                            </div>
+                            <div className="flex justify-end">
+                              <button
+                                type="button"
+                                disabled={pending}
+                                onClick={() => addFromLibrary(food)}
+                                aria-label={`Add ${food.name}`}
+                                className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                              >
+                                <Plus className="size-4" />
+                              </button>
+                            </div>
+                          </li>
+                        )
+                      })}
+                    </ul>
+                    <p className="mt-3 pb-1 text-center text-[11.5px] text-faint">
+                      Showing {filtered.length === foods.length ? "all " : ""}
+                      {filtered.length} {filtered.length === 1 ? "food" : "foods"}
+                    </p>
+                  </div>
+
+                  {/* Mobile stacked cards */}
+                  <ul className="flex flex-col md:hidden">
+                    {filtered.map((food) => {
+                      const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
+                      const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
+                      const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+                      return (
+                        <li key={food.id} className="flex gap-3 border-t border-border py-4 first:border-t-0 first:pt-0">
+                          <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
                             {food.imageUrl ? (
                               // eslint-disable-next-line @next/next/no-img-element
                               <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
                             ) : (
-                              <Apple className="size-5 text-faint" />
+                              <span className="flex size-full items-center justify-center text-faint">
+                                <UtensilsCrossed className="size-5" />
+                              </span>
                             )}
                           </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="flex items-baseline justify-between gap-2">
-                              <span className="truncate font-medium">{food.name}</span>
-                              <span className="shrink-0 text-sm font-semibold tabular-nums">
-                                {Math.round(food.calories)}
-                                <span className="ml-0.5 text-xs font-normal text-faint">kj</span>
-                              </span>
-                            </span>
-                            <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                              <ProteinScoreBadges proteinG={food.protein} kcal={kcal} />
-                              <CalorieDensityBadge kcal={kcal} servingSize={food.servingSize} />
-                              {food.servingSize ? (
-                                <span className="text-xs text-faint">{food.servingSize}</span>
-                              ) : null}
-                            </span>
-                          </span>
-                          <Plus className="size-4 shrink-0 text-faint" />
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
+                          <div className="flex min-w-0 flex-1 flex-col gap-2">
+                            <div className="flex items-start gap-2">
+                              <p className="min-w-0 flex-1 leading-tight text-pretty">
+                                <span className="text-[13.5px] font-semibold">{food.name}</span>
+                                {(food.brand || food.servingSize) && (
+                                  <span className="ml-2 text-[11.5px] font-normal text-faint">
+                                    {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                                  </span>
+                                )}
+                              </p>
+                              <button
+                                type="button"
+                                disabled={pending}
+                                onClick={() => addFromLibrary(food)}
+                                aria-label={`Add ${food.name}`}
+                                className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                              >
+                                <Plus className="size-4" />
+                              </button>
+                            </div>
+                            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                              <MacroBadges
+                                kcal={caloriesKcal}
+                                kcalPct={targetCalories ? caloriesPct : null}
+                                protein={food.protein}
+                                proteinPct={targetProtein ? proteinPct : null}
+                                carbs={food.carbs}
+                                fat={food.fat}
+                              />
+                              <div className="flex shrink-0 items-center gap-1.5">
+                                <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                                <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
               )}
             </div>
-          </TabsContent>
-
-          <TabsContent value="quick" className="mt-4">
+          </div>
+        ) : (
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <form onSubmit={submitQuick}>
               <FieldGroup>
                 <Field>
@@ -363,8 +459,8 @@ export function AddFoodDialog({ open, onOpenChange, group, dateKey, foods, onAdd
                 </Button>
               </FieldGroup>
             </form>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

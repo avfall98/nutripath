@@ -5,6 +5,7 @@ import { deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { EditEntryDialog } from "@/components/dashboard/edit-entry-dialog"
+import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -28,7 +29,7 @@ const KJ_PER_KCAL = 4.184
 
 // Shared grid template so header + rows align vertically.
 const ROW_GRID =
-  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_132px_32px]"
+  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px]"
 
 export function MealSection({
   group,
@@ -52,12 +53,23 @@ export function MealSection({
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<EntryDTO | null>(null)
+  const [foodEditOpen, setFoodEditOpen] = useState(false)
+  const [selectedFood, setSelectedFood] = useState<FoodDTO | null>(null)
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
   const groupCalories = entries.reduce((sum, e) => sum + e.calories * e.quantity, 0)
   const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
+
+  const hasCarbs = entries.some((e) => e.carbs != null)
+  const hasFat = entries.some((e) => e.fat != null)
+  const groupCarbs = hasCarbs
+    ? round(entries.reduce((sum, e) => sum + (e.carbs != null ? e.carbs * e.quantity : 0), 0))
+    : null
+  const groupFat = hasFat
+    ? round(entries.reduce((sum, e) => sum + (e.fat != null ? e.fat * e.quantity : 0), 0))
+    : null
 
   const groupServingSize =
     entries.length > 0
@@ -150,11 +162,18 @@ export function MealSection({
 
   return (
     <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
-      {/* Header: name + summary + meal score pills + add-food text button */}
+      {/* Header: name + (mobile-only) summary + meal score pills */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <h3 className="text-lg font-extrabold tracking-[-0.3px]">{group.name}</h3>
+        <h3
+          className={cn(
+            "text-lg font-extrabold tracking-[-0.3px]",
+            entries.length === 0 && "text-muted-foreground",
+          )}
+        >
+          {group.name}
+        </h3>
         {entries.length > 0 ? (
-          <span className="text-[13px] tabular-nums text-muted-foreground">
+          <span className="text-[13px] tabular-nums text-muted-foreground md:hidden">
             {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein
             {targetProtein ? ` (${groupProteinPct}%)` : ""}
           </span>
@@ -162,22 +181,12 @@ export function MealSection({
           <span className="text-[13px] text-faint">Nothing logged yet</span>
         )}
         {entries.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 md:hidden">
             <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
             {groupServingSize ? (
               <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
             ) : null}
           </div>
-        )}
-        {isReal && (
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="ml-auto hidden items-center gap-1.5 text-[13px] font-bold text-muted-foreground transition-colors hover:text-white md:flex"
-          >
-            <Plus className="size-4" />
-            Add food
-          </button>
         )}
       </div>
 
@@ -196,7 +205,49 @@ export function MealSection({
           <span>Protein</span>
           <span>Carbs</span>
           <span>Fat</span>
-          <span className="text-right">Scores</span>
+          <span className="text-right">Kcal score</span>
+          <span className="text-right">P score</span>
+          <span />
+        </div>
+      )}
+
+      {/* Desktop totals row */}
+      {entries.length > 0 && (
+        <div
+          className={cn(
+            ROW_GRID,
+            "hidden rounded-[4px] border-b border-white/10 bg-white/[0.04] px-2 py-2.5 md:grid",
+          )}
+        >
+          <span />
+          <span />
+          <span className="text-[13px] font-bold">Total</span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="calories" />
+            {groupCaloriesKcal}
+            {targetCalories ? <span className="font-normal text-faint">({groupCaloriesPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="protein" />
+            {round(groupProtein)}
+            {targetProtein ? <span className="font-normal text-faint">({groupProteinPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="carbs" />
+            {groupCarbs ?? "—"}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="fat" />
+            {groupFat ?? "—"}
+          </span>
+          <div className="flex items-center justify-end">
+            {groupServingSize ? (
+              <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
+            ) : null}
+          </div>
+          <div className="flex items-center justify-end">
+            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+          </div>
           <span />
         </div>
       )}
@@ -220,13 +271,33 @@ export function MealSection({
                 {/* Desktop table row */}
                 <div className={cn(ROW_GRID, "hidden rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08] md:grid")}>
                   <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
-                  {thumb(food)}
-                  <div className="min-w-0">
+                  <button
+                    type="button"
+                    disabled={!food}
+                    onClick={() => {
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
+                    }}
+                    className="flex items-center justify-center rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                  >
+                    {thumb(food)}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={!food}
+                    onClick={() => {
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
+                    }}
+                    className="min-w-0 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                  >
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
                       {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
                     </p>
-                  </div>
+                  </button>
                   <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
                     <MacroIcon macro="calories" />
                     {entryCalories}
@@ -245,24 +316,48 @@ export function MealSection({
                     <MacroIcon macro="fat" />
                     {entryFat ?? "—"}
                   </span>
-                  <div className="flex items-center justify-end gap-1.5">
-                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                  <div className="flex items-center justify-end">
                     <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                   </div>
                   <div className="flex justify-end">{entryMenu(entry)}</div>
                 </div>
 
                 {/* Mobile stacked row */}
                 <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
-                  {thumb(food)}
+                  <button
+                    type="button"
+                    disabled={!food}
+                    onClick={() => {
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
+                    }}
+                    className="flex shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                  >
+                    {thumb(food)}
+                  </button>
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex items-start gap-2">
-                      <p className="min-w-0 flex-1 text-[13.5px] font-semibold leading-tight text-pretty">
-                        {food?.name || entry.name}
-                        <span className="ml-2 text-[11.5px] font-normal text-faint">
-                          {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                        </span>
-                      </p>
+                      <button
+                        type="button"
+                        disabled={!food}
+                        onClick={() => {
+                          if (!food) return
+                          setSelectedFood(food)
+                          setFoodEditOpen(true)
+                        }}
+                        className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                      >
+                        <p className="text-[13.5px] font-semibold leading-tight text-pretty">
+                          {food?.name || entry.name}
+                          <span className="ml-2 text-[11.5px] font-normal text-faint">
+                            {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                          </span>
+                        </p>
+                      </button>
                       <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
@@ -287,16 +382,35 @@ export function MealSection({
         </ul>
       )}
 
+      {/* Desktop add-food button centered at bottom of table */}
+      {isReal && (
+        <div
+          className={cn(
+            "hidden justify-center md:flex",
+            entries.length > 0 ? "border-t border-white/10 pt-2" : "pt-1",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            aria-label="Add food"
+            className="flex size-8 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+          >
+            <Plus className="size-4" />
+          </button>
+        </div>
+      )}
+
       {/* Mobile add-food dashed pill (kept from existing structure) */}
       {isReal ? (
         <div className={cn("md:hidden", entries.length > 0 ? "mt-1 border-t border-border pt-3" : "pt-1")}>
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="mx-auto flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            aria-label="Add food"
+            className="mx-auto flex size-9 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <Plus className="size-4" />
-            Add food
           </button>
         </div>
       ) : (
@@ -311,6 +425,8 @@ export function MealSection({
             group={{ id: group.id, name: group.name, sortOrder: 0 }}
             dateKey={dateKey}
             foods={foods}
+            targetCalories={targetCalories}
+            targetProtein={targetProtein}
             onAdded={onChanged}
           />
           {selectedEntry && (
@@ -324,6 +440,13 @@ export function MealSection({
           )}
         </>
       )}
+
+      <FoodFormDialog
+        open={foodEditOpen}
+        onOpenChange={setFoodEditOpen}
+        food={selectedFood}
+        onSaved={onChanged}
+      />
     </section>
   )
 }

@@ -418,7 +418,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8">
+        <DialogContent
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8"
+        >
         <DialogHeader className="mb-6">
           <DialogTitle className="text-2xl font-bold tracking-tight">
             {food ? "Edit food" : "Add a food"}

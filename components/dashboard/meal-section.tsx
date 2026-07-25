@@ -164,7 +164,14 @@ export function MealSection({
     <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
       {/* Header: name + (mobile-only) summary + meal score pills */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <h3 className="text-lg font-extrabold tracking-[-0.3px]">{group.name}</h3>
+        <h3
+          className={cn(
+            "text-lg font-extrabold tracking-[-0.3px]",
+            entries.length === 0 && "text-muted-foreground",
+          )}
+        >
+          {group.name}
+        </h3>
         {entries.length > 0 ? (
           <span className="text-[13px] tabular-nums text-muted-foreground md:hidden">
             {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein
@@ -386,10 +393,10 @@ export function MealSection({
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="flex items-center gap-1.5 text-[13px] font-bold text-muted-foreground transition-colors hover:text-white"
+            aria-label="Add food"
+            className="flex size-8 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <Plus className="size-4" />
-            Add food
           </button>
         </div>
       )}
@@ -400,10 +407,10 @@ export function MealSection({
           <button
             type="button"
             onClick={() => setAddOpen(true)}
-            className="mx-auto flex items-center gap-1.5 rounded-full border border-dashed border-white/15 px-5 py-2 text-[13px] font-semibold text-muted-foreground transition-colors hover:border-primary hover:text-primary"
+            aria-label="Add food"
+            className="mx-auto flex size-9 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary"
           >
             <Plus className="size-4" />
-            Add food
           </button>
         </div>
       ) : (

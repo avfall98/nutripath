@@ -62,6 +62,15 @@ export function MealSection({
   const groupCaloriesKcal = round(groupCalories / KJ_PER_KCAL, 0)
   const groupProtein = entries.reduce((sum, e) => sum + e.protein * e.quantity, 0)
 
+  const hasCarbs = entries.some((e) => e.carbs != null)
+  const hasFat = entries.some((e) => e.fat != null)
+  const groupCarbs = hasCarbs
+    ? round(entries.reduce((sum, e) => sum + (e.carbs != null ? e.carbs * e.quantity : 0), 0))
+    : null
+  const groupFat = hasFat
+    ? round(entries.reduce((sum, e) => sum + (e.fat != null ? e.fat * e.quantity : 0), 0))
+    : null
+
   const groupServingSize =
     entries.length > 0
       ? entries
@@ -153,11 +162,11 @@ export function MealSection({
 
   return (
     <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
-      {/* Header: name + summary + meal score pills + add-food text button */}
+      {/* Header: name + (mobile-only) summary + meal score pills */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
         <h3 className="text-lg font-extrabold tracking-[-0.3px]">{group.name}</h3>
         {entries.length > 0 ? (
-          <span className="text-[13px] tabular-nums text-muted-foreground">
+          <span className="text-[13px] tabular-nums text-muted-foreground md:hidden">
             {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein
             {targetProtein ? ` (${groupProteinPct}%)` : ""}
           </span>
@@ -165,22 +174,12 @@ export function MealSection({
           <span className="text-[13px] text-faint">Nothing logged yet</span>
         )}
         {entries.length > 0 && (
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 md:hidden">
             <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
             {groupServingSize ? (
               <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
             ) : null}
           </div>
-        )}
-        {isReal && (
-          <button
-            type="button"
-            onClick={() => setAddOpen(true)}
-            className="ml-auto hidden items-center gap-1.5 text-[13px] font-bold text-muted-foreground transition-colors hover:text-white md:flex"
-          >
-            <Plus className="size-4" />
-            Add food
-          </button>
         )}
       </div>
 
@@ -201,6 +200,47 @@ export function MealSection({
           <span>Fat</span>
           <span className="text-right">Kcal score</span>
           <span className="text-right">P score</span>
+          <span />
+        </div>
+      )}
+
+      {/* Desktop totals row */}
+      {entries.length > 0 && (
+        <div
+          className={cn(
+            ROW_GRID,
+            "hidden rounded-[4px] border-b border-white/10 bg-white/[0.04] px-2 py-2.5 md:grid",
+          )}
+        >
+          <span />
+          <span />
+          <span className="text-[13px] font-bold">Total</span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="calories" />
+            {groupCaloriesKcal}
+            {targetCalories ? <span className="font-normal text-faint">({groupCaloriesPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="protein" />
+            {round(groupProtein)}
+            {targetProtein ? <span className="font-normal text-faint">({groupProteinPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="carbs" />
+            {groupCarbs ?? "—"}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="fat" />
+            {groupFat ?? "—"}
+          </span>
+          <div className="flex items-center justify-end">
+            {groupServingSize ? (
+              <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
+            ) : null}
+          </div>
+          <div className="flex items-center justify-end">
+            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+          </div>
           <span />
         </div>
       )}
@@ -333,6 +373,25 @@ export function MealSection({
             )
           })}
         </ul>
+      )}
+
+      {/* Desktop add-food button centered at bottom of table */}
+      {isReal && (
+        <div
+          className={cn(
+            "hidden justify-center md:flex",
+            entries.length > 0 ? "border-t border-white/10 pt-2" : "pt-1",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => setAddOpen(true)}
+            className="flex items-center gap-1.5 text-[13px] font-bold text-muted-foreground transition-colors hover:text-white"
+          >
+            <Plus className="size-4" />
+            Add food
+          </button>
+        </div>
       )}
 
       {/* Mobile add-food dashed pill (kept from existing structure) */}

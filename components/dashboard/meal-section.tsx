@@ -5,6 +5,7 @@ import { deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { EditEntryDialog } from "@/components/dashboard/edit-entry-dialog"
+import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -52,6 +53,8 @@ export function MealSection({
   const [addOpen, setAddOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [selectedEntry, setSelectedEntry] = useState<EntryDTO | null>(null)
+  const [foodEditOpen, setFoodEditOpen] = useState(false)
+  const [selectedFood, setSelectedFood] = useState<FoodDTO | null>(null)
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
@@ -222,21 +225,25 @@ export function MealSection({
                   <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
                   <button
                     type="button"
+                    disabled={!food}
                     onClick={() => {
-                      setSelectedEntry(entry)
-                      setEditOpen(true)
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
                     }}
-                    className="flex items-center justify-center rounded-[4px] hover:opacity-80 transition-opacity"
+                    className="flex items-center justify-center rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
                   >
                     {thumb(food)}
                   </button>
                   <button
                     type="button"
+                    disabled={!food}
                     onClick={() => {
-                      setSelectedEntry(entry)
-                      setEditOpen(true)
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
                     }}
-                    className="min-w-0 text-left hover:opacity-80 transition-opacity"
+                    className="min-w-0 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
                   >
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
@@ -272,11 +279,13 @@ export function MealSection({
                 <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
                   <button
                     type="button"
+                    disabled={!food}
                     onClick={() => {
-                      setSelectedEntry(entry)
-                      setEditOpen(true)
+                      if (!food) return
+                      setSelectedFood(food)
+                      setFoodEditOpen(true)
                     }}
-                    className="flex shrink-0 rounded-[4px] hover:opacity-80 transition-opacity"
+                    className="flex shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
                   >
                     {thumb(food)}
                   </button>
@@ -284,11 +293,13 @@ export function MealSection({
                     <div className="flex items-start gap-2">
                       <button
                         type="button"
+                        disabled={!food}
                         onClick={() => {
-                          setSelectedEntry(entry)
-                          setEditOpen(true)
+                          if (!food) return
+                          setSelectedFood(food)
+                          setFoodEditOpen(true)
                         }}
-                        className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+                        className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
                       >
                         <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                           {food?.name || entry.name}
@@ -358,6 +369,13 @@ export function MealSection({
           )}
         </>
       )}
+
+      <FoodFormDialog
+        open={foodEditOpen}
+        onOpenChange={setFoodEditOpen}
+        food={selectedFood}
+        onSaved={onChanged}
+      />
     </section>
   )
 }

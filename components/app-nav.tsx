@@ -22,7 +22,7 @@ export function AppNav() {
   return (
     <>
       {/* Desktop fixed top bar */}
-      <header className="fixed inset-x-0 top-0 z-40 hidden h-16 bg-background md:block">
+      <header className="fixed inset-x-0 top-0 z-40 hidden h-16 md:block">
         <div className="mx-auto flex h-full max-w-[1100px] items-center justify-between bg-background px-4 md:px-8">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">

@@ -268,11 +268,19 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
 
       {/* Desktop: 4 stat cards */}
       <div className="hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
-        {statCards.map((s) => (
+        {statCards.map((s, idx) => (
           <div key={s.label} className="rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
-            <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
-              {s.label}
-            </p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
+                {s.label}
+              </p>
+              {idx === 0 && (
+                <CalorieDensityBadge kcal={totals.kcal} servingSize={null} size="sm" />
+              )}
+              {idx === 1 && (
+                <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
+              )}
+            </div>
             <p className="mt-2 text-3xl font-extrabold tabular-nums leading-none">
               {s.value}
               {s.unit ? <span className="text-lg font-semibold text-faint">{s.unit}</span> : null}
@@ -298,9 +306,17 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {statCards.map((s, i) => (
             <div key={s.label} className={cn("flex flex-col", i % 2 === 1 && "border-l border-border pl-4")}>
-              <p className="text-[11px] font-bold uppercase tracking-[.07em]" style={{ color: s.color }}>
-                {s.label}
-              </p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-[11px] font-bold uppercase tracking-[.07em]" style={{ color: s.color }}>
+                  {s.label}
+                </p>
+                {i === 0 && (
+                  <CalorieDensityBadge kcal={totals.kcal} servingSize={null} size="sm" />
+                )}
+                {i === 1 && (
+                  <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
+                )}
+              </div>
               <p className="mt-1.5 text-2xl font-extrabold leading-none tabular-nums">
                 {s.value}
                 {s.unit ? <span className="text-base font-semibold text-faint">{s.unit}</span> : null}

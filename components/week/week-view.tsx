@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
+import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 
 const KJ_PER_KCAL = 4.184
 

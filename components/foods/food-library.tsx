@@ -23,13 +23,13 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { ArrowUpDown, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
 
-type SortKey = "name-asc" | "name-desc" | "kcal" | "protein" | "protein-score" | "kcal-score"
+type SortKey = "name-asc" | "name-desc" | "kcal" | "protein" | "protein-score-asc" | "protein-score-desc" | "kcal-score-asc" | "kcal-score-desc"
 type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores"
 
 const KJ_PER_KCAL = 4.184
 
 const ROW_GRID =
-  "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_132px_32px] items-center gap-x-3"
+  "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
@@ -76,12 +76,22 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           return b.calories / KJ_PER_KCAL - a.calories / KJ_PER_KCAL
         case "protein":
           return b.protein - a.protein
-        case "protein-score": {
+        case "protein-score-asc": {
+          const aScore = Math.max(0, Math.min(100, (a.protein / (Math.round(a.calories / KJ_PER_KCAL) * 0.1)) * 100))
+          const bScore = Math.max(0, Math.min(100, (b.protein / (Math.round(b.calories / KJ_PER_KCAL) * 0.1)) * 100))
+          return aScore - bScore
+        }
+        case "protein-score-desc": {
           const aScore = Math.max(0, Math.min(100, (a.protein / (Math.round(a.calories / KJ_PER_KCAL) * 0.1)) * 100))
           const bScore = Math.max(0, Math.min(100, (b.protein / (Math.round(b.calories / KJ_PER_KCAL) * 0.1)) * 100))
           return bScore - aScore
         }
-        case "kcal-score": {
+        case "kcal-score-asc": {
+          const aScore = Math.round(a.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
+          const bScore = Math.round(b.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
+          return aScore - bScore
+        }
+        case "kcal-score-desc": {
           const aScore = Math.round(a.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
           const bScore = Math.round(b.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
           return bScore - aScore
@@ -284,7 +294,26 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
               <span>Protein</span>
               <span>Carbs</span>
               <span>Fat</span>
-              <span className="text-right">Scores</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "kcal-score-desc") setSortKey("kcal-score-asc")
+                  else setSortKey("kcal-score-desc")
+                }}
+                className="text-right transition-colors hover:text-white"
+              >
+                Kcal Score
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "protein-score-desc") setSortKey("protein-score-asc")
+                  else setSortKey("protein-score-desc")
+                }}
+                className="text-right transition-colors hover:text-white"
+              >
+                Protein Score
+              </button>
               <span />
             </div>
             <ul className="mt-1 flex flex-col">
@@ -342,9 +371,11 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                       <MacroIcon macro="fat" />
                       {food.fat != null ? Math.round(food.fat) : "—"}
                     </span>
-                    <div className="flex items-center justify-end gap-1.5">
-                      <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                    <div className="flex items-center justify-end">
                       <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                    </div>
+                    <div className="flex items-center justify-end">
+                      <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                     </div>
                     <div className="flex justify-end">{foodMenu(food)}</div>
                   </li>

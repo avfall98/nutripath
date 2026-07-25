@@ -19,7 +19,6 @@ import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
-import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 
 const KJ_PER_KCAL = 4.184
 
@@ -274,9 +273,6 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
                 {s.label}
               </p>
-              {idx === 0 && (
-                <CalorieDensityBadge kcal={totals.kcal} servingSize={null} size="sm" />
-              )}
               {idx === 1 && (
                 <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
               )}
@@ -310,9 +306,6 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 <p className="text-[11px] font-bold uppercase tracking-[.07em]" style={{ color: s.color }}>
                   {s.label}
                 </p>
-                {i === 0 && (
-                  <CalorieDensityBadge kcal={totals.kcal} servingSize={null} size="sm" />
-                )}
                 {i === 1 && (
                   <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
                 )}

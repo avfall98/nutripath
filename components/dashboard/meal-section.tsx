@@ -425,6 +425,8 @@ export function MealSection({
             group={{ id: group.id, name: group.name, sortOrder: 0 }}
             dateKey={dateKey}
             foods={foods}
+            targetCalories={targetCalories}
+            targetProtein={targetProtein}
             onAdded={onChanged}
           />
           {selectedEntry && (

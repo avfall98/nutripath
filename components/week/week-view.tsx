@@ -20,6 +20,7 @@ import { round } from "@/lib/format"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { PageLoading } from "@/components/page-loading"
 
 const KJ_PER_KCAL = 4.184
 
@@ -39,7 +40,8 @@ type DayTotals = {
 export function WeekView({ profile }: { profile: ProfileDTO }) {
   const [anchor, setAnchor] = useState(() => new Date())
   const [entries, setEntries] = useState<EntryDTO[]>([])
-  const [pending, startTransition] = useTransition()
+  const [hasLoaded, setHasLoaded] = useState(false)
+  const [, startTransition] = useTransition()
 
   const weekStart = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
   const weekEnd = useMemo(() => endOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
@@ -51,6 +53,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
     startTransition(async () => {
       const rows = await getEntriesInRange(startKey, endKey)
       setEntries(rows)
+      setHasLoaded(true)
     })
   }, [weekStart, weekEnd])
 
@@ -266,6 +269,10 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         </div>
       </header>
 
+      {!hasLoaded ? (
+        <PageLoading label="Loading your week…" />
+      ) : (
+      <>
       {/* Desktop: 4 stat cards */}
       <div className="hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
         {statCards.map((s, idx) => (
@@ -483,8 +490,8 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
           </ul>
         </Card>
       </div>
-
-      {pending && entries.length === 0 ? <p className="text-center text-sm text-faint">Loading week…</p> : null}
+      </>
+      )}
     </div>
   )
 }

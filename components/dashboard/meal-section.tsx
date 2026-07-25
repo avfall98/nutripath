@@ -220,13 +220,29 @@ export function MealSection({
                 {/* Desktop table row */}
                 <div className={cn(ROW_GRID, "hidden rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08] md:grid")}>
                   <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
-                  {thumb(food)}
-                  <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEntry(entry)
+                      setEditOpen(true)
+                    }}
+                    className="flex items-center justify-center rounded-[4px] hover:opacity-80 transition-opacity"
+                  >
+                    {thumb(food)}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEntry(entry)
+                      setEditOpen(true)
+                    }}
+                    className="min-w-0 text-left hover:opacity-80 transition-opacity"
+                  >
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
                       {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
                     </p>
-                  </div>
+                  </button>
                   <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
                     <MacroIcon macro="calories" />
                     {entryCalories}
@@ -254,15 +270,33 @@ export function MealSection({
 
                 {/* Mobile stacked row */}
                 <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
-                  {thumb(food)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedEntry(entry)
+                      setEditOpen(true)
+                    }}
+                    className="flex shrink-0 rounded-[4px] hover:opacity-80 transition-opacity"
+                  >
+                    {thumb(food)}
+                  </button>
                   <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex items-start gap-2">
-                      <p className="min-w-0 flex-1 text-[13.5px] font-semibold leading-tight text-pretty">
-                        {food?.name || entry.name}
-                        <span className="ml-2 text-[11.5px] font-normal text-faint">
-                          {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                        </span>
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedEntry(entry)
+                          setEditOpen(true)
+                        }}
+                        className="min-w-0 flex-1 text-left hover:opacity-80 transition-opacity"
+                      >
+                        <p className="text-[13.5px] font-semibold leading-tight text-pretty">
+                          {food?.name || entry.name}
+                          <span className="ml-2 text-[11.5px] font-normal text-faint">
+                            {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                          </span>
+                        </p>
+                      </button>
                       <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">

@@ -179,9 +179,8 @@ export function DaySummary({
               <span className="text-lg font-medium text-faint">
                 / {targetCalories != null ? targetCalories.toLocaleString() : "—"} kcal
               </span>
-              <div className="flex items-center gap-1.5">
-                <ProteinScoreBadges proteinG={totals.protein} kcal={caloriesKcal} />
-                {servingWeightG ? <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} /> : null}
+              <div className="flex items-center gap-2">
+                {servingWeightG ? <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} size="lg" /> : null}
               </div>
             </div>
             {targetCalories != null && (
@@ -196,18 +195,27 @@ export function DaySummary({
           <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" />
         </div>
 
-        <div className="flex flex-col gap-2.5">
-          <div className="flex items-baseline justify-between gap-2">
-            <span className="text-base font-bold">Protein</span>
-            <span className="text-sm tabular-nums text-faint">
-              <span className="font-bold text-foreground">{round(totals.protein)}</span> /{" "}
-              {targetProtein != null ? targetProtein : "—"} g
-              {proteinRemaining != null &&
-                ` · ${proteinOver ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`}`}
-              {targetProtein != null && (
-                <span className="font-bold text-primary"> · {Math.round(proteinPct)}%</span>
-              )}
-            </span>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="text-[52px] font-black leading-none tabular-nums tracking-[-1.5px]">
+                {round(totals.protein).toLocaleString()}
+              </span>
+              <span className="text-lg font-medium text-faint">
+                / {targetProtein != null ? targetProtein : "—"} g
+              </span>
+              <div className="flex items-center gap-2">
+                <ProteinScoreBadges proteinG={totals.protein} kcal={caloriesKcal} size="lg" />
+              </div>
+            </div>
+            {targetProtein != null && (
+              <span className="text-sm tabular-nums text-faint">
+                {proteinRemaining != null && (proteinOver ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`)} ·{" "}
+                <span className="font-bold" style={{ color: proteinOver ? "var(--cal-over)" : "var(--primary)" }}>
+                  {Math.round(proteinPct)}%
+                </span>
+              </span>
+            )}
           </div>
           <SegmentedBar
             segments={proteinSegments}

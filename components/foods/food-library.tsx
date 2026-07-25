@@ -307,7 +307,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   if (sortKey === "name-desc") setSortKey("name-asc")
                   else setSortKey("name-desc")
                 }}
-                className="transition-colors hover:text-white"
+                className="text-left transition-colors hover:text-white"
               >
                 FOOD
               </button>
@@ -317,7 +317,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   if (sortKey === "kcal-desc") setSortKey("kcal-asc")
                   else setSortKey("kcal-desc")
                 }}
-                className="transition-colors hover:text-white"
+                className="text-left transition-colors hover:text-white"
               >
                 KCAL
               </button>
@@ -327,7 +327,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   if (sortKey === "protein-desc") setSortKey("protein-asc")
                   else setSortKey("protein-desc")
                 }}
-                className="transition-colors hover:text-white"
+                className="text-left transition-colors hover:text-white"
               >
                 PROTEIN
               </button>
@@ -337,7 +337,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   if (sortKey === "carbs-desc") setSortKey("carbs-asc")
                   else setSortKey("carbs-desc")
                 }}
-                className="transition-colors hover:text-white"
+                className="text-left transition-colors hover:text-white"
               >
                 CARBS
               </button>
@@ -347,7 +347,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                   if (sortKey === "fat-desc") setSortKey("fat-asc")
                   else setSortKey("fat-desc")
                 }}
-                className="transition-colors hover:text-white"
+                className="text-left transition-colors hover:text-white"
               >
                 FAT
               </button>

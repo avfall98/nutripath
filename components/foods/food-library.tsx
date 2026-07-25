@@ -309,7 +309,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="transition-colors hover:text-white"
               >
-                Food
+                FOOD
               </button>
               <button
                 type="button"
@@ -319,7 +319,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="transition-colors hover:text-white"
               >
-                Kcal
+                KCAL
               </button>
               <button
                 type="button"
@@ -329,7 +329,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="transition-colors hover:text-white"
               >
-                Protein
+                PROTEIN
               </button>
               <button
                 type="button"
@@ -339,7 +339,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="transition-colors hover:text-white"
               >
-                Carbs
+                CARBS
               </button>
               <button
                 type="button"
@@ -349,7 +349,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="transition-colors hover:text-white"
               >
-                Fat
+                FAT
               </button>
               <button
                 type="button"

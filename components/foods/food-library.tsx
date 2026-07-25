@@ -359,7 +359,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="text-right transition-colors hover:text-white"
               >
-                Kcal Score
+                KCAL SCORE
               </button>
               <button
                 type="button"
@@ -369,7 +369,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="text-right transition-colors hover:text-white"
               >
-                P Score
+                P SCORE
               </button>
               <span />
             </div>

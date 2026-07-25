@@ -23,7 +23,7 @@ import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { ArrowUpDown, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
 
-type SortKey = "name-asc" | "name-desc" | "kcal" | "protein" | "protein-score-asc" | "protein-score-desc" | "kcal-score-asc" | "kcal-score-desc"
+type SortKey = "name-asc" | "name-desc" | "kcal-asc" | "kcal-desc" | "protein-asc" | "protein-desc" | "carbs-asc" | "carbs-desc" | "fat-asc" | "fat-desc" | "protein-score-asc" | "protein-score-desc" | "kcal-score-asc" | "kcal-score-desc"
 type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores"
 
 const KJ_PER_KCAL = 4.184
@@ -72,10 +72,22 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           return a.name.localeCompare(b.name)
         case "name-desc":
           return b.name.localeCompare(a.name)
-        case "kcal":
+        case "kcal-asc":
+          return a.calories / KJ_PER_KCAL - b.calories / KJ_PER_KCAL
+        case "kcal-desc":
           return b.calories / KJ_PER_KCAL - a.calories / KJ_PER_KCAL
-        case "protein":
+        case "protein-asc":
+          return a.protein - b.protein
+        case "protein-desc":
           return b.protein - a.protein
+        case "carbs-asc":
+          return (a.carbs ?? 0) - (b.carbs ?? 0)
+        case "carbs-desc":
+          return (b.carbs ?? 0) - (a.carbs ?? 0)
+        case "fat-asc":
+          return (a.fat ?? 0) - (b.fat ?? 0)
+        case "fat-desc":
+          return (b.fat ?? 0) - (a.fat ?? 0)
         case "protein-score-asc": {
           const aScore = Math.max(0, Math.min(100, (a.protein / (Math.round(a.calories / KJ_PER_KCAL) * 0.1)) * 100))
           const bScore = Math.max(0, Math.min(100, (b.protein / (Math.round(b.calories / KJ_PER_KCAL) * 0.1)) * 100))
@@ -289,11 +301,56 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
             >
               <span className="text-right">#</span>
               <span />
-              <span>Food</span>
-              <span>Kcal</span>
-              <span>Protein</span>
-              <span>Carbs</span>
-              <span>Fat</span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "name-desc") setSortKey("name-asc")
+                  else setSortKey("name-desc")
+                }}
+                className="transition-colors hover:text-white"
+              >
+                Food
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "kcal-desc") setSortKey("kcal-asc")
+                  else setSortKey("kcal-desc")
+                }}
+                className="transition-colors hover:text-white"
+              >
+                Kcal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "protein-desc") setSortKey("protein-asc")
+                  else setSortKey("protein-desc")
+                }}
+                className="transition-colors hover:text-white"
+              >
+                Protein
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "carbs-desc") setSortKey("carbs-asc")
+                  else setSortKey("carbs-desc")
+                }}
+                className="transition-colors hover:text-white"
+              >
+                Carbs
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (sortKey === "fat-desc") setSortKey("fat-asc")
+                  else setSortKey("fat-desc")
+                }}
+                className="transition-colors hover:text-white"
+              >
+                Fat
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -312,7 +369,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 }}
                 className="text-right transition-colors hover:text-white"
               >
-                Protein Score
+                P Score
               </button>
               <span />
             </div>

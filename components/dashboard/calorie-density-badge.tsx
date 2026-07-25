@@ -6,10 +6,12 @@ import { ScorePill } from "@/components/dashboard/protein-score-badges"
 export function CalorieDensityBadge({
   kcal,
   servingSize,
+  size = "sm",
 }: {
   kcal: number
   servingSize: string | null
   fontSize?: string
+  size?: "sm" | "lg"
 }) {
   const density = calorieDensity(kcal, parseServingWeight(servingSize))
   const value = density.value != null ? String(round(density.value, 0)) : null
@@ -24,6 +26,7 @@ export function CalorieDensityBadge({
           ? `Calorie density: grade ${density.grade}, ${value} kcal per 100g`
           : "Calorie density: not available"
       }
+      size={size}
     />
   )
 }

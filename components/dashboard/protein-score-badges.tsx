@@ -1,6 +1,7 @@
 import { Flame } from "lucide-react"
 import { proteinPer100Cal, type ProteinGrade } from "@/lib/nutrition"
 import { round } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 // 5-step grade scale — translucent background + colored text (see DESIGN-SPEC.md).
 export const GRADE_STYLES: Record<ProteinGrade, { backgroundColor: string; color: string }> = {
@@ -12,10 +13,13 @@ export const GRADE_STYLES: Record<ProteinGrade, { backgroundColor: string; color
 }
 
 // Orange "P" circle used to mark the protein score.
-function ProteinGlyph() {
+function ProteinGlyph({ size = "sm" }: { size?: "sm" | "lg" }) {
   return (
     <span
-      className="flex size-3 shrink-0 items-center justify-center rounded-full bg-macro-protein text-[7px] font-bold leading-none text-white"
+      className={cn(
+        "flex shrink-0 items-center justify-center rounded-full bg-macro-protein font-bold leading-none text-white",
+        size === "lg" ? "size-4 text-[9px]" : "size-3 text-[7px]",
+      )}
       aria-hidden="true"
     >
       P
@@ -31,21 +35,28 @@ export function ScorePill({
   value,
   title,
   ariaLabel,
+  size = "sm",
 }: {
   kind: PillKind
   grade: ProteinGrade | null
   value: string | null
   title?: string
   ariaLabel?: string
+  size?: "sm" | "lg"
 }) {
+  const sizeClasses = size === "lg" ? "min-w-16 px-3 py-1.5 text-[13px]" : "min-w-14 px-2 py-1 text-[10.5px]"
+
   if (grade == null || value == null) {
     return (
       <span
-        className="inline-flex min-w-14 items-center justify-center gap-1 whitespace-nowrap rounded-full bg-muted px-2 py-1 text-[10.5px] font-semibold tabular-nums text-muted-foreground"
+        className={cn(
+          "inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full bg-muted font-semibold tabular-nums text-muted-foreground",
+          sizeClasses,
+        )}
         title={title}
         aria-label={ariaLabel}
       >
-        {kind === "protein" ? <ProteinGlyph /> : <Flame className="size-3 shrink-0" aria-hidden="true" />}
+        {kind === "protein" ? <ProteinGlyph size={size} /> : <Flame className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} aria-hidden="true" />}
         N/A
       </span>
     )
@@ -53,15 +64,18 @@ export function ScorePill({
 
   return (
     <span
-      className="inline-flex min-w-14 items-center justify-center gap-1 whitespace-nowrap rounded-full px-2 py-1 text-[10.5px] font-semibold tabular-nums"
+      className={cn(
+        "inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-full font-semibold tabular-nums",
+        sizeClasses,
+      )}
       style={GRADE_STYLES[grade]}
       title={title}
       aria-label={ariaLabel}
     >
       {kind === "protein" ? (
-        <ProteinGlyph />
+        <ProteinGlyph size={size} />
       ) : (
-        <Flame className="size-3 shrink-0" style={{ color: GRADE_STYLES[grade].color }} aria-hidden="true" />
+        <Flame className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} style={{ color: GRADE_STYLES[grade].color }} aria-hidden="true" />
       )}
       {grade} · {value}
     </span>
@@ -69,7 +83,7 @@ export function ScorePill({
 }
 
 // proteinG in grams, kcal in kilocalories.
-export function ProteinScoreBadges({ proteinG, kcal }: { proteinG: number; kcal: number; fontSize?: string }) {
+export function ProteinScoreBadges({ proteinG, kcal, size = "sm" }: { proteinG: number; kcal: number; fontSize?: string; size?: "sm" | "lg" }) {
   const p100 = proteinPer100Cal(proteinG, kcal)
   const value = p100.value != null ? round(p100.value, 1).toFixed(1) : null
   return (
@@ -81,6 +95,7 @@ export function ProteinScoreBadges({ proteinG, kcal }: { proteinG: number; kcal:
       ariaLabel={
         p100.grade ? `Protein score: grade ${p100.grade}, ${value}` : "Protein score: not available"
       }
+      size={size}
     />
   )
 }

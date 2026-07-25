@@ -29,7 +29,7 @@ const KJ_PER_KCAL = 4.184
 
 // Shared grid template so header + rows align vertically.
 const ROW_GRID =
-  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_40px_1fr_112px_104px_60px_60px_132px_32px]"
+  "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px]"
 
 export function MealSection({
   group,
@@ -199,7 +199,8 @@ export function MealSection({
           <span>Protein</span>
           <span>Carbs</span>
           <span>Fat</span>
-          <span className="text-right">Scores</span>
+          <span className="text-right">Kcal score</span>
+          <span className="text-right">P score</span>
           <span />
         </div>
       )}
@@ -268,9 +269,11 @@ export function MealSection({
                     <MacroIcon macro="fat" />
                     {entryFat ?? "—"}
                   </span>
-                  <div className="flex items-center justify-end gap-1.5">
-                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                  <div className="flex items-center justify-end">
                     <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
                   </div>
                   <div className="flex justify-end">{entryMenu(entry)}</div>
                 </div>

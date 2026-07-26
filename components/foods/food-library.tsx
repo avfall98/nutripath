@@ -99,14 +99,18 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           return bScore - aScore
         }
         case "kcal-score-asc": {
-          const aScore = Math.round(a.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
-          const bScore = Math.round(b.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
-          return aScore - bScore
+          const aVal = calorieDensity(Math.round(a.calories / KJ_PER_KCAL), parseServingWeight(a.servingSize)).value
+          const bVal = calorieDensity(Math.round(b.calories / KJ_PER_KCAL), parseServingWeight(b.servingSize)).value
+          if (aVal == null) return bVal == null ? 0 : 1
+          if (bVal == null) return -1
+          return aVal - bVal
         }
         case "kcal-score-desc": {
-          const aScore = Math.round(a.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
-          const bScore = Math.round(b.calories / KJ_PER_KCAL) / (profile?.targetCalories || 2000)
-          return bScore - aScore
+          const aVal = calorieDensity(Math.round(a.calories / KJ_PER_KCAL), parseServingWeight(a.servingSize)).value
+          const bVal = calorieDensity(Math.round(b.calories / KJ_PER_KCAL), parseServingWeight(b.servingSize)).value
+          if (aVal == null) return bVal == null ? 0 : 1
+          if (bVal == null) return -1
+          return bVal - aVal
         }
         default:
           return 0
@@ -187,16 +191,16 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => setSortKey("kcal")} className={sortKey === "kcal" ? "bg-accent" : ""}>
+          <DropdownMenuItem onClick={() => setSortKey("kcal-desc")} className={sortKey === "kcal-desc" ? "bg-accent" : ""}>
             Highest kcal
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSortKey("protein")} className={sortKey === "protein" ? "bg-accent" : ""}>
+          <DropdownMenuItem onClick={() => setSortKey("protein-desc")} className={sortKey === "protein-desc" ? "bg-accent" : ""}>
             Most protein
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSortKey("protein-score")} className={sortKey === "protein-score" ? "bg-accent" : ""}>
+          <DropdownMenuItem onClick={() => setSortKey("protein-score-desc")} className={sortKey === "protein-score-desc" ? "bg-accent" : ""}>
             Protein score
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setSortKey("kcal-score")} className={sortKey === "kcal-score" ? "bg-accent" : ""}>
+          <DropdownMenuItem onClick={() => setSortKey("kcal-score-desc")} className={sortKey === "kcal-score-desc" ? "bg-accent" : ""}>
             Kcal score
           </DropdownMenuItem>
         </DropdownMenuGroup>

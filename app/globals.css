@@ -183,9 +183,50 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* Kill the grey flash box on tap for a native feel. */
+    -webkit-tap-highlight-color: transparent;
   }
+
+  html {
+    /* Respect notches / rounded corners in standalone mode. */
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply bg-background text-foreground;
+    /* Prevent web-page bounce / pull-to-refresh for an app-like scroll. */
+    overscroll-behavior-y: none;
+  }
+
+  /* Standalone (installed) mode: fill safe areas so content clears notches
+     and the home indicator. */
+  @media (display-mode: standalone) {
+    body {
+      padding-top: env(safe-area-inset-top);
+    }
+  }
+
+  /* Disable text selection on non-text interactive elements for a native feel,
+     while keeping real text inputs fully selectable. */
+  button,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  [role="option"],
+  a[href],
+  label,
+  summary,
+  nav {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  [contenteditable="true"],
+  [data-selectable] {
+    -webkit-user-select: text;
+    user-select: text;
   }
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),

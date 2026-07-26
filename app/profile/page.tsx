@@ -1,5 +1,7 @@
 import { ProfileForm } from "@/components/profile/profile-form"
 import { MealGroupsManager } from "@/components/meals/meal-groups-manager"
+import { InstallAppButton } from "@/components/pwa/install-app"
+import { Card } from "@/components/ui/card"
 import { getProfile } from "@/app/actions/profile"
 import { getMealGroups } from "@/app/actions/meal-groups"
 
@@ -28,6 +30,16 @@ export default async function ProfilePage() {
       <ProfileForm profile={profile}>
         <MealGroupsManager initialGroups={groups} />
       </ProfileForm>
+
+      <Card className="mt-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+        <div>
+          <h2 className="text-xl font-bold">Install NutriTrack</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add NutriTrack to your device for a full-screen, app-like experience.
+          </p>
+        </div>
+        <InstallAppButton className="self-start sm:self-auto" />
+      </Card>
     </main>
   )
 }

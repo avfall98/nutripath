@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
+// Woolworths (Akamai) geo/bot-blocks non-AU datacenter IPs with a 403.
+// Pin this function to Vercel's Sydney region so the egress IP is Australian.
+export const preferredRegion = "syd1"
 
 const KJ_PER_KCAL = 4.184
 
@@ -239,6 +242,15 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       console.log("[v0] Woolworths fetch failed:", res.status, res.statusText)
+      if (res.status === 403) {
+        return NextResponse.json(
+          {
+            error:
+              "Woolworths blocked the request (403). This usually means their bot protection rejected the server's IP. Try again shortly, or enter the details manually.",
+          },
+          { status: 502 },
+        )
+      }
       return NextResponse.json(
         { error: `Woolworths returned ${res.status}. Please try again in a moment.` },
         { status: 502 },

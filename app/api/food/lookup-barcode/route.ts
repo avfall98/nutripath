@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
+// Woolworths (Akamai) geo/bot-blocks non-AU datacenter IPs with a 403.
+// Pin this function to Vercel's Sydney region so the egress IP is Australian.
+export const preferredRegion = "syd1"
 
 const KJ_PER_KCAL = 4.184
 

@@ -62,6 +62,7 @@ const empty = {
   name: "",
   brand: "",
   servingSize: "",
+  servingsPack: "",
   calories: "",
   protein: "",
   carbs: "",
@@ -115,6 +116,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         name: food?.name ?? "",
         brand: food?.brand ?? "",
         servingSize: servingNum,
+        servingsPack: food?.servingsPack ?? "",
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
@@ -242,6 +244,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: p.name || f.name,
       brand: p.brand || f.brand,
       servingSize: p.servingSize || f.servingSize,
+      servingsPack: f.servingsPack,
       calories: s(p.caloriesKj),
       protein: s(p.protein),
       fat: s(p.fat),
@@ -341,6 +344,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: form.name,
       brand: form.brand,
       servingSize,
+      servingsPack: form.servingsPack || null,
       calories: num(form.calories),
       protein: num(form.protein),
       carbs: num(form.carbs),
@@ -590,7 +594,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 className={fieldInput}
               />
             </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-brand" className={labelClass}>
                   Brand <span className="font-normal text-faint">(optional)</span>
@@ -636,6 +640,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   value={form.servingSize}
                   onChange={(e) => set("servingSize", e.target.value)}
                   placeholder="e.g. 100"
+                  className={fieldInput}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-servings-pack" className={labelClass}>
+                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <Input
+                  id="food-servings-pack"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={form.servingsPack}
+                  onChange={(e) => set("servingsPack", e.target.value)}
+                  placeholder="e.g. 4"
                   className={fieldInput}
                 />
               </div>

@@ -15,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -509,99 +510,100 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             )}
 
           <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                "relative size-24 shrink-0 overflow-hidden rounded-2xl",
-                imageUrl ? "bg-muted" : "border-2 border-dashed border-border/70 bg-transparent",
-              )}
-            >
-              {imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl || "/placeholder.svg"} alt="Food preview" className="size-full object-cover" />
-              ) : (
-                <div className="flex size-full items-center justify-center text-faint">
-                  <Plus className="size-6" />
-                </div>
-              )}
-              {imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrl(null)}
-                  className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
-                  aria-label="Remove image"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
-                <button
-                  type="button"
-                  onClick={() => setPhotoMode("upload")}
-                  className={cn(
-                    "h-9 rounded-lg text-sm font-semibold transition-colors",
-                    photoMode === "upload"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPhotoMode("url")}
-                  className={cn(
-                    "h-9 rounded-lg text-sm font-semibold transition-colors",
-                    photoMode === "url"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Image URL
-                </button>
-              </div>
-              <div className="mt-2.5">
-                {photoMode === "upload" ? (
-                  <>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFile}
-                      className="hidden"
-                      id="food-photo"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-11 w-full rounded-xl border-border/70 font-semibold"
-                      disabled={uploading}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      {uploading ? (
-                        <Loader2 data-icon="inline-start" className="animate-spin" />
-                      ) : (
-                        <ImagePlus data-icon="inline-start" />
-                      )}
-                      {uploading ? "Uploading..." : "Choose photo"}
-                    </Button>
-                  </>
-                ) : (
-                  <Input
-                    type="url"
-                    placeholder="https://example.com/food.jpg"
-                    value={imageUrl ?? ""}
-                    onChange={(e) => setImageUrl(e.target.value || null)}
-                    className={fieldInput}
-                  />
+            <Popover>
+              <PopoverTrigger
+                aria-label="Edit photo"
+                className={cn(
+                  "relative size-24 shrink-0 cursor-pointer overflow-hidden rounded-2xl transition-opacity hover:opacity-90",
+                  imageUrl ? "bg-muted" : "border-2 border-dashed border-border/70 bg-transparent",
                 )}
-              </div>
-            </div>
-          </div>
+              >
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl || "/placeholder.svg"} alt="Food preview" className="size-full object-cover" />
+                ) : (
+                  <div className="flex size-full items-center justify-center text-faint">
+                    <Plus className="size-6" />
+                  </div>
+                )}
+              </PopoverTrigger>
+              <PopoverContent align="start" side="bottom" className="w-80">
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode("upload")}
+                    className={cn(
+                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      photoMode === "upload"
+                        ? "bg-muted text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode("url")}
+                    className={cn(
+                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      photoMode === "url"
+                        ? "bg-muted text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Image URL
+                  </button>
+                </div>
+                <div className="mt-2.5">
+                  {photoMode === "upload" ? (
+                    <>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFile}
+                        className="hidden"
+                        id="food-photo"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 w-full rounded-xl border-border/70 font-semibold"
+                        disabled={uploading}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        {uploading ? (
+                          <Loader2 data-icon="inline-start" className="animate-spin" />
+                        ) : (
+                          <ImagePlus data-icon="inline-start" />
+                        )}
+                        {uploading ? "Uploading..." : "Choose photo"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/food.jpg"
+                      value={imageUrl ?? ""}
+                      onChange={(e) => setImageUrl(e.target.value || null)}
+                      className={fieldInput}
+                    />
+                  )}
+                </div>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    className="mt-2.5 flex h-9 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <X className="size-4" />
+                    Remove image
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
 
-          <div className="flex flex-col gap-5">
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid flex-1 gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-name" className={labelClass}>
                   Name
@@ -627,6 +629,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 />
               </div>
             </div>
+          </div>
+
+          <div className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-serving" className={labelClass}>

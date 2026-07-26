@@ -582,19 +582,19 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           </div>
 
           <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="food-name" className={labelClass}>
-                Name
-              </label>
-              <Input
-                id="food-name"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="e.g. Greek yogurt"
-                className={fieldInput}
-              />
-            </div>
-            <div className="grid gap-5 sm:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-name" className={labelClass}>
+                  Name
+                </label>
+                <Input
+                  id="food-name"
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="e.g. Greek yogurt"
+                  className={fieldInput}
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-brand" className={labelClass}>
                   Brand <span className="font-normal text-faint">(optional)</span>
@@ -607,12 +607,25 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   className={fieldInput}
                 />
               </div>
+            </div>
+            <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label htmlFor="food-serving" className={labelClass}>
-                    Serving size
-                  </label>
-                  <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
+                <label htmlFor="food-serving" className={labelClass}>
+                  Serving size
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="food-serving"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={form.servingSize}
+                    onChange={(e) => set("servingSize", e.target.value)}
+                    placeholder="e.g. 100"
+                    className={cn(fieldInput, "flex-1")}
+                  />
+                  <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
                     {(["g", "ml"] as ServingUnit[]).map((u) => (
                       <button
                         key={u}
@@ -631,17 +644,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     ))}
                   </div>
                 </div>
-                <Input
-                  id="food-serving"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.servingSize}
-                  onChange={(e) => set("servingSize", e.target.value)}
-                  placeholder="e.g. 100"
-                  className={fieldInput}
-                />
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-servings-pack" className={labelClass}>

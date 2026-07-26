@@ -55,13 +55,12 @@ function SegmentedBar({
 
             return (
               <Popover key={s.key} open={isOpen} onOpenChange={(open) => setOpenPopover(open ? s.key : null)}>
-                <PopoverTrigger asChild>
-                  <div
-                    style={{ width: `${s.pct}%`, backgroundColor: color }}
-                    className="h-full cursor-pointer rounded-[2px] transition-all hover:opacity-80"
-                    title={s.name}
-                  />
-                </PopoverTrigger>
+                <PopoverTrigger
+                  style={{ width: `${s.pct}%`, backgroundColor: color }}
+                  className="block h-full cursor-pointer appearance-none rounded-[2px] border-0 p-0 transition-all hover:opacity-80"
+                  title={s.name}
+                  aria-label={s.name}
+                />
                 {groupData && (
                   <PopoverContent className="w-64 p-4">
                     <div className="space-y-3">

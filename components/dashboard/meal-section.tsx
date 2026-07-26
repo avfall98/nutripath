@@ -55,6 +55,13 @@ export function MealSection({
   const [selectedEntry, setSelectedEntry] = useState<EntryDTO | null>(null)
   const [foodEditOpen, setFoodEditOpen] = useState(false)
   const [selectedFood, setSelectedFood] = useState<FoodDTO | null>(null)
+  const [tooltipState, setTooltipState] = useState<{ visible: boolean; label: string; percentage: number; x: number; y: number }>({
+    visible: false,
+    label: "",
+    percentage: 0,
+    x: 0,
+    y: 0,
+  })
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
@@ -221,7 +228,78 @@ export function MealSection({
         >
           <span />
           <span />
-          <span className="text-[13px] font-bold">Total</span>
+          <div className="flex flex-col gap-2">
+            {/* Kcal progress bar */}
+            <div
+              className="relative cursor-help"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: true,
+                  label: "Kcal",
+                  percentage: groupCaloriesPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+              onMouseLeave={() => setTooltipState({ ...tooltipState, visible: false })}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: !tooltipState.visible,
+                  label: "Kcal",
+                  percentage: groupCaloriesPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+            >
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
+                <div
+                  style={{
+                    width: `${Math.min(groupCaloriesPct, 100)}%`,
+                    backgroundColor: "var(--primary)",
+                  }}
+                  className="h-full rounded-full transition-all"
+                />
+              </div>
+            </div>
+            {/* Protein progress bar */}
+            <div
+              className="relative cursor-help"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: true,
+                  label: "Protein",
+                  percentage: groupProteinPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+              onMouseLeave={() => setTooltipState({ ...tooltipState, visible: false })}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: !tooltipState.visible,
+                  label: "Protein",
+                  percentage: groupProteinPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+            >
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
+                <div
+                  style={{
+                    width: `${Math.min(groupProteinPct, 100)}%`,
+                    backgroundColor: "var(--protein-bar)",
+                  }}
+                  className="h-full rounded-full transition-all"
+                />
+              </div>
+            </div>
+          </div>
           <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
             <MacroIcon macro="calories" />
             {groupCaloriesKcal}
@@ -326,54 +404,55 @@ export function MealSection({
                 </div>
 
                 {/* Mobile stacked row */}
-                <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
-                  <button
-                    type="button"
-                    disabled={!food}
-                    onClick={() => {
-                      if (!food) return
-                      setSelectedFood(food)
-                      setFoodEditOpen(true)
-                    }}
-                    className="flex shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
-                  >
-                    {thumb(food)}
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <div className="flex items-start gap-2">
-                      <button
-                        type="button"
-                        disabled={!food}
-                        onClick={() => {
-                          if (!food) return
-                          setSelectedFood(food)
-                          setFoodEditOpen(true)
-                        }}
-                        className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
-                      >
-                        <p className="text-[13.5px] font-semibold leading-tight text-pretty">
-                          {food?.name || entry.name}
-                          <span className="ml-2 text-[11.5px] font-normal text-faint">
-                            {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                          </span>
-                        </p>
-                      </button>
-                      <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                      <MacroBadges
-                        kcal={entryCalories}
-                        kcalPct={targetCalories ? entryCaloriesPct : null}
-                        protein={entryProtein}
-                        proteinPct={targetProtein ? entryProteinPct : null}
-                        carbs={entryCarbs}
-                        fat={entryFat}
-                      />
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                        <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
-                      </div>
-                    </div>
+                <div className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0 md:hidden">
+                  {/* Row 1: Thumbnail + Name/Quantity + Menu */}
+                  <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      disabled={!food}
+                      onClick={() => {
+                        if (!food) return
+                        setSelectedFood(food)
+                        setFoodEditOpen(true)
+                      }}
+                      className="flex size-10 shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    >
+                      {thumb(food)}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!food}
+                      onClick={() => {
+                        if (!food) return
+                        setSelectedFood(food)
+                        setFoodEditOpen(true)
+                      }}
+                      className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    >
+                      <p className="text-[13.5px] font-semibold leading-tight text-pretty">
+                        {food?.name || entry.name}
+                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                          {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                        </span>
+                      </p>
+                    </button>
+                    <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
+                  </div>
+                  
+                  {/* Row 2: Nutrition stats */}
+                  <MacroBadges
+                    kcal={entryCalories}
+                    kcalPct={targetCalories ? entryCaloriesPct : null}
+                    protein={entryProtein}
+                    proteinPct={targetProtein ? entryProteinPct : null}
+                    carbs={entryCarbs}
+                    fat={entryFat}
+                  />
+                  
+                  {/* Row 3: Score badges */}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
                   </div>
                 </div>
               </li>
@@ -447,6 +526,23 @@ export function MealSection({
         food={selectedFood}
         onSaved={onChanged}
       />
+
+      {/* Tooltip popup */}
+      {tooltipState.visible && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${tooltipState.x}px`,
+            top: `${tooltipState.y}px`,
+            transform: "translateY(-100%)",
+            zIndex: 50,
+          }}
+          className="pointer-events-none whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-lg"
+        >
+          <span>{tooltipState.label}</span>
+          <span className="ml-2 font-semibold">{tooltipState.percentage}%</span>
+        </div>
+      )}
     </section>
   )
 }

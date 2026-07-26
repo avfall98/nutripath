@@ -1,8 +1,11 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroIcon } from "@/components/dashboard/macro-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -31,24 +34,88 @@ function SegmentedBar({
   totalPct,
   color,
   heightClass = "h-1.5",
+  mealGroupsData = [],
+  targetCalories = null,
+  targetProtein = null,
 }: {
   segments: { key: number; pct: number; name: string }[]
   totalPct: number
   color: string
   heightClass?: string
+  mealGroupsData?: GroupNutrition[]
+  targetCalories?: number | null
+  targetProtein?: number | null
 }) {
+  const [openPopover, setOpenPopover] = useState<number | null>(null)
+
   return (
     <div className={cn("w-full overflow-hidden rounded-full bg-track", heightClass)}>
       {segments.length > 0 ? (
         <div className="flex h-full w-full gap-[2px]">
-          {segments.map((s) => (
-            <div
-              key={s.key}
-              title={s.name}
-              style={{ width: `${s.pct}%`, backgroundColor: color }}
-              className="h-full rounded-[2px] transition-all"
-            />
-          ))}
+          {segments.map((s) => {
+            const groupData = mealGroupsData.find((g) => g.id === s.key)
+            const isOpen = openPopover === s.key
+            const groupKcal = groupData ? Math.round(groupData.calories / KJ_PER_KCAL) : 0
+            const groupKcalPct =
+              groupData && targetCalories && targetCalories > 0
+                ? Math.round((groupKcal / targetCalories) * 100)
+                : null
+            const groupProteinPct =
+              groupData && targetProtein && targetProtein > 0
+                ? Math.round((groupData.protein / targetProtein) * 100)
+                : null
+
+            return (
+              <Popover key={s.key} open={isOpen} onOpenChange={(open) => setOpenPopover(open ? s.key : null)}>
+                <PopoverTrigger
+                  style={{ width: `${s.pct}%`, backgroundColor: color }}
+                  className="block h-full cursor-pointer appearance-none rounded-[2px] border-0 p-0 transition-all hover:opacity-80"
+                  title={s.name}
+                  aria-label={s.name}
+                />
+                {groupData && (
+                  <PopoverContent className="w-auto p-4">
+                    <div className="flex flex-col gap-3">
+                      <div className="border-b border-border pb-2">
+                        <h4 className="font-semibold text-foreground">{groupData.name}</h4>
+                      </div>
+                      <div className="flex flex-col gap-2 text-[13px] font-bold tabular-nums text-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="calories" />
+                          <span>
+                            {groupKcal}
+                            {groupKcalPct != null && <span className="font-normal text-faint"> ({groupKcalPct}%)</span>}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="protein" />
+                          <span>
+                            {Math.round(groupData.protein)}
+                            {groupProteinPct != null && <span className="font-normal text-faint"> ({groupProteinPct}%)</span>}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="carbs" />
+                          <span>{groupData.carbs != null ? Math.round(groupData.carbs) : "—"}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="fat" />
+                          <span>{groupData.fat != null ? Math.round(groupData.fat) : "—"}</span>
+                        </span>
+                      </div>
+                      {/* Scores */}
+                      <div className="flex flex-col items-start gap-2 border-t border-border pt-3">
+                        {groupData.servingWeightG ? (
+                          <CalorieDensityBadge kcal={groupKcal} servingSize={`${groupData.servingWeightG}g`} />
+                        ) : null}
+                        <ProteinScoreBadges proteinG={groupData.protein} kcal={groupKcal} />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                )}
+              </Popover>
+            )
+          })}
         </div>
       ) : (
         <div style={{ width: `${totalPct}%`, backgroundColor: color }} className="h-full rounded-full transition-all" />
@@ -192,7 +259,7 @@ export function DaySummary({
               </span>
             )}
           </div>
-          <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" />
+              <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" mealGroupsData={mealGroups} targetCalories={targetCalories} targetProtein={targetProtein} />
         </div>
 
         <div className="flex flex-col gap-3">
@@ -222,6 +289,9 @@ export function DaySummary({
             totalPct={Math.min(proteinPct, 100)}
             color="var(--protein-bar)"
             heightClass="h-2"
+            mealGroupsData={mealGroups}
+            targetCalories={targetCalories}
+            targetProtein={targetProtein}
           />
         </div>
 
@@ -255,7 +325,7 @@ export function DaySummary({
                   )}
                 </span>
               </div>
-              <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" />
+              <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" mealGroupsData={mealGroups} targetCalories={targetCalories} targetProtein={targetProtein} />
             </div>
 
             {/* Protein */}
@@ -278,6 +348,9 @@ export function DaySummary({
                 totalPct={Math.min(proteinPct, 100)}
                 color="var(--protein-bar)"
                 heightClass="h-2"
+                mealGroupsData={mealGroups}
+                targetCalories={targetCalories}
+                targetProtein={targetProtein}
               />
             </div>
           </div>

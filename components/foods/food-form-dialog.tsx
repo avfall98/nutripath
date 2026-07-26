@@ -19,7 +19,7 @@ import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
+import { ArrowDown, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -86,6 +86,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [importQuery, setImportQuery] = useState("")
   const [scannerOpen, setScannerOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -139,6 +140,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setServingUnit(unit)
       setImportQuery("")
       setSource(null)
+      setShowImport(false)
     }
   }, [open, food])
 
@@ -426,18 +428,34 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8"
         >
-        <DialogHeader className="mb-6">
-          <DialogTitle className="text-2xl font-bold tracking-tight">
-            {food ? "Edit food" : "Add a food"}
-          </DialogTitle>
-          <DialogDescription>
-            Save foods you eat often with their nutrition, a photo, and a reference link.
-          </DialogDescription>
+        <DialogHeader className="mb-6 pr-10">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <DialogTitle className="text-2xl font-bold tracking-tight">
+                {food ? "Edit food" : "Add a food"}
+              </DialogTitle>
+              <DialogDescription>
+                Save foods you eat often with their nutrition, a photo, and a reference link.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant={showImport ? "default" : "outline"}
+              size="sm"
+              aria-pressed={showImport}
+              onClick={() => setShowImport((v) => !v)}
+              className="h-9 shrink-0 rounded-xl px-4 font-semibold"
+            >
+              <Download data-icon="inline-start" />
+              Import
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
 
+            {showImport && (
             <div className="rounded-lg bg-inset p-4 sm:p-5">
               <p className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
                 <ArrowDown className="size-4" />
@@ -488,6 +506,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 Paste a product link, enter a stockcode, or scan a barcode to look up nutrition automatically.
               </p>
             </div>
+            )}
 
           <div className="flex items-start gap-4">
             <div

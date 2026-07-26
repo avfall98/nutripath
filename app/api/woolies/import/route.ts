@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
+// Woolworths (Akamai) geo/bot-blocks non-AU datacenter IPs with a 403.
+// Pin this function to Vercel's Sydney region so the egress IP is Australian.
+export const preferredRegion = "syd1"
 
 const KJ_PER_KCAL = 4.184
 
@@ -86,11 +89,34 @@ class CookieJar {
   }
 }
 
+/**
+ * Route an outbound URL through an optional proxy service when
+ * WOOLWORTHS_PROXY_URL is configured. This lets Woolworths' Akamai bot
+ * protection see a trusted (ideally AU residential) IP instead of Vercel's
+ * datacenter IP, which is the usual cause of the 403.
+ *
+ * Two template styles are supported:
+ *  - Contains "{url}"  -> the target URL (encoded) is substituted in place.
+ *      e.g. https://api.scraperapi.com/?api_key=KEY&country_code=au&url={url}
+ *  - No "{url}"        -> the target URL (encoded) is appended as ?url=...
+ *      e.g. https://proxy.example.com/fetch
+ *
+ * Providers with rotating IPs should pin an AU session in the template so the
+ * cookie-priming request and the API request share one IP.
+ */
+function proxied(targetUrl: string): string {
+  const tpl = process.env.WOOLWORTHS_PROXY_URL
+  if (!tpl) return targetUrl
+  const encoded = encodeURIComponent(targetUrl)
+  if (tpl.includes("{url}")) return tpl.replace("{url}", encoded)
+  return `${tpl}${tpl.includes("?") ? "&" : "?"}url=${encoded}`
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), ms)
   try {
-    return await fetch(url, { ...init, signal: controller.signal })
+    return await fetch(proxied(url), { ...init, signal: controller.signal })
   } finally {
     clearTimeout(timeout)
   }
@@ -101,13 +127,18 @@ type Parsed = {
   per100: Record<string, { value: number | null; unit: string }>
 }
 
+// Order matters: this array is scanned with `.find()`, so more specific
+// matchers must come before the generic ones. `satfat` ("Fat Saturated") is
+// tested before `fat` ("Fat Total") so the saturated row isn't swallowed by the
+// generic fat matcher. Sugars ("Sugars ...") and carbs ("Carbohydrate ...") do
+// not overlap, but sugars is kept first defensively.
 const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
   { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
   { key: "protein", test: (n) => n.includes("protein") },
   { key: "satfat", test: (n) => n.includes("fatsaturated") },
   { key: "fat", test: (n) => n.includes("fattotal") },
-  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "sugars", test: (n) => n.includes("sugars") },
+  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "fiber", test: (n) => n.includes("dietaryfibre") || n.includes("dietaryfiber") },
   { key: "sodium", test: (n) => n.includes("sodium") },
 ]
@@ -138,8 +169,15 @@ function parseNutritionalInformation(raw: unknown): Parsed {
     const rawName = String(attr?.Name ?? "")
     if (!rawName) continue
     const norm = rawName.toLowerCase()
-    // Skip descriptive "ValueWord" duplicates.
-    if (norm.includes("valueword")) continue
+    // Woolworths emits up to three descriptor rows per nutrient:
+    //   "... - Total - NIP"       -> the real value + unit, e.g. "8.4g"
+    //   "... - ValueWord - NIP"   -> value only, e.g. "8.4"
+    //   "... - SuffixUnits - NIP" -> unit only, e.g. "g"
+    // Only the "Total" row carries a usable value+unit. The others must be
+    // skipped; otherwise "SuffixUnits" (which sorts before "Total") is captured
+    // first as a null value and blocks the real row (this was silently zeroing
+    // out Sugars, which has all three variants).
+    if (!norm.includes("- total -")) continue
 
     const isPer100 = norm.includes("per 100")
     const isPerServe = norm.includes("per serve")
@@ -239,6 +277,17 @@ export async function POST(request: NextRequest) {
 
     if (!res.ok) {
       console.log("[v0] Woolworths fetch failed:", res.status, res.statusText)
+      if (res.status === 403) {
+        const proxied = Boolean(process.env.WOOLWORTHS_PROXY_URL)
+        return NextResponse.json(
+          {
+            error: proxied
+              ? "Woolworths still blocked the request (403) even through the configured proxy. The proxy may not be routing through an Australian residential IP. Check WOOLWORTHS_PROXY_URL, or enter the details manually."
+              : "Woolworths blocked the request (403). Their bot protection rejected the server's IP. Set a WOOLWORTHS_PROXY_URL (an AU residential proxy) to route around it, or enter the details manually.",
+          },
+          { status: 502 },
+        )
+      }
       return NextResponse.json(
         { error: `Woolworths returned ${res.status}. Please try again in a moment.` },
         { status: 502 },

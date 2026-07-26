@@ -2,6 +2,9 @@ import { type NextRequest, NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 30
+// Woolworths (Akamai) geo/bot-blocks non-AU datacenter IPs with a 403.
+// Pin this function to Vercel's Sydney region so the egress IP is Australian.
+export const preferredRegion = "syd1"
 
 const KJ_PER_KCAL = 4.184
 
@@ -75,6 +78,24 @@ class CookieJar {
   }
 }
 
+/**
+ * Route a Woolworths URL through an optional proxy service when
+ * WOOLWORTHS_PROXY_URL is configured, so Akamai sees a trusted (ideally AU
+ * residential) IP instead of Vercel's datacenter IP. Not applied to Open Food
+ * Facts, which isn't blocked and shouldn't consume proxy credits.
+ *
+ * Template styles:
+ *  - Contains "{url}" -> target URL (encoded) is substituted in place.
+ *  - No "{url}"       -> target URL (encoded) is appended as ?url=...
+ */
+function proxied(targetUrl: string): string {
+  const tpl = process.env.WOOLWORTHS_PROXY_URL
+  if (!tpl) return targetUrl
+  const encoded = encodeURIComponent(targetUrl)
+  if (tpl.includes("{url}")) return tpl.replace("{url}", encoded)
+  return `${tpl}${tpl.includes("?") ? "&" : "?"}url=${encoded}`
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), ms)
@@ -90,13 +111,17 @@ type Parsed = {
   per100: Record<string, { value: number | null; unit: string }>
 }
 
+// Order matters: scanned with `.find()`, so more specific matchers must come
+// first. `satfat` ("Fat Saturated") before `fat` ("Fat Total") so the saturated
+// row isn't swallowed by the generic fat matcher. Sugars and carbs don't
+// overlap, but sugars is kept first defensively.
 const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
   { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
   { key: "protein", test: (n) => n.includes("protein") },
   { key: "satfat", test: (n) => n.includes("fatsaturated") },
   { key: "fat", test: (n) => n.includes("fattotal") },
-  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "sugars", test: (n) => n.includes("sugars") },
+  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "fiber", test: (n) => n.includes("dietaryfibre") || n.includes("dietaryfiber") },
   { key: "sodium", test: (n) => n.includes("sodium") },
 ]
@@ -121,7 +146,12 @@ function parseNutritionalInformation(raw: unknown): Parsed {
     const rawName = String(attr?.Name ?? "")
     if (!rawName) continue
     const norm = rawName.toLowerCase()
-    if (norm.includes("valueword")) continue
+    // Woolworths emits up to three descriptor rows per nutrient: "- Total -"
+    // (value + unit, e.g. "8.4g"), "- ValueWord -" (value only) and
+    // "- SuffixUnits -" (unit only, e.g. "g"). Only "Total" carries a usable
+    // value. Skipping the rest prevents "SuffixUnits" (which sorts before
+    // "Total") from being captured first as null and zeroing out Sugars.
+    if (!norm.includes("- total -")) continue
 
     const isPer100 = norm.includes("per 100")
     const isPerServe = norm.includes("per serve")
@@ -163,7 +193,7 @@ function deriveServingSize(perServe: number | null, per100: number | null): numb
 async function primeWoolworths(jar: CookieJar) {
   try {
     const home = await fetchWithTimeout(
-      "https://www.woolworths.com.au/",
+      proxied("https://www.woolworths.com.au/"),
       {
         headers: {
           ...BASE_HEADERS,
@@ -192,7 +222,7 @@ async function lookupWoolworths(barcode: string): Promise<LookupResult | null> {
   let stockcode: string | null = null
   try {
     const searchRes = await fetchWithTimeout(
-      "https://www.woolworths.com.au/apis/ui/Search/products",
+      proxied("https://www.woolworths.com.au/apis/ui/Search/products"),
       {
         method: "POST",
         headers: {
@@ -233,7 +263,7 @@ async function lookupWoolworths(barcode: string): Promise<LookupResult | null> {
   try {
     const apiUrl = `https://www.woolworths.com.au/apis/ui/product/detail/${stockcode}`
     const res = await fetchWithTimeout(
-      apiUrl,
+      proxied(apiUrl),
       {
         headers: {
           ...BASE_HEADERS,

@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react"
+import { Dna, Flame } from "lucide-react"
 import { proteinPer100Cal, type ProteinGrade } from "@/lib/nutrition"
 import { round } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -10,21 +10,6 @@ export const GRADE_STYLES: Record<ProteinGrade, { backgroundColor: string; color
   C: { backgroundColor: "rgba(250,204,21,.12)", color: "#facc15" },
   D: { backgroundColor: "rgba(251,146,60,.12)", color: "#fb923c" },
   F: { backgroundColor: "rgba(244,63,94,.14)", color: "#fb7185" },
-}
-
-// Orange "P" circle used to mark the protein score.
-function ProteinGlyph({ size = "sm" }: { size?: "sm" | "lg" }) {
-  return (
-    <span
-      className={cn(
-        "flex shrink-0 items-center justify-center rounded-full bg-macro-protein font-bold leading-none text-white",
-        size === "lg" ? "size-4 text-[9px]" : "size-3 text-[7px]",
-      )}
-      aria-hidden="true"
-    >
-      P
-    </span>
-  )
 }
 
 type PillKind = "protein" | "density"
@@ -56,7 +41,11 @@ export function ScorePill({
         title={title}
         aria-label={ariaLabel}
       >
-        {kind === "protein" ? <ProteinGlyph size={size} /> : <Flame className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} aria-hidden="true" />}
+        {kind === "protein" ? (
+          <Dna className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} aria-hidden="true" />
+        ) : (
+          <Flame className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} aria-hidden="true" />
+        )}
         N/A
       </span>
     )
@@ -73,7 +62,7 @@ export function ScorePill({
       aria-label={ariaLabel}
     >
       {kind === "protein" ? (
-        <ProteinGlyph size={size} />
+        <Dna className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} style={{ color: GRADE_STYLES[grade].color }} aria-hidden="true" />
       ) : (
         <Flame className={cn("shrink-0", size === "lg" ? "size-4" : "size-3")} style={{ color: GRADE_STYLES[grade].color }} aria-hidden="true" />
       )}

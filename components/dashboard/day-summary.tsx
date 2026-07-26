@@ -1,6 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { cn } from "@/lib/utils"
@@ -31,24 +33,73 @@ function SegmentedBar({
   totalPct,
   color,
   heightClass = "h-1.5",
+  mealGroupsData = [],
+  isMacroType = "calories",
 }: {
   segments: { key: number; pct: number; name: string }[]
   totalPct: number
   color: string
   heightClass?: string
+  mealGroupsData?: GroupNutrition[]
+  isMacroType?: "calories" | "protein"
 }) {
+  const [openPopover, setOpenPopover] = useState<number | null>(null)
+
   return (
     <div className={cn("w-full overflow-hidden rounded-full bg-track", heightClass)}>
       {segments.length > 0 ? (
         <div className="flex h-full w-full gap-[2px]">
-          {segments.map((s) => (
-            <div
-              key={s.key}
-              title={s.name}
-              style={{ width: `${s.pct}%`, backgroundColor: color }}
-              className="h-full rounded-[2px] transition-all"
-            />
-          ))}
+          {segments.map((s) => {
+            const groupData = mealGroupsData.find((g) => g.id === s.key)
+            const isOpen = openPopover === s.key
+
+            return (
+              <Popover key={s.key} open={isOpen} onOpenChange={(open) => setOpenPopover(open ? s.key : null)}>
+                <PopoverTrigger asChild>
+                  <div
+                    style={{ width: `${s.pct}%`, backgroundColor: color }}
+                    className="h-full cursor-pointer rounded-[2px] transition-all hover:opacity-80"
+                    title={s.name}
+                  />
+                </PopoverTrigger>
+                {groupData && (
+                  <PopoverContent className="w-64 p-4">
+                    <div className="space-y-3">
+                      <div className="border-b border-border pb-2">
+                        <h4 className="font-semibold text-foreground">{groupData.name}</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Calories</span>
+                          <span className="mt-1 text-base font-bold">
+                            {Math.round(groupData.calories / KJ_PER_KCAL)} <span className="text-xs font-normal text-faint">kcal</span>
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Protein</span>
+                          <span className="mt-1 text-base font-bold">
+                            {round(groupData.protein)} <span className="text-xs font-normal text-faint">g</span>
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Carbs</span>
+                          <span className="mt-1 text-base font-bold">
+                            {groupData.carbs ?? "—"} <span className="text-xs font-normal text-faint">g</span>
+                          </span>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Fat</span>
+                          <span className="mt-1 text-base font-bold">
+                            {groupData.fat ?? "—"} <span className="text-xs font-normal text-faint">g</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                )}
+              </Popover>
+            )
+          })}
         </div>
       ) : (
         <div style={{ width: `${totalPct}%`, backgroundColor: color }} className="h-full rounded-full transition-all" />
@@ -192,7 +243,7 @@ export function DaySummary({
               </span>
             )}
           </div>
-          <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" />
+              <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" mealGroupsData={mealGroups} isMacroType="calories" />
         </div>
 
         <div className="flex flex-col gap-3">
@@ -222,6 +273,8 @@ export function DaySummary({
             totalPct={Math.min(proteinPct, 100)}
             color="var(--protein-bar)"
             heightClass="h-2"
+            mealGroupsData={mealGroups}
+            isMacroType="protein"
           />
         </div>
 
@@ -255,7 +308,7 @@ export function DaySummary({
                   )}
                 </span>
               </div>
-              <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" />
+          <SegmentedBar segments={calSegments} totalPct={Math.min(calPct, 100)} color={calColor} heightClass="h-2" mealGroupsData={mealGroups} isMacroType="calories" />
             </div>
 
             {/* Protein */}
@@ -278,6 +331,8 @@ export function DaySummary({
                 totalPct={Math.min(proteinPct, 100)}
                 color="var(--protein-bar)"
                 heightClass="h-2"
+                mealGroupsData={mealGroups}
+                isMacroType="protein"
               />
             </div>
           </div>

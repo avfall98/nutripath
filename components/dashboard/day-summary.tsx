@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
-import { MacroBadges } from "@/components/dashboard/macro-badges"
+import { MacroIcon } from "@/components/dashboard/macro-badges"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
 
@@ -79,15 +79,34 @@ function SegmentedBar({
                       <div className="border-b border-border pb-2">
                         <h4 className="font-semibold text-foreground">{groupData.name}</h4>
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                        <MacroBadges
-                          kcal={groupKcal}
-                          kcalPct={groupKcalPct}
-                          protein={groupData.protein}
-                          proteinPct={groupProteinPct}
-                          carbs={groupData.carbs ?? null}
-                          fat={groupData.fat ?? null}
-                        />
+                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] font-bold tabular-nums text-foreground">
+                        {/* Row 1: kcal + protein */}
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="calories" />
+                          <span>
+                            {groupKcal}
+                            {groupKcalPct != null && <span className="font-normal text-faint"> ({groupKcalPct}%)</span>}
+                          </span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="protein" />
+                          <span>
+                            {Math.round(groupData.protein)}
+                            {groupProteinPct != null && <span className="font-normal text-faint"> ({groupProteinPct}%)</span>}
+                          </span>
+                        </span>
+                        {/* Row 2: carbs + fat */}
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="carbs" />
+                          <span>{groupData.carbs != null ? Math.round(groupData.carbs) : "—"}</span>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <MacroIcon macro="fat" />
+                          <span>{groupData.fat != null ? Math.round(groupData.fat) : "—"}</span>
+                        </span>
+                      </div>
+                      {/* Row 3: scores */}
+                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                         {groupData.servingWeightG ? (
                           <CalorieDensityBadge kcal={groupKcal} servingSize={`${groupData.servingWeightG}g`} />
                         ) : null}

@@ -221,7 +221,40 @@ export function MealSection({
         >
           <span />
           <span />
-          <span className="text-[13px] font-bold">Total</span>
+          <div className="flex flex-col gap-2">
+            {/* Kcal progress bar */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Kcal</span>
+                <span className="text-[11px] font-semibold tabular-nums text-faint">{groupCaloriesPct}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
+                <div
+                  style={{
+                    width: `${Math.min(groupCaloriesPct, 100)}%`,
+                    backgroundColor: "var(--primary)",
+                  }}
+                  className="h-full rounded-full transition-all"
+                />
+              </div>
+            </div>
+            {/* Protein progress bar */}
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Protein</span>
+                <span className="text-[11px] font-semibold tabular-nums text-faint">{groupProteinPct}%</span>
+              </div>
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
+                <div
+                  style={{
+                    width: `${Math.min(groupProteinPct, 100)}%`,
+                    backgroundColor: "var(--protein-bar)",
+                  }}
+                  className="h-full rounded-full transition-all"
+                />
+              </div>
+            </div>
+          </div>
           <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
             <MacroIcon macro="calories" />
             {groupCaloriesKcal}

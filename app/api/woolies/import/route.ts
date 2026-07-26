@@ -104,13 +104,18 @@ type Parsed = {
   per100: Record<string, { value: number | null; unit: string }>
 }
 
+// Order matters: this array is scanned with `.find()`, so more specific
+// matchers must come before the generic ones they overlap with. Woolworths
+// names the sugars row "Carbohydrate Sugars ... NIP", which contains BOTH
+// "carbohydrate" and "sugars" after normalization, so `sugars` must be tested
+// before `carbs`. Likewise `satfat` ("Fat Saturated") before `fat` ("Fat Total").
 const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
   { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
   { key: "protein", test: (n) => n.includes("protein") },
   { key: "satfat", test: (n) => n.includes("fatsaturated") },
   { key: "fat", test: (n) => n.includes("fattotal") },
-  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "sugars", test: (n) => n.includes("sugars") },
+  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "fiber", test: (n) => n.includes("dietaryfibre") || n.includes("dietaryfiber") },
   { key: "sodium", test: (n) => n.includes("sodium") },
 ]

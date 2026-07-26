@@ -112,9 +112,9 @@ type Parsed = {
 }
 
 // Order matters: scanned with `.find()`, so more specific matchers must come
-// before generic ones they overlap with. Woolworths' sugars row is named
-// "Carbohydrate Sugars ... NIP" (contains both "carbohydrate" and "sugars"),
-// so `sugars` must be tested before `carbs`, and `satfat` before `fat`.
+// first. `satfat` ("Fat Saturated") before `fat` ("Fat Total") so the saturated
+// row isn't swallowed by the generic fat matcher. Sugars and carbs don't
+// overlap, but sugars is kept first defensively.
 const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
   { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
   { key: "protein", test: (n) => n.includes("protein") },
@@ -146,7 +146,12 @@ function parseNutritionalInformation(raw: unknown): Parsed {
     const rawName = String(attr?.Name ?? "")
     if (!rawName) continue
     const norm = rawName.toLowerCase()
-    if (norm.includes("valueword")) continue
+    // Woolworths emits up to three descriptor rows per nutrient: "- Total -"
+    // (value + unit, e.g. "8.4g"), "- ValueWord -" (value only) and
+    // "- SuffixUnits -" (unit only, e.g. "g"). Only "Total" carries a usable
+    // value. Skipping the rest prevents "SuffixUnits" (which sorts before
+    // "Total") from being captured first as null and zeroing out Sugars.
+    if (!norm.includes("- total -")) continue
 
     const isPer100 = norm.includes("per 100")
     const isPerServe = norm.includes("per serve")

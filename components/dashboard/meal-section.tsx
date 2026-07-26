@@ -55,6 +55,13 @@ export function MealSection({
   const [selectedEntry, setSelectedEntry] = useState<EntryDTO | null>(null)
   const [foodEditOpen, setFoodEditOpen] = useState(false)
   const [selectedFood, setSelectedFood] = useState<FoodDTO | null>(null)
+  const [tooltipState, setTooltipState] = useState<{ visible: boolean; label: string; percentage: number; x: number; y: number }>({
+    visible: false,
+    label: "",
+    percentage: 0,
+    x: 0,
+    y: 0,
+  })
   const [, startTransition] = useTransition()
   const isReal = group.id !== -1
 
@@ -223,11 +230,30 @@ export function MealSection({
           <span />
           <div className="flex flex-col gap-2">
             {/* Kcal progress bar */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Kcal</span>
-                <span className="text-[11px] font-semibold tabular-nums text-faint">{groupCaloriesPct}%</span>
-              </div>
+            <div
+              className="relative cursor-help"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: true,
+                  label: "Kcal",
+                  percentage: groupCaloriesPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+              onMouseLeave={() => setTooltipState({ ...tooltipState, visible: false })}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: !tooltipState.visible,
+                  label: "Kcal",
+                  percentage: groupCaloriesPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+            >
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
                 <div
                   style={{
@@ -239,11 +265,30 @@ export function MealSection({
               </div>
             </div>
             {/* Protein progress bar */}
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold uppercase tracking-[.07em] text-faint">Protein</span>
-                <span className="text-[11px] font-semibold tabular-nums text-faint">{groupProteinPct}%</span>
-              </div>
+            <div
+              className="relative cursor-help"
+              onMouseEnter={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: true,
+                  label: "Protein",
+                  percentage: groupProteinPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+              onMouseLeave={() => setTooltipState({ ...tooltipState, visible: false })}
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect()
+                setTooltipState({
+                  visible: !tooltipState.visible,
+                  label: "Protein",
+                  percentage: groupProteinPct,
+                  x: rect.left,
+                  y: rect.top - 8,
+                })
+              }}
+            >
               <div className="h-1.5 w-full overflow-hidden rounded-full bg-track">
                 <div
                   style={{
@@ -480,6 +525,23 @@ export function MealSection({
         food={selectedFood}
         onSaved={onChanged}
       />
+
+      {/* Tooltip popup */}
+      {tooltipState.visible && (
+        <div
+          style={{
+            position: "fixed",
+            left: `${tooltipState.x}px`,
+            top: `${tooltipState.y}px`,
+            transform: "translateY(-100%)",
+            zIndex: 50,
+          }}
+          className="pointer-events-none whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-lg"
+        >
+          <span>{tooltipState.label}</span>
+          <span className="ml-2 font-semibold">{tooltipState.percentage}%</span>
+        </div>
+      )}
     </section>
   )
 }

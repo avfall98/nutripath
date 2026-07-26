@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -18,6 +19,11 @@ function isActive(href: string, pathname: string) {
 
 export function AppNav() {
   const pathname = usePathname()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   return (
     <>
@@ -32,7 +38,7 @@ export function AppNav() {
         </Link>
         <nav className="flex items-center gap-1">
           {links.map(({ href, label }) => {
-            const active = isActive(href, pathname)
+            const active = mounted && isActive(href, pathname)
             return (
               <Link
                 key={href}

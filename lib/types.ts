@@ -33,6 +33,7 @@ export type FoodDTO = {
   sodiumPerHundred: number | null
   imageUrl: string | null
   infoUrl: string | null
+  favourite: boolean
 }
 
 export type MealGroupDTO = {

@@ -6,6 +6,7 @@ import {
   numeric,
   date,
   timestamp,
+  boolean,
 } from "drizzle-orm/pg-core"
 
 export const profile = pgTable("profile", {
@@ -52,6 +53,7 @@ export const foods = pgTable("foods", {
   sodiumPerHundred: numeric("sodium_per_hundred"),
   imageUrl: text("image_url"),
   infoUrl: text("info_url"),
+  favourite: boolean("favourite").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 

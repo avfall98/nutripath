@@ -409,7 +409,7 @@ export function AddFoodDialog({
                 <p className="flex-1 text-sm text-muted-foreground">
                   {tab === "recent"
                     ? "Your 10 most recently logged foods."
-                    : "Your most-logged foods. Favourite tagging is coming soon."}
+                    : "Foods you've tagged as favourites in your library."}
                 </p>
               )}
               {renderQuantityControls()}
@@ -444,7 +444,7 @@ export function AddFoodDialog({
               ) : !favouriteFoods || favouriteFoods.length === 0 ? (
                 emptyState(
                   <Star className="size-6" />,
-                  "No favourites yet. Once you tag favourites they will appear here — for now this shows your most-logged foods.",
+                      "No favourites yet. Tag foods as favourites from your food library and they'll appear here.",
                 )
               ) : (
                 renderFoodList(favouriteFoods)

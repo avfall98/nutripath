@@ -79,8 +79,7 @@ function SegmentedBar({
                       <div className="border-b border-border pb-2">
                         <h4 className="font-semibold text-foreground">{groupData.name}</h4>
                       </div>
-                      <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px] font-bold tabular-nums text-foreground">
-                        {/* Row 1: kcal + protein */}
+                      <div className="flex flex-col gap-2 text-[13px] font-bold tabular-nums text-foreground">
                         <span className="flex items-center gap-1.5">
                           <MacroIcon macro="calories" />
                           <span>
@@ -95,7 +94,6 @@ function SegmentedBar({
                             {groupProteinPct != null && <span className="font-normal text-faint"> ({groupProteinPct}%)</span>}
                           </span>
                         </span>
-                        {/* Row 2: carbs + fat */}
                         <span className="flex items-center gap-1.5">
                           <MacroIcon macro="carbs" />
                           <span>{groupData.carbs != null ? Math.round(groupData.carbs) : "—"}</span>
@@ -105,8 +103,8 @@ function SegmentedBar({
                           <span>{groupData.fat != null ? Math.round(groupData.fat) : "—"}</span>
                         </span>
                       </div>
-                      {/* Row 3: scores */}
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                      {/* Scores */}
+                      <div className="flex flex-col items-start gap-2 border-t border-border pt-3">
                         {groupData.servingWeightG ? (
                           <CalorieDensityBadge kcal={groupKcal} servingSize={`${groupData.servingWeightG}g`} />
                         ) : null}

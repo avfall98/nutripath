@@ -89,11 +89,34 @@ class CookieJar {
   }
 }
 
+/**
+ * Route an outbound URL through an optional proxy service when
+ * WOOLWORTHS_PROXY_URL is configured. This lets Woolworths' Akamai bot
+ * protection see a trusted (ideally AU residential) IP instead of Vercel's
+ * datacenter IP, which is the usual cause of the 403.
+ *
+ * Two template styles are supported:
+ *  - Contains "{url}"  -> the target URL (encoded) is substituted in place.
+ *      e.g. https://api.scraperapi.com/?api_key=KEY&country_code=au&url={url}
+ *  - No "{url}"        -> the target URL (encoded) is appended as ?url=...
+ *      e.g. https://proxy.example.com/fetch
+ *
+ * Providers with rotating IPs should pin an AU session in the template so the
+ * cookie-priming request and the API request share one IP.
+ */
+function proxied(targetUrl: string): string {
+  const tpl = process.env.WOOLWORTHS_PROXY_URL
+  if (!tpl) return targetUrl
+  const encoded = encodeURIComponent(targetUrl)
+  if (tpl.includes("{url}")) return tpl.replace("{url}", encoded)
+  return `${tpl}${tpl.includes("?") ? "&" : "?"}url=${encoded}`
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), ms)
   try {
-    return await fetch(url, { ...init, signal: controller.signal })
+    return await fetch(proxied(url), { ...init, signal: controller.signal })
   } finally {
     clearTimeout(timeout)
   }
@@ -248,10 +271,12 @@ export async function POST(request: NextRequest) {
     if (!res.ok) {
       console.log("[v0] Woolworths fetch failed:", res.status, res.statusText)
       if (res.status === 403) {
+        const proxied = Boolean(process.env.WOOLWORTHS_PROXY_URL)
         return NextResponse.json(
           {
-            error:
-              "Woolworths blocked the request (403). This usually means their bot protection rejected the server's IP. Try again shortly, or enter the details manually.",
+            error: proxied
+              ? "Woolworths still blocked the request (403) even through the configured proxy. The proxy may not be routing through an Australian residential IP. Check WOOLWORTHS_PROXY_URL, or enter the details manually."
+              : "Woolworths blocked the request (403). Their bot protection rejected the server's IP. Set a WOOLWORTHS_PROXY_URL (an AU residential proxy) to route around it, or enter the details manually.",
           },
           { status: 502 },
         )

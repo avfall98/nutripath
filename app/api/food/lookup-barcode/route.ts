@@ -78,6 +78,24 @@ class CookieJar {
   }
 }
 
+/**
+ * Route a Woolworths URL through an optional proxy service when
+ * WOOLWORTHS_PROXY_URL is configured, so Akamai sees a trusted (ideally AU
+ * residential) IP instead of Vercel's datacenter IP. Not applied to Open Food
+ * Facts, which isn't blocked and shouldn't consume proxy credits.
+ *
+ * Template styles:
+ *  - Contains "{url}" -> target URL (encoded) is substituted in place.
+ *  - No "{url}"       -> target URL (encoded) is appended as ?url=...
+ */
+function proxied(targetUrl: string): string {
+  const tpl = process.env.WOOLWORTHS_PROXY_URL
+  if (!tpl) return targetUrl
+  const encoded = encodeURIComponent(targetUrl)
+  if (tpl.includes("{url}")) return tpl.replace("{url}", encoded)
+  return `${tpl}${tpl.includes("?") ? "&" : "?"}url=${encoded}`
+}
+
 async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Promise<Response> {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), ms)
@@ -93,13 +111,17 @@ type Parsed = {
   per100: Record<string, { value: number | null; unit: string }>
 }
 
+// Order matters: scanned with `.find()`, so more specific matchers must come
+// before generic ones they overlap with. Woolworths' sugars row is named
+// "Carbohydrate Sugars ... NIP" (contains both "carbohydrate" and "sugars"),
+// so `sugars` must be tested before `carbs`, and `satfat` before `fat`.
 const NUTRIENT_MATCHERS: { key: string; test: (name: string) => boolean }[] = [
   { key: "energy", test: (n) => n.includes("energy") && n.includes("kj") },
   { key: "protein", test: (n) => n.includes("protein") },
   { key: "satfat", test: (n) => n.includes("fatsaturated") },
   { key: "fat", test: (n) => n.includes("fattotal") },
-  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "sugars", test: (n) => n.includes("sugars") },
+  { key: "carbs", test: (n) => n.includes("carbohydrate") },
   { key: "fiber", test: (n) => n.includes("dietaryfibre") || n.includes("dietaryfiber") },
   { key: "sodium", test: (n) => n.includes("sodium") },
 ]
@@ -166,7 +188,7 @@ function deriveServingSize(perServe: number | null, per100: number | null): numb
 async function primeWoolworths(jar: CookieJar) {
   try {
     const home = await fetchWithTimeout(
-      "https://www.woolworths.com.au/",
+      proxied("https://www.woolworths.com.au/"),
       {
         headers: {
           ...BASE_HEADERS,
@@ -195,7 +217,7 @@ async function lookupWoolworths(barcode: string): Promise<LookupResult | null> {
   let stockcode: string | null = null
   try {
     const searchRes = await fetchWithTimeout(
-      "https://www.woolworths.com.au/apis/ui/Search/products",
+      proxied("https://www.woolworths.com.au/apis/ui/Search/products"),
       {
         method: "POST",
         headers: {
@@ -236,7 +258,7 @@ async function lookupWoolworths(barcode: string): Promise<LookupResult | null> {
   try {
     const apiUrl = `https://www.woolworths.com.au/apis/ui/product/detail/${stockcode}`
     const res = await fetchWithTimeout(
-      apiUrl,
+      proxied(apiUrl),
       {
         headers: {
           ...BASE_HEADERS,

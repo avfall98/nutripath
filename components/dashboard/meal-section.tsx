@@ -404,54 +404,55 @@ export function MealSection({
                 </div>
 
                 {/* Mobile stacked row */}
-                <div className="flex gap-3 border-t border-border py-3 first:border-t-0 md:hidden">
-                  <button
-                    type="button"
-                    disabled={!food}
-                    onClick={() => {
-                      if (!food) return
-                      setSelectedFood(food)
-                      setFoodEditOpen(true)
-                    }}
-                    className="flex shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
-                  >
-                    {thumb(food)}
-                  </button>
-                  <div className="flex min-w-0 flex-1 flex-col gap-2">
-                    <div className="flex items-start gap-2">
-                      <button
-                        type="button"
-                        disabled={!food}
-                        onClick={() => {
-                          if (!food) return
-                          setSelectedFood(food)
-                          setFoodEditOpen(true)
-                        }}
-                        className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
-                      >
-                        <p className="text-[13.5px] font-semibold leading-tight text-pretty">
-                          {food?.name || entry.name}
-                          <span className="ml-2 text-[11.5px] font-normal text-faint">
-                            {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                          </span>
-                        </p>
-                      </button>
-                      <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
-                    </div>
-                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                      <MacroBadges
-                        kcal={entryCalories}
-                        kcalPct={targetCalories ? entryCaloriesPct : null}
-                        protein={entryProtein}
-                        proteinPct={targetProtein ? entryProteinPct : null}
-                        carbs={entryCarbs}
-                        fat={entryFat}
-                      />
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                        <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
-                      </div>
-                    </div>
+                <div className="flex flex-col gap-2 border-t border-border py-3 first:border-t-0 md:hidden">
+                  {/* Row 1: Thumbnail + Name/Quantity + Menu */}
+                  <div className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      disabled={!food}
+                      onClick={() => {
+                        if (!food) return
+                        setSelectedFood(food)
+                        setFoodEditOpen(true)
+                      }}
+                      className="flex size-10 shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    >
+                      {thumb(food)}
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!food}
+                      onClick={() => {
+                        if (!food) return
+                        setSelectedFood(food)
+                        setFoodEditOpen(true)
+                      }}
+                      className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    >
+                      <p className="text-[13.5px] font-semibold leading-tight text-pretty">
+                        {food?.name || entry.name}
+                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                          {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                        </span>
+                      </p>
+                    </button>
+                    <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
+                  </div>
+                  
+                  {/* Row 2: Nutrition stats */}
+                  <MacroBadges
+                    kcal={entryCalories}
+                    kcalPct={targetCalories ? entryCaloriesPct : null}
+                    protein={entryProtein}
+                    proteinPct={targetProtein ? entryProteinPct : null}
+                    carbs={entryCarbs}
+                    fat={entryFat}
+                  />
+                  
+                  {/* Row 3: Score badges */}
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
                   </div>
                 </div>
               </li>

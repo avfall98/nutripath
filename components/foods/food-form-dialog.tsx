@@ -15,11 +15,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
+import { ArrowDown, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -62,6 +63,7 @@ const empty = {
   name: "",
   brand: "",
   servingSize: "",
+  servingsPack: "",
   calories: "",
   protein: "",
   carbs: "",
@@ -85,6 +87,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [pending, startTransition] = useTransition()
   const [uploading, setUploading] = useState(false)
   const [importing, setImporting] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [importQuery, setImportQuery] = useState("")
   const [scannerOpen, setScannerOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
@@ -115,6 +118,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         name: food?.name ?? "",
         brand: food?.brand ?? "",
         servingSize: servingNum,
+        servingsPack: food?.servingsPack ?? "",
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
@@ -137,6 +141,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setServingUnit(unit)
       setImportQuery("")
       setSource(null)
+      setShowImport(false)
     }
   }, [open, food])
 
@@ -242,6 +247,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: p.name || f.name,
       brand: p.brand || f.brand,
       servingSize: p.servingSize || f.servingSize,
+      servingsPack: f.servingsPack,
       calories: s(p.caloriesKj),
       protein: s(p.protein),
       fat: s(p.fat),
@@ -341,6 +347,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: form.name,
       brand: form.brand,
       servingSize,
+      servingsPack: form.servingsPack || null,
       calories: num(form.calories),
       protein: num(form.protein),
       carbs: num(form.carbs),
@@ -422,18 +429,34 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           onOpenAutoFocus={(e) => e.preventDefault()}
           className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8"
         >
-        <DialogHeader className="mb-6">
-          <DialogTitle className="text-2xl font-bold tracking-tight">
-            {food ? "Edit food" : "Add a food"}
-          </DialogTitle>
-          <DialogDescription>
-            Save foods you eat often with their nutrition, a photo, and a reference link.
-          </DialogDescription>
+        <DialogHeader className="mb-6 pr-10">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <DialogTitle className="text-2xl font-bold tracking-tight">
+                {food ? "Edit food" : "Add a food"}
+              </DialogTitle>
+              <DialogDescription>
+                Save foods you eat often with their nutrition, a photo, and a reference link.
+              </DialogDescription>
+            </div>
+            <Button
+              type="button"
+              variant={showImport ? "default" : "outline"}
+              size="sm"
+              aria-pressed={showImport}
+              onClick={() => setShowImport((v) => !v)}
+              className="h-9 shrink-0 rounded-xl px-4 font-semibold"
+            >
+              <Download data-icon="inline-start" />
+              Import
+            </Button>
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
 
+            {showImport && (
             <div className="rounded-lg bg-inset p-4 sm:p-5">
               <p className="mb-3 flex items-center gap-2 text-sm font-bold text-foreground">
                 <ArrowDown className="size-4" />
@@ -484,113 +507,115 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 Paste a product link, enter a stockcode, or scan a barcode to look up nutrition automatically.
               </p>
             </div>
+            )}
 
           <div className="flex items-start gap-4">
-            <div
-              className={cn(
-                "relative size-24 shrink-0 overflow-hidden rounded-2xl",
-                imageUrl ? "bg-muted" : "border-2 border-dashed border-border/70 bg-transparent",
-              )}
-            >
-              {imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={imageUrl || "/placeholder.svg"} alt="Food preview" className="size-full object-cover" />
-              ) : (
-                <div className="flex size-full items-center justify-center text-faint">
-                  <Plus className="size-6" />
-                </div>
-              )}
-              {imageUrl && (
-                <button
-                  type="button"
-                  onClick={() => setImageUrl(null)}
-                  className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-background/90 text-foreground shadow"
-                  aria-label="Remove image"
-                >
-                  <X className="size-3.5" />
-                </button>
-              )}
-            </div>
-            <div className="flex-1">
-              <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
-                <button
-                  type="button"
-                  onClick={() => setPhotoMode("upload")}
-                  className={cn(
-                    "h-9 rounded-lg text-sm font-semibold transition-colors",
-                    photoMode === "upload"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Upload
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPhotoMode("url")}
-                  className={cn(
-                    "h-9 rounded-lg text-sm font-semibold transition-colors",
-                    photoMode === "url"
-                      ? "bg-muted text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  Image URL
-                </button>
-              </div>
-              <div className="mt-2.5">
-                {photoMode === "upload" ? (
-                  <>
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFile}
-                      className="hidden"
-                      id="food-photo"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="h-11 w-full rounded-xl border-border/70 font-semibold"
-                      disabled={uploading}
-                      onClick={() => fileRef.current?.click()}
-                    >
-                      {uploading ? (
-                        <Loader2 data-icon="inline-start" className="animate-spin" />
-                      ) : (
-                        <ImagePlus data-icon="inline-start" />
-                      )}
-                      {uploading ? "Uploading..." : "Choose photo"}
-                    </Button>
-                  </>
-                ) : (
-                  <Input
-                    type="url"
-                    placeholder="https://example.com/food.jpg"
-                    value={imageUrl ?? ""}
-                    onChange={(e) => setImageUrl(e.target.value || null)}
-                    className={fieldInput}
-                  />
+            <Popover>
+              <PopoverTrigger
+                aria-label="Edit photo"
+                className={cn(
+                  "relative size-24 shrink-0 cursor-pointer overflow-hidden rounded-2xl transition-opacity hover:opacity-90",
+                  imageUrl ? "bg-muted" : "border-2 border-dashed border-border/70 bg-transparent",
                 )}
-              </div>
-            </div>
-          </div>
+              >
+                {imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={imageUrl || "/placeholder.svg"} alt="Food preview" className="size-full object-cover" />
+                ) : (
+                  <div className="flex size-full items-center justify-center text-faint">
+                    <Plus className="size-6" />
+                  </div>
+                )}
+              </PopoverTrigger>
+              <PopoverContent align="start" side="bottom" className="w-80">
+                <div className="grid grid-cols-2 gap-2 rounded-xl bg-muted/40 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode("upload")}
+                    className={cn(
+                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      photoMode === "upload"
+                        ? "bg-muted text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPhotoMode("url")}
+                    className={cn(
+                      "h-9 rounded-lg text-sm font-semibold transition-colors",
+                      photoMode === "url"
+                        ? "bg-muted text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    Image URL
+                  </button>
+                </div>
+                <div className="mt-2.5">
+                  {photoMode === "upload" ? (
+                    <>
+                      <input
+                        ref={fileRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFile}
+                        className="hidden"
+                        id="food-photo"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-11 w-full rounded-xl border-border/70 font-semibold"
+                        disabled={uploading}
+                        onClick={() => fileRef.current?.click()}
+                      >
+                        {uploading ? (
+                          <Loader2 data-icon="inline-start" className="animate-spin" />
+                        ) : (
+                          <ImagePlus data-icon="inline-start" />
+                        )}
+                        {uploading ? "Uploading..." : "Choose photo"}
+                      </Button>
+                    </>
+                  ) : (
+                    <Input
+                      type="url"
+                      placeholder="https://example.com/food.jpg"
+                      value={imageUrl ?? ""}
+                      onChange={(e) => setImageUrl(e.target.value || null)}
+                      className={fieldInput}
+                    />
+                  )}
+                </div>
+                {imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setImageUrl(null)}
+                    className="mt-2.5 flex h-9 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <X className="size-4" />
+                    Remove image
+                  </button>
+                )}
+              </PopoverContent>
+            </Popover>
 
-          <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="food-name" className={labelClass}>
-                Name
-              </label>
-              <Input
-                id="food-name"
-                value={form.name}
-                onChange={(e) => set("name", e.target.value)}
-                placeholder="e.g. Greek yogurt"
-                className={fieldInput}
-              />
-            </div>
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid flex-1 gap-5 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-name" className={labelClass}>
+                  Name
+                </label>
+                <Input
+                  id="food-name"
+                  value={form.name}
+                  onChange={(e) => set("name", e.target.value)}
+                  placeholder="e.g. Greek yogurt"
+                  className={fieldInput}
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-brand" className={labelClass}>
                   Brand <span className="font-normal text-faint">(optional)</span>
@@ -603,12 +628,28 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   className={fieldInput}
                 />
               </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-5">
+            <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <label htmlFor="food-serving" className={labelClass}>
-                    Serving size
-                  </label>
-                  <div className="flex items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
+                <label htmlFor="food-serving" className={labelClass}>
+                  Serving size
+                </label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="food-serving"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={form.servingSize}
+                    onChange={(e) => set("servingSize", e.target.value)}
+                    placeholder="e.g. 100"
+                    className={cn(fieldInput, "flex-1")}
+                  />
+                  <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
                     {(["g", "ml"] as ServingUnit[]).map((u) => (
                       <button
                         key={u}
@@ -627,15 +668,20 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     ))}
                   </div>
                 </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-servings-pack" className={labelClass}>
+                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                </label>
                 <Input
-                  id="food-serving"
+                  id="food-servings-pack"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
-                  value={form.servingSize}
-                  onChange={(e) => set("servingSize", e.target.value)}
-                  placeholder="e.g. 100"
+                  value={form.servingsPack}
+                  onChange={(e) => set("servingsPack", e.target.value)}
+                  placeholder="e.g. 4"
                   className={fieldInput}
                 />
               </div>

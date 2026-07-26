@@ -14,6 +14,7 @@ export type FoodDTO = {
   name: string
   brand: string | null
   servingSize: string | null
+  servingsPack: string | null
   calories: number
   protein: number
   carbs: number | null
@@ -32,6 +33,7 @@ export type FoodDTO = {
   sodiumPerHundred: number | null
   imageUrl: string | null
   infoUrl: string | null
+  favourite: boolean
 }
 
 export type MealGroupDTO = {

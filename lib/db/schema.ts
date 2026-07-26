@@ -6,6 +6,7 @@ import {
   numeric,
   date,
   timestamp,
+  boolean,
 } from "drizzle-orm/pg-core"
 
 export const profile = pgTable("profile", {
@@ -33,6 +34,7 @@ export const foods = pgTable("foods", {
   name: text("name").notNull(),
   brand: text("brand"),
   servingSize: text("serving_size"),
+  servingsPack: text("servings_pack"),
   calories: numeric("calories").notNull().default("0"),
   protein: numeric("protein").notNull().default("0"),
   carbs: numeric("carbs"),
@@ -51,6 +53,7 @@ export const foods = pgTable("foods", {
   sodiumPerHundred: numeric("sodium_per_hundred"),
   imageUrl: text("image_url"),
   infoUrl: text("info_url"),
+  favourite: boolean("favourite").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { deleteFood } from "@/app/actions/foods"
+import { deleteFood, toggleFavourite } from "@/app/actions/foods"
 import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
@@ -21,7 +21,7 @@ import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTi
 import { proteinPer100Cal, calorieDensity, parseServingWeight } from "@/lib/nutrition"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { ArrowUpDown, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
+import { ArrowUpDown, Bookmark, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
 
 type SortKey = "name-asc" | "name-desc" | "kcal-asc" | "kcal-desc" | "protein-asc" | "protein-desc" | "carbs-asc" | "carbs-desc" | "fat-asc" | "fat-desc" | "protein-score-asc" | "protein-score-desc" | "kcal-score-asc" | "kcal-score-desc"
 type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores"
@@ -45,7 +45,10 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
   const [editing, setEditing] = useState<FoodDTO | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("name-asc")
   const [filter, setFilter] = useState<FilterKey>("all")
+  const [favOverrides, setFavOverrides] = useState<Record<number, boolean>>({})
   const [, startTransition] = useTransition()
+
+  const isFavourite = (food: FoodDTO) => favOverrides[food.id] ?? food.favourite
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -138,6 +141,16 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
     })
   }
 
+  function handleToggleFavourite(food: FoodDTO) {
+    const next = !isFavourite(food)
+    setFavOverrides((prev) => ({ ...prev, [food.id]: next }))
+    startTransition(async () => {
+      await toggleFavourite(food.id, next)
+      toast.success(next ? `Added "${food.name}" to favourites.` : `Removed "${food.name}" from favourites.`)
+      router.refresh()
+    })
+  }
+
   function foodMenu(food: FoodDTO) {
     return (
       <DropdownMenu>
@@ -148,6 +161,13 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
+            <DropdownMenuItem onClick={() => handleToggleFavourite(food)}>
+              <Bookmark
+                data-icon="inline-start"
+                className={isFavourite(food) ? "fill-current text-primary" : ""}
+              />
+              {isFavourite(food) ? "Remove favourite" : "Favourite"}
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => openEdit(food)}>
               <Pencil data-icon="inline-start" />
               Edit
@@ -401,13 +421,18 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                       )}
                     </button>
                     <div className="min-w-0">
-                      <button
-                        type="button"
-                        onClick={() => openEdit(food)}
-                        className="block max-w-full truncate text-left text-[14px] font-semibold leading-tight hover:underline"
-                      >
-                        {food.name}
-                      </button>
+                      <div className="flex items-center gap-1.5">
+                        {isFavourite(food) && (
+                          <Bookmark className="size-3.5 shrink-0 fill-current text-primary" aria-label="Favourite" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => openEdit(food)}
+                          className="block max-w-full truncate text-left text-[14px] font-semibold leading-tight hover:underline"
+                        >
+                          {food.name}
+                        </button>
+                      </div>
                       {(food.brand || food.servingSize) && (
                         <p className="truncate text-[11.5px] text-faint">
                           {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
@@ -473,6 +498,12 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                       <div className="flex min-w-0 flex-1 flex-col gap-2">
                         <div className="flex items-start gap-2">
                           <p className="min-w-0 flex-1 leading-tight text-pretty">
+                            {isFavourite(food) && (
+                              <Bookmark
+                                className="mr-1 inline-block size-3.5 -translate-y-px fill-current align-middle text-primary"
+                                aria-label="Favourite"
+                              />
+                            )}
                             <button
                               type="button"
                               onClick={() => openEdit(food)}

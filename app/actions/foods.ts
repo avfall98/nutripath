@@ -1,8 +1,8 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { foods } from "@/lib/db/schema"
-import { asc, eq } from "drizzle-orm"
+import { entries, foods } from "@/lib/db/schema"
+import { asc, desc, eq, isNotNull, sql } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
 import type { FoodDTO } from "@/lib/types"
@@ -37,6 +37,43 @@ function serialize(r: typeof foods.$inferSelect): FoodDTO {
 export async function getFoods(): Promise<FoodDTO[]> {
   const rows = await db.select().from(foods).orderBy(asc(foods.name))
   return rows.map(serialize)
+}
+
+// The N most recently logged library foods (deduped by food, newest first).
+export async function getRecentFoods(limit = 10): Promise<FoodDTO[]> {
+  const rows = await db
+    .select({ food: foods, createdAt: entries.createdAt })
+    .from(entries)
+    .innerJoin(foods, eq(entries.foodId, foods.id))
+    .where(isNotNull(entries.foodId))
+    .orderBy(desc(entries.createdAt))
+    .limit(200)
+
+  const seen = new Set<number>()
+  const recent: FoodDTO[] = []
+  for (const { food } of rows) {
+    if (seen.has(food.id)) continue
+    seen.add(food.id)
+    recent.push(serialize(food))
+    if (recent.length >= limit) break
+  }
+  return recent
+}
+
+// The most frequently logged library foods. This currently ranks by how often a
+// food has been logged; once the favourite-tagging feature lands, this will
+// prefer explicitly favourited foods.
+export async function getFavouriteFoods(limit = 20): Promise<FoodDTO[]> {
+  const rows = await db
+    .select({ food: foods, uses: sql<number>`count(*)` })
+    .from(entries)
+    .innerJoin(foods, eq(entries.foodId, foods.id))
+    .where(isNotNull(entries.foodId))
+    .groupBy(foods.id)
+    .orderBy(desc(sql`count(*)`))
+    .limit(limit)
+
+  return rows.map(({ food }) => serialize(food))
 }
 
 export type FoodInput = {

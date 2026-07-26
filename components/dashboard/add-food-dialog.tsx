@@ -1,7 +1,9 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
+import useSWR from "swr"
 import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
+import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
 import type { FoodDTO, MealGroupDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
@@ -18,7 +20,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Plus, Search, UtensilsCrossed } from "lucide-react"
+import { Clock, Loader2, Plus, Search, Star, UtensilsCrossed } from "lucide-react"
 
 type Props = {
   open: boolean
@@ -32,7 +34,7 @@ type Props = {
 }
 
 type QuantityMode = "servings" | "weight"
-type TabKey = "library" | "quick"
+type TabKey = "library" | "recent" | "favourites" | "quick"
 
 const KJ_PER_KCAL = 4.184
 
@@ -63,6 +65,16 @@ export function AddFoodDialog({
       (f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q),
     )
   }, [foods, query])
+
+  // Lazily load Recent / Favourites only while the dialog is open on that tab.
+  const { data: recentFoods, isLoading: recentLoading } = useSWR(
+    open && tab === "recent" ? ["recent-foods", dateKey] : null,
+    () => getRecentFoods(10),
+  )
+  const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
+    open && tab === "favourites" ? ["favourite-foods", dateKey] : null,
+    () => getFavouriteFoods(20),
+  )
 
   function num(v: string, fallback = 0): number {
     const n = Number(v)
@@ -127,6 +139,223 @@ export function AddFoodDialog({
     })
   }
 
+  function renderQuantityControls() {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+          {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+            const active = qtyMode === mode
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setQtyMode(mode)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                )}
+              >
+                {mode}
+              </button>
+            )
+          })}
+        </div>
+        {qtyMode === "servings" ? (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.5"
+            aria-label="Servings"
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="1"
+          />
+        ) : (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            aria-label="Weight in grams"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="g"
+          />
+        )}
+      </div>
+    )
+  }
+
+  function renderFoodList(list: FoodDTO[]) {
+    return (
+      <>
+        {/* Desktop table */}
+        <div className="hidden flex-col md:flex">
+          <div
+            className={cn(
+              ROW_GRID,
+              "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
+            )}
+          >
+            <span className="text-right">#</span>
+            <span />
+            <span>Food</span>
+            <span>Kcal</span>
+            <span>Protein</span>
+            <span>Carbs</span>
+            <span>Fat</span>
+            <span className="text-right">Kcal score</span>
+            <span className="text-right">P score</span>
+            <span />
+          </div>
+          <ul className="mt-1 flex flex-col">
+            {list.map((food, i) => {
+              const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
+              const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
+              const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+              return (
+                <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
+                  <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
+                  <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                    {food.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                    ) : (
+                      <span className="flex size-full items-center justify-center text-faint">
+                        <UtensilsCrossed className="size-4" />
+                      </span>
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{food.name}</p>
+                    {(food.brand || food.servingSize) && (
+                      <p className="truncate text-[11.5px] text-faint">
+                        {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="calories" />
+                    {caloriesKcal}
+                    {targetCalories ? <span className="font-normal text-faint">({caloriesPct}%)</span> : null}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="protein" />
+                    {Math.round(food.protein)}
+                    {targetProtein ? <span className="font-normal text-faint">({proteinPct}%)</span> : null}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="carbs" />
+                    {food.carbs != null ? Math.round(food.carbs) : "—"}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="fat" />
+                    {food.fat != null ? Math.round(food.fat) : "—"}
+                  </span>
+                  <div className="flex items-center justify-end">
+                    <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                  </div>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => addFromLibrary(food)}
+                      aria-label={`Add ${food.name}`}
+                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="mt-3 pb-1 text-center text-[11.5px] text-faint">
+            Showing {list.length} {list.length === 1 ? "food" : "foods"}
+          </p>
+        </div>
+
+        {/* Mobile stacked cards */}
+        <ul className="flex flex-col md:hidden">
+          {list.map((food) => {
+            const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
+            const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
+            const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+            return (
+              <li key={food.id} className="flex gap-3 border-t border-border py-4 first:border-t-0 first:pt-0">
+                <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                  {food.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                  ) : (
+                    <span className="flex size-full items-center justify-center text-faint">
+                      <UtensilsCrossed className="size-5" />
+                    </span>
+                  )}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <div className="flex items-start gap-2">
+                    <p className="min-w-0 flex-1 leading-tight text-pretty">
+                      <span className="text-[13.5px] font-semibold">{food.name}</span>
+                      {(food.brand || food.servingSize) && (
+                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                          {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                        </span>
+                      )}
+                    </p>
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => addFromLibrary(food)}
+                      aria-label={`Add ${food.name}`}
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                    <MacroBadges
+                      kcal={caloriesKcal}
+                      kcalPct={targetCalories ? caloriesPct : null}
+                      protein={food.protein}
+                      proteinPct={targetProtein ? proteinPct : null}
+                      carbs={food.carbs}
+                      fat={food.fat}
+                    />
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                      <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                    </div>
+                  </div>
+                </div>
+              </li>
+            )
+          })}
+        </ul>
+      </>
+    )
+  }
+
+  const emptyState = (icon: React.ReactNode, text: string) => (
+    <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-muted-foreground">
+      {icon}
+      <p className="max-w-xs text-pretty">{text}</p>
+    </div>
+  )
+
+  const loadingState = (
+    <div className="flex items-center justify-center gap-2 py-12 text-sm text-muted-foreground">
+      <Loader2 className="size-4 animate-spin" />
+      Loading…
+    </div>
+  )
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
@@ -140,6 +369,8 @@ export function AddFoodDialog({
           {(
             [
               { key: "library", label: "From library" },
+              { key: "recent", label: "Recent" },
+              { key: "favourites", label: "Favourites" },
               { key: "quick", label: "Quick add" },
             ] as { key: TabKey; label: string }[]
           ).map((t) => {
@@ -160,224 +391,63 @@ export function AddFoodDialog({
           })}
         </div>
 
-        {tab === "library" ? (
+        {tab !== "quick" ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
-            {/* Search + servings/weight toggle + quantity */}
+            {/* Search (library only) + servings/weight toggle + quantity */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
-                  placeholder="Search foods..."
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
-                  {(["servings", "weight"] as QuantityMode[]).map((mode) => {
-                    const active = qtyMode === mode
-                    return (
-                      <button
-                        key={mode}
-                        type="button"
-                        onClick={() => setQtyMode(mode)}
-                        className={cn(
-                          "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
-                          active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
-                        )}
-                      >
-                        {mode}
-                      </button>
-                    )
-                  })}
+              {tab === "library" ? (
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
+                    placeholder="Search foods..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
                 </div>
-                {qtyMode === "servings" ? (
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.5"
-                    aria-label="Servings"
-                    value={servings}
-                    onChange={(e) => setServings(e.target.value)}
-                    className="h-11 w-24 rounded-full text-center"
-                    placeholder="1"
-                  />
-                ) : (
-                  <Input
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    aria-label="Weight in grams"
-                    value={weight}
-                    onChange={(e) => setWeight(e.target.value)}
-                    className="h-11 w-24 rounded-full text-center"
-                    placeholder="g"
-                  />
-                )}
-              </div>
+              ) : (
+                <p className="flex-1 text-sm text-muted-foreground">
+                  {tab === "recent"
+                    ? "Your 10 most recently logged foods."
+                    : "Your most-logged foods. Favourite tagging is coming soon."}
+                </p>
+              )}
+              {renderQuantityControls()}
             </div>
 
             {/* List */}
             <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-              {foods.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">
-                  No foods saved yet. Add some in the Foods tab, or use Quick add.
-                </p>
-              ) : filtered.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">No matches for &quot;{query}&quot;.</p>
+              {tab === "library" ? (
+                foods.length === 0 ? (
+                  emptyState(
+                    <UtensilsCrossed className="size-6" />,
+                    "No foods saved yet. Add some in the Foods tab, or use Quick add.",
+                  )
+                ) : filtered.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">No matches for &quot;{query}&quot;.</p>
+                ) : (
+                  renderFoodList(filtered)
+                )
+              ) : tab === "recent" ? (
+                recentLoading ? (
+                  loadingState
+                ) : !recentFoods || recentFoods.length === 0 ? (
+                  emptyState(
+                    <Clock className="size-6" />,
+                    "No recently logged foods yet. Add a food from your library and it will show up here.",
+                  )
+                ) : (
+                  renderFoodList(recentFoods)
+                )
+              ) : favouriteLoading ? (
+                loadingState
+              ) : !favouriteFoods || favouriteFoods.length === 0 ? (
+                emptyState(
+                  <Star className="size-6" />,
+                  "No favourites yet. Once you tag favourites they will appear here — for now this shows your most-logged foods.",
+                )
               ) : (
-                <>
-                  {/* Desktop table */}
-                  <div className="hidden flex-col md:flex">
-                    <div
-                      className={cn(
-                        ROW_GRID,
-                        "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
-                      )}
-                    >
-                      <span className="text-right">#</span>
-                      <span />
-                      <span>Food</span>
-                      <span>Kcal</span>
-                      <span>Protein</span>
-                      <span>Carbs</span>
-                      <span>Fat</span>
-                      <span className="text-right">Kcal score</span>
-                      <span className="text-right">P score</span>
-                      <span />
-                    </div>
-                    <ul className="mt-1 flex flex-col">
-                      {filtered.map((food, i) => {
-                        const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
-                        const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
-                        const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
-                        return (
-                          <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
-                            <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
-                            <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
-                              {food.imageUrl ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                              ) : (
-                                <span className="flex size-full items-center justify-center text-faint">
-                                  <UtensilsCrossed className="size-4" />
-                                </span>
-                              )}
-                            </span>
-                            <div className="min-w-0">
-                              <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{food.name}</p>
-                              {(food.brand || food.servingSize) && (
-                                <p className="truncate text-[11.5px] text-faint">
-                                  {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
-                                </p>
-                              )}
-                            </div>
-                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
-                              <MacroIcon macro="calories" />
-                              {caloriesKcal}
-                              {targetCalories ? <span className="font-normal text-faint">({caloriesPct}%)</span> : null}
-                            </span>
-                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
-                              <MacroIcon macro="protein" />
-                              {Math.round(food.protein)}
-                              {targetProtein ? <span className="font-normal text-faint">({proteinPct}%)</span> : null}
-                            </span>
-                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
-                              <MacroIcon macro="carbs" />
-                              {food.carbs != null ? Math.round(food.carbs) : "—"}
-                            </span>
-                            <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
-                              <MacroIcon macro="fat" />
-                              {food.fat != null ? Math.round(food.fat) : "—"}
-                            </span>
-                            <div className="flex items-center justify-end">
-                              <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
-                            </div>
-                            <div className="flex items-center justify-end">
-                              <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                            </div>
-                            <div className="flex justify-end">
-                              <button
-                                type="button"
-                                disabled={pending}
-                                onClick={() => addFromLibrary(food)}
-                                aria-label={`Add ${food.name}`}
-                                className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                              >
-                                <Plus className="size-4" />
-                              </button>
-                            </div>
-                          </li>
-                        )
-                      })}
-                    </ul>
-                    <p className="mt-3 pb-1 text-center text-[11.5px] text-faint">
-                      Showing {filtered.length === foods.length ? "all " : ""}
-                      {filtered.length} {filtered.length === 1 ? "food" : "foods"}
-                    </p>
-                  </div>
-
-                  {/* Mobile stacked cards */}
-                  <ul className="flex flex-col md:hidden">
-                    {filtered.map((food) => {
-                      const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
-                      const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
-                      const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
-                      return (
-                        <li key={food.id} className="flex gap-3 border-t border-border py-4 first:border-t-0 first:pt-0">
-                          <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
-                            {food.imageUrl ? (
-                              // eslint-disable-next-line @next/next/no-img-element
-                              <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                            ) : (
-                              <span className="flex size-full items-center justify-center text-faint">
-                                <UtensilsCrossed className="size-5" />
-                              </span>
-                            )}
-                          </span>
-                          <div className="flex min-w-0 flex-1 flex-col gap-2">
-                            <div className="flex items-start gap-2">
-                              <p className="min-w-0 flex-1 leading-tight text-pretty">
-                                <span className="text-[13.5px] font-semibold">{food.name}</span>
-                                {(food.brand || food.servingSize) && (
-                                  <span className="ml-2 text-[11.5px] font-normal text-faint">
-                                    {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
-                                  </span>
-                                )}
-                              </p>
-                              <button
-                                type="button"
-                                disabled={pending}
-                                onClick={() => addFromLibrary(food)}
-                                aria-label={`Add ${food.name}`}
-                                className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                              >
-                                <Plus className="size-4" />
-                              </button>
-                            </div>
-                            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                              <MacroBadges
-                                kcal={caloriesKcal}
-                                kcalPct={targetCalories ? caloriesPct : null}
-                                protein={food.protein}
-                                proteinPct={targetProtein ? proteinPct : null}
-                                carbs={food.carbs}
-                                fat={food.fat}
-                              />
-                              <div className="flex shrink-0 items-center gap-1.5">
-                                <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                                <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
-                              </div>
-                            </div>
-                          </div>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </>
+                renderFoodList(favouriteFoods)
               )}
             </div>
           </div>

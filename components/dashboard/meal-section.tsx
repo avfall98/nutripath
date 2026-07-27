@@ -170,7 +170,7 @@ export function MealSection({
   return (
     <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
       {/* Header: name + (mobile-only) summary + meal score pills */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+      <div className="flex flex-col gap-2">
         <h3
           className={cn(
             "text-lg font-extrabold tracking-[-0.3px]",
@@ -180,20 +180,26 @@ export function MealSection({
           {group.name}
         </h3>
         {entries.length > 0 ? (
-          <span className="text-[13px] tabular-nums text-muted-foreground md:hidden">
-            {groupCaloriesKcal} kcal{targetCalories ? ` (${groupCaloriesPct}%)` : ""} · {round(groupProtein)}g protein
-            {targetProtein ? ` (${groupProteinPct}%)` : ""}
-          </span>
+          <div className="flex flex-col gap-2 md:hidden">
+            {/* Macro badges row */}
+            <MacroBadges
+              kcal={groupCaloriesKcal}
+              kcalPct={targetCalories ? groupCaloriesPct : null}
+              protein={groupProtein}
+              proteinPct={targetProtein ? groupProteinPct : null}
+              carbs={groupCarbs}
+              fat={groupFat}
+            />
+            {/* Score badges row */}
+            <div className="flex items-center gap-1.5">
+              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+              {groupServingSize ? (
+                <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
+              ) : null}
+            </div>
+          </div>
         ) : (
           <span className="text-[13px] text-faint">Nothing logged yet</span>
-        )}
-        {entries.length > 0 && (
-          <div className="flex items-center gap-1.5 md:hidden">
-            <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
-            {groupServingSize ? (
-              <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
-            ) : null}
-          </div>
         )}
       </div>
 
@@ -431,8 +437,14 @@ export function MealSection({
                     >
                       <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                         {food?.name || entry.name}
-                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                        <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                          {entry.servingWeightG && (
+                            <>
+                              {" · "}
+                              {Math.round(entry.quantity * entry.servingWeightG)}g
+                            </>
+                          )}
                         </span>
                       </p>
                     </button>

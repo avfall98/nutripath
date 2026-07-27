@@ -380,6 +380,12 @@ export function MealSection({
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
                       {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                      {food?.servingSize && (
+                        <>
+                          {" − "}
+                          {food.servingSize}
+                        </>
+                      )}
                     </p>
                   </button>
                   <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
@@ -439,6 +445,12 @@ export function MealSection({
                         {food?.name || entry.name}
                         <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                          {food?.servingSize && (
+                            <>
+                              {" − "}
+                              {food.servingSize}
+                            </>
+                          )}
                           {entry.servingWeightG && (
                             <>
                               {" · "}

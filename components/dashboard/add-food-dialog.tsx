@@ -373,7 +373,6 @@ export function AddFoodDialog({
       <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
-          <DialogDescription>Log a food from your library or quickly add a one-off item.</DialogDescription>
         </DialogHeader>
 
         {/* Pill tabs */}

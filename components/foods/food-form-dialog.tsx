@@ -147,7 +147,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setSource(null)
       setShowImport(false)
     }
-  }, [open, food])
+  }, [open, food, pending])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => {
@@ -386,15 +386,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       infoUrl: form.infoUrl,
     }
     startTransition(async () => {
-      if (food) {
-        await updateFood(food.id, input)
-        toast.success("Food updated.")
-      } else {
-        await createFood(input)
-        toast.success("Food added to your library.")
+      try {
+        if (food) {
+          await updateFood(food.id, input)
+          toast.success("Food updated.")
+        } else {
+          await createFood(input)
+          toast.success("Food added to your library.")
+        }
+      } finally {
+        onOpenChange(false)
+        onSaved()
       }
-      onOpenChange(false)
-      onSaved()
     })
   }
 

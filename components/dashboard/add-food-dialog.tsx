@@ -380,9 +380,9 @@ export function AddFoodDialog({
         <div className="flex items-center gap-2">
           {(
             [
+              { key: "library", label: "Library" },
               { key: "favourites", label: "Favourites" },
               { key: "recent", label: "Recent" },
-              { key: "library", label: "Library" },
               { key: "quick", label: "Custom" },
             ] as { key: TabKey; label: string }[]
           ).map((t) => {

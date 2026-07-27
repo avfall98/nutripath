@@ -349,7 +349,7 @@ export function MealSection({
               targetCalories && targetCalories > 0 ? Math.round((entryCalories / targetCalories) * 100) : 0
             const entryProteinPct =
               targetProtein && targetProtein > 0 ? Math.round((entryProtein / targetProtein) * 100) : 0
-            const qtyLabel = entry.quantity % 1 === 0 ? entry.quantity.toFixed(1) : String(entry.quantity)
+            const qtyLabel = entry.quantity % 1 === 0 ? String(Math.floor(entry.quantity)) : String(entry.quantity)
             return (
               <li key={entry.id}>
                 {/* Desktop table row */}

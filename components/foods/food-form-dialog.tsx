@@ -117,12 +117,24 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         }
       }
       
+      // Parse packSize to extract number (same unit as servingSize)
+      let packNum = ""
+      if (food?.packSize) {
+        const match = food.packSize.match(/^([\d.]+)\s*(g|ml)$/i)
+        if (match) {
+          packNum = match[1]
+        } else {
+          // Fallback: treat entire string as pack size if no unit found
+          packNum = food.packSize
+        }
+      }
+      
       setForm({
         name: food?.name ?? "",
         brand: food?.brand ?? "",
         servingSize: servingNum,
         servingsPack: food?.servingsPack ?? "",
-        packSize: food?.packSize ?? "",
+        packSize: packNum,
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",

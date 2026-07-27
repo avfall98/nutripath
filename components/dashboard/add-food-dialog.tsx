@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useMemo, useState, useTransition, useEffect } from "react"
 import useSWR from "swr"
 import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
 import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
@@ -51,9 +51,21 @@ export function AddFoodDialog({
   onAdded,
 }: Props) {
   const [pending, startTransition] = useTransition()
-  const [tab, setTab] = useState<TabKey>("favourites")
+  const [tab, setTab] = useState<TabKey>(() => {
+    // Initialize from session storage, default to "favourites"
+    if (typeof window !== "undefined") {
+      const saved = sessionStorage.getItem("addFoodDialog_selectedTab")
+      return (saved as TabKey) || "favourites"
+    }
+    return "favourites"
+  })
   const [query, setQuery] = useState("")
   const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
+
+  // Save tab selection to sessionStorage whenever it changes
+  useEffect(() => {
+    sessionStorage.setItem("addFoodDialog_selectedTab", tab)
+  }, [tab])
   const [servings, setServings] = useState("1")
   const [weight, setWeight] = useState("")
   const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })

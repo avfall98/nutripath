@@ -35,6 +35,7 @@ export const foods = pgTable("foods", {
   brand: text("brand"),
   servingSize: text("serving_size"),
   servingsPack: text("servings_pack"),
+  packSize: text("pack_size"),
   calories: numeric("calories").notNull().default("0"),
   protein: numeric("protein").notNull().default("0"),
   carbs: numeric("carbs"),

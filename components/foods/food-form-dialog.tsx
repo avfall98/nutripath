@@ -29,6 +29,8 @@ type ImportedProduct = {
   infoUrl: string
   servingSize: string
   servingUnit: ServingUnit
+  servingsPack: string | null
+  packSize: string | null
   caloriesKj: number | null
   protein: number | null
   fat: number | null
@@ -64,6 +66,7 @@ const empty = {
   brand: "",
   servingSize: "",
   servingsPack: "",
+  packSize: "",
   calories: "",
   protein: "",
   carbs: "",
@@ -119,6 +122,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         brand: food?.brand ?? "",
         servingSize: servingNum,
         servingsPack: food?.servingsPack ?? "",
+        packSize: food?.packSize ?? "",
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
@@ -247,7 +251,8 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: p.name || f.name,
       brand: p.brand || f.brand,
       servingSize: p.servingSize || f.servingSize,
-      servingsPack: f.servingsPack,
+      servingsPack: p.servingsPack || f.servingsPack,
+      packSize: p.packSize || f.packSize,
       calories: s(p.caloriesKj),
       protein: s(p.protein),
       fat: s(p.fat),
@@ -343,11 +348,13 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       return
     }
     const servingSize = form.servingSize.trim() ? `${form.servingSize}${servingUnit}` : ""
+    const packSize = form.packSize.trim() ? `${form.packSize}${servingUnit}` : ""
     const input: FoodInput = {
       name: form.name,
       brand: form.brand,
       servingSize,
       servingsPack: form.servingsPack || null,
+      packSize: packSize || null,
       calories: num(form.calories),
       protein: num(form.protein),
       carbs: num(form.carbs),
@@ -634,6 +641,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           <div className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
+                <label htmlFor="food-servings-pack" className={labelClass}>
+                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <Input
+                  id="food-servings-pack"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={form.servingsPack}
+                  onChange={(e) => set("servingsPack", e.target.value)}
+                  placeholder="e.g. 4"
+                  className={fieldInput}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
                 <label htmlFor="food-serving" className={labelClass}>
                   Serving size
                 </label>
@@ -669,22 +692,23 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="food-servings-pack" className={labelClass}>
-                  Servings / pack <span className="font-normal text-faint">(optional)</span>
-                </label>
-                <Input
-                  id="food-servings-pack"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.servingsPack}
-                  onChange={(e) => set("servingsPack", e.target.value)}
-                  placeholder="e.g. 4"
-                  className={fieldInput}
-                />
-              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="food-pack-size" className={labelClass}>
+                Pack size <span className="font-normal text-faint">(optional)</span>
+              </label>
+              <Input
+                id="food-pack-size"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={form.packSize}
+                onChange={(e) => set("packSize", e.target.value)}
+                placeholder={`e.g. 500 (total ${servingUnit} of product)`}
+                className={fieldInput}
+              />
             </div>
 
             <div className="flex flex-col gap-2">

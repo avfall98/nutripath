@@ -26,6 +26,8 @@ type ImportResult = {
   infoUrl: string
   servingSize: string
   servingUnit: "g" | "ml"
+  servingsPack: string | null
+  packSize: string | null
   // Energy is stored in kJ, sodium in mg, everything else in grams to match the app.
   caloriesKj: number | null
   protein: number | null
@@ -324,30 +326,32 @@ export async function POST(request: NextRequest) {
     const isLiquid = packageSize.includes("ml") || packageSize.includes("litre") || /\d\s*l\b/.test(packageSize)
     const servingUnit: "g" | "ml" = isLiquid ? "ml" : "g"
 
-    const result: ImportResult = {
-      name,
-      brand,
-      imageUrl: image,
-      infoUrl: `https://www.woolworths.com.au/shop/productdetails/${stockcode}`,
-      servingSize: servingNum != null ? String(servingNum) : "",
-      servingUnit,
-      caloriesKj,
-      protein: val(perServe.protein),
-      fat: val(perServe.fat),
-      saturatedFat: val(perServe.satfat),
-      carbs: val(perServe.carbs),
-      sugars: val(perServe.sugars),
-      dietaryFiber: val(perServe.fiber),
-      sodium: val(perServe.sodium),
-      caloriesKjPer100,
-      proteinPer100: val(per100.protein),
-      fatPer100: val(per100.fat),
-      saturatedFatPer100: val(per100.satfat),
-      carbsPer100: val(per100.carbs),
-      sugarsPer100: val(per100.sugars),
-      dietaryFiberPer100: val(per100.fiber),
-      sodiumPer100: val(per100.sodium),
-    }
+  const result: ImportResult = {
+    name,
+    brand,
+    imageUrl: image,
+    infoUrl: `https://www.woolworths.com.au/shop/productdetails/${stockcode}`,
+    servingSize: servingNum != null ? String(servingNum) : "",
+    servingUnit,
+    servingsPack: null,
+    packSize: packageSize ? parseNumber(packageSize) ? String(parseNumber(packageSize)) : null : null,
+    caloriesKj,
+    protein: val(perServe.protein),
+    fat: val(perServe.fat),
+    saturatedFat: val(perServe.satfat),
+    carbs: val(perServe.carbs),
+    sugars: val(perServe.sugars),
+    dietaryFiber: val(perServe.fiber),
+    sodium: val(perServe.sodium),
+    caloriesKjPer100,
+    proteinPer100: val(per100.protein),
+    fatPer100: val(per100.fat),
+    saturatedFatPer100: val(per100.satfat),
+    carbsPer100: val(per100.carbs),
+    sugarsPer100: val(per100.sugars),
+    dietaryFiberPer100: val(per100.fiber),
+    sodiumPer100: val(per100.sodium),
+  }
 
     if (!result.name) {
       return NextResponse.json({ error: "Product found but it has no name." }, { status: 422 })

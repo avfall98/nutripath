@@ -380,7 +380,7 @@ export function AddFoodDialog({
           {(
             [
               { key: "library", label: "Library" },
-              { key: "favourites", label: "Favourites" },
+              { key: "favourites", label: "Favs" },
               { key: "recent", label: "Recent" },
               { key: "quick", label: "Custom" },
             ] as { key: TabKey; label: string }[]

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
@@ -87,7 +87,7 @@ const empty = {
 }
 
 export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
-  const [pending, startTransition] = useTransition()
+  const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -158,8 +158,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setImportQuery("")
       setSource(null)
       setShowImport(false)
+      // Always clear any stale saving state when (re)opening the dialog
+      setSaving(false)
     }
-  }, [open, food, pending])
+  }, [open, food])
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => {
@@ -397,7 +399,8 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       imageUrl,
       infoUrl: form.infoUrl,
     }
-    startTransition(async () => {
+    setSaving(true)
+    void (async () => {
       try {
         if (food) {
           await updateFood(food.id, input)
@@ -406,11 +409,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           await createFood(input)
           toast.success("Food added to your library.")
         }
-      } finally {
-        onOpenChange(false)
-        onSaved()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not save food.")
+        // Re-enable the button so the user can retry on failure
+        setSaving(false)
+        return
       }
-    })
+      // Clear the saving state BEFORE closing/refreshing so the indicator
+      // can never carry over to the next food opened in this dialog instance.
+      setSaving(false)
+      onOpenChange(false)
+      onSaved()
+    })()
   }
 
   const fieldInput =
@@ -821,9 +831,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             <Button
               type="submit"
               className="h-11 rounded-full px-7 font-semibold"
-              disabled={pending || uploading}
+              disabled={saving || uploading}
             >
-              {pending ? "Saving..." : food ? "Save changes" : "Save food"}
+              {saving ? "Saving..." : food ? "Save changes" : "Save food"}
             </Button>
           </DialogFooter>
         </form>

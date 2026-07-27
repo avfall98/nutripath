@@ -300,51 +300,58 @@ export function AddFoodDialog({
             const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
             const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
             return (
-              <li key={food.id} className="flex gap-3 border-t border-border py-4 first:border-t-0 first:pt-0">
-                <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
-                  {food.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                  ) : (
-                    <span className="flex size-full items-center justify-center text-faint">
-                      <UtensilsCrossed className="size-5" />
-                    </span>
-                  )}
-                </span>
-                <div className="flex min-w-0 flex-1 flex-col gap-2">
-                  <div className="flex items-start gap-2">
-                    <p className="min-w-0 flex-1 leading-tight text-pretty">
-                      <span className="text-[13.5px] font-semibold">{food.name}</span>
+              <li key={food.id} className="flex flex-col gap-2 border-t border-border py-4 first:border-t-0 first:pt-0">
+                {/* Row 1: Thumbnail + Name/Details + Add button */}
+                <div className="flex items-start gap-2">
+                  <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                    {food.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                    ) : (
+                      <span className="flex size-full items-center justify-center text-faint">
+                        <UtensilsCrossed className="size-5" />
+                      </span>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={!food}
+                    className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                  >
+                    <p className="text-[13.5px] font-semibold leading-tight text-pretty">
+                      {food.name}
                       {(food.brand || food.servingSize) && (
                         <span className="ml-2 text-[11.5px] font-normal text-faint">
                           {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
                         </span>
                       )}
                     </p>
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => addFromLibrary(food)}
-                      aria-label={`Add ${food.name}`}
-                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                    >
-                      <Plus className="size-4" />
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
-                    <MacroBadges
-                      kcal={caloriesKcal}
-                      kcalPct={targetCalories ? caloriesPct : null}
-                      protein={food.protein}
-                      proteinPct={targetProtein ? proteinPct : null}
-                      carbs={food.carbs}
-                      fat={food.fat}
-                    />
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                      <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
-                    </div>
-                  </div>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => addFromLibrary(food)}
+                    aria-label={`Add ${food.name}`}
+                    className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                  >
+                    <Plus className="size-4" />
+                  </button>
+                </div>
+                
+                {/* Row 2: Macro badges */}
+                <MacroBadges
+                  kcal={caloriesKcal}
+                  kcalPct={targetCalories ? caloriesPct : null}
+                  protein={food.protein}
+                  proteinPct={targetProtein ? proteinPct : null}
+                  carbs={food.carbs}
+                  fat={food.fat}
+                />
+                
+                {/* Row 3: Score badges */}
+                <div className="flex shrink-0 items-center gap-1.5">
+                  <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                  <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                 </div>
               </li>
             )

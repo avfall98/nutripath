@@ -639,7 +639,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           </div>
 
           <div className="flex flex-col gap-5">
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-servings-pack" className={labelClass}>
                   Servings / pack <span className="font-normal text-faint">(optional)</span>
@@ -692,23 +692,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="food-pack-size" className={labelClass}>
-                Pack size <span className="font-normal text-faint">(optional)</span>
-              </label>
-              <Input
-                id="food-pack-size"
-                type="number"
-                inputMode="decimal"
-                min={0}
-                step="any"
-                value={form.packSize}
-                onChange={(e) => set("packSize", e.target.value)}
-                placeholder={`e.g. 500 (total ${servingUnit} of product)`}
-                className={fieldInput}
-              />
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-pack-size" className={labelClass}>
+                  Pack size <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <Input
+                  id="food-pack-size"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={form.packSize}
+                  onChange={(e) => set("packSize", e.target.value)}
+                  placeholder={`e.g. 500 (total ${servingUnit} of product)`}
+                  className={fieldInput}
+                />
+              </div>
             </div>
 
             <div className="flex flex-col gap-2">

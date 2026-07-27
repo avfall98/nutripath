@@ -198,6 +198,17 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         }
       }
       
+      // Case 3: User is editing servings per pack
+      // Auto-calculate pack size as servingsPack × servingSize
+      if (key === "servingsPack") {
+        const servingsPackNum = num(value)
+        const servingSizeNum = num(f.servingSize)
+        if (servingsPackNum !== null && servingSizeNum && servingSizeNum > 0) {
+          const packSizeNum = round(servingsPackNum * servingSizeNum, 1)
+          updated.packSize = String(packSizeNum === Math.floor(packSizeNum) ? Math.floor(packSizeNum) : packSizeNum)
+        }
+      }
+      
       return updated
     })
   }

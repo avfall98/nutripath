@@ -321,7 +321,7 @@ export function AddFoodDialog({
                     <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                       {food.name}
                       {(food.brand || food.servingSize) && (
-                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                        <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
                         </span>
                       )}

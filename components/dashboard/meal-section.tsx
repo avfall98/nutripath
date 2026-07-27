@@ -437,7 +437,7 @@ export function MealSection({
                     >
                       <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                         {food?.name || entry.name}
-                        <span className="ml-2 text-[11.5px] font-normal text-faint">
+                        <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
                         </span>
                       </p>

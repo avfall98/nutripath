@@ -51,7 +51,7 @@ export function AddFoodDialog({
   onAdded,
 }: Props) {
   const [pending, startTransition] = useTransition()
-  const [tab, setTab] = useState<TabKey>("library")
+  const [tab, setTab] = useState<TabKey>("favourites")
   const [query, setQuery] = useState("")
   const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
   const [servings, setServings] = useState("1")

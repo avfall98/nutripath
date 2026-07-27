@@ -439,6 +439,12 @@ export function MealSection({
                         {food?.name || entry.name}
                         <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
+                          {entry.servingWeightG && (
+                            <>
+                              {" · "}
+                              {Math.round(entry.quantity * entry.servingWeightG)}g
+                            </>
+                          )}
                         </span>
                       </p>
                     </button>

@@ -15,6 +15,7 @@ export type FoodDTO = {
   brand: string | null
   servingSize: string | null
   servingsPack: string | null
+  packSize: string | null
   calories: number
   protein: number
   carbs: number | null

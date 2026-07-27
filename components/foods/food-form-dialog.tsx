@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
@@ -29,6 +29,8 @@ type ImportedProduct = {
   infoUrl: string
   servingSize: string
   servingUnit: ServingUnit
+  servingsPack: string | null
+  packSize: string | null
   caloriesKj: number | null
   protein: number | null
   fat: number | null
@@ -64,6 +66,7 @@ const empty = {
   brand: "",
   servingSize: "",
   servingsPack: "",
+  packSize: "",
   calories: "",
   protein: "",
   carbs: "",
@@ -84,7 +87,7 @@ const empty = {
 }
 
 export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
-  const [pending, startTransition] = useTransition()
+  const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [importing, setImporting] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -114,11 +117,24 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         }
       }
       
+      // Parse packSize to extract number (same unit as servingSize)
+      let packNum = ""
+      if (food?.packSize) {
+        const match = food.packSize.match(/^([\d.]+)\s*(g|ml)$/i)
+        if (match) {
+          packNum = match[1]
+        } else {
+          // Fallback: treat entire string as pack size if no unit found
+          packNum = food.packSize
+        }
+      }
+      
       setForm({
         name: food?.name ?? "",
         brand: food?.brand ?? "",
         servingSize: servingNum,
         servingsPack: food?.servingsPack ?? "",
+        packSize: packNum,
         calories: food?.calories != null ? String(food.calories) : "",
         protein: food?.protein != null ? String(food.protein) : "",
         carbs: food?.carbs != null ? String(food.carbs) : "",
@@ -142,6 +158,8 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setImportQuery("")
       setSource(null)
       setShowImport(false)
+      // Always clear any stale saving state when (re)opening the dialog
+      setSaving(false)
     }
   }, [open, food])
 
@@ -191,6 +209,17 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               updated[perServingKey as K] = String(perServingValue)
             }
           })
+        }
+      }
+      
+      // Case 3: User is editing servings per pack
+      // Auto-calculate pack size as servingsPack × servingSize
+      if (key === "servingsPack") {
+        const servingsPackNum = num(value)
+        const servingSizeNum = num(f.servingSize)
+        if (servingsPackNum !== null && servingSizeNum && servingSizeNum > 0) {
+          const packSizeNum = round(servingsPackNum * servingSizeNum, 1)
+          updated.packSize = String(packSizeNum === Math.floor(packSizeNum) ? Math.floor(packSizeNum) : packSizeNum)
         }
       }
       
@@ -247,7 +276,8 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       name: p.name || f.name,
       brand: p.brand || f.brand,
       servingSize: p.servingSize || f.servingSize,
-      servingsPack: f.servingsPack,
+      servingsPack: p.servingsPack || f.servingsPack,
+      packSize: p.packSize || f.packSize,
       calories: s(p.caloriesKj),
       protein: s(p.protein),
       fat: s(p.fat),
@@ -343,11 +373,13 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       return
     }
     const servingSize = form.servingSize.trim() ? `${form.servingSize}${servingUnit}` : ""
+    const packSize = form.packSize.trim() ? `${form.packSize}${servingUnit}` : ""
     const input: FoodInput = {
       name: form.name,
       brand: form.brand,
       servingSize,
       servingsPack: form.servingsPack || null,
+      packSize: packSize || null,
       calories: num(form.calories),
       protein: num(form.protein),
       carbs: num(form.carbs),
@@ -367,17 +399,28 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       imageUrl,
       infoUrl: form.infoUrl,
     }
-    startTransition(async () => {
-      if (food) {
-        await updateFood(food.id, input)
-        toast.success("Food updated.")
-      } else {
-        await createFood(input)
-        toast.success("Food added to your library.")
+    setSaving(true)
+    void (async () => {
+      try {
+        if (food) {
+          await updateFood(food.id, input)
+          toast.success("Food updated.")
+        } else {
+          await createFood(input)
+          toast.success("Food added to your library.")
+        }
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Could not save food.")
+        // Re-enable the button so the user can retry on failure
+        setSaving(false)
+        return
       }
+      // Clear the saving state BEFORE closing/refreshing so the indicator
+      // can never carry over to the next food opened in this dialog instance.
+      setSaving(false)
       onOpenChange(false)
       onSaved()
-    })
+    })()
   }
 
   const fieldInput =
@@ -632,7 +675,23 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           </div>
 
           <div className="flex flex-col gap-5">
-            <div className="grid gap-5 sm:grid-cols-2">
+            <div className="grid gap-5 sm:grid-cols-3">
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-servings-pack" className={labelClass}>
+                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <Input
+                  id="food-servings-pack"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={form.servingsPack}
+                  onChange={(e) => set("servingsPack", e.target.value)}
+                  placeholder="e.g. 4"
+                  className={fieldInput}
+                />
+              </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-serving" className={labelClass}>
                   Serving size
@@ -670,18 +729,18 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 </div>
               </div>
               <div className="flex flex-col gap-2">
-                <label htmlFor="food-servings-pack" className={labelClass}>
-                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                <label htmlFor="food-pack-size" className={labelClass}>
+                  Pack size <span className="font-normal text-faint">(optional)</span>
                 </label>
                 <Input
-                  id="food-servings-pack"
+                  id="food-pack-size"
                   type="number"
                   inputMode="decimal"
                   min={0}
                   step="any"
-                  value={form.servingsPack}
-                  onChange={(e) => set("servingsPack", e.target.value)}
-                  placeholder="e.g. 4"
+                  value={form.packSize}
+                  onChange={(e) => set("packSize", e.target.value)}
+                  placeholder={`e.g. 500 (total ${servingUnit} of product)`}
                   className={fieldInput}
                 />
               </div>
@@ -772,9 +831,9 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             <Button
               type="submit"
               className="h-11 rounded-full px-7 font-semibold"
-              disabled={pending || uploading}
+              disabled={saving || uploading}
             >
-              {pending ? "Saving..." : food ? "Save changes" : "Save food"}
+              {saving ? "Saving..." : food ? "Save changes" : "Save food"}
             </Button>
           </DialogFooter>
         </form>

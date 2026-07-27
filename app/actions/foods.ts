@@ -14,6 +14,7 @@ function serialize(r: typeof foods.$inferSelect): FoodDTO {
     brand: r.brand,
     servingSize: r.servingSize,
     servingsPack: r.servingsPack,
+    packSize: r.packSize,
     calories: num0(r.calories),
     protein: num0(r.protein),
     carbs: num(r.carbs),
@@ -86,6 +87,7 @@ export type FoodInput = {
   brand?: string | null
   servingSize?: string | null
   servingsPack?: string | null
+  packSize?: string | null
   calories?: number | null
   protein?: number | null
   carbs?: number | null
@@ -114,6 +116,7 @@ export async function createFood(input: FoodInput): Promise<FoodDTO> {
       brand: input.brand?.trim() || null,
       servingSize: input.servingSize?.trim() || null,
       servingsPack: input.servingsPack?.trim() || null,
+      packSize: input.packSize?.trim() || null,
       calories: toNumeric(input.calories) ?? "0",
       protein: toNumeric(input.protein) ?? "0",
       carbs: toNumeric(input.carbs),
@@ -147,6 +150,7 @@ export async function updateFood(id: number, input: FoodInput) {
       brand: input.brand?.trim() || null,
       servingSize: input.servingSize?.trim() || null,
       servingsPack: input.servingsPack?.trim() || null,
+      packSize: input.packSize?.trim() || null,
       calories: toNumeric(input.calories) ?? "0",
       protein: toNumeric(input.protein) ?? "0",
       carbs: toNumeric(input.carbs),

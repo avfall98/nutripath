@@ -24,7 +24,7 @@ import { toast } from "sonner"
 import { ArrowUpDown, Bookmark, ExternalLink, MoreVertical, Pencil, Plus, Search, Trash2, UtensilsCrossed } from "lucide-react"
 
 type SortKey = "name-asc" | "name-desc" | "kcal-asc" | "kcal-desc" | "protein-asc" | "protein-desc" | "carbs-asc" | "carbs-desc" | "fat-asc" | "fat-desc" | "protein-score-asc" | "protein-score-desc" | "kcal-score-asc" | "kcal-score-desc"
-type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores"
+type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores" | "favourites"
 
 const KJ_PER_KCAL = 4.184
 
@@ -33,6 +33,7 @@ const ROW_GRID =
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "favourites", label: "Favs" },
   { key: "high-protein", label: "High protein" },
   { key: "low-calorie", label: "Low calorie" },
   { key: "ab-scores", label: "A & B scores" },
@@ -58,6 +59,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
     }
     if (filter !== "all") {
       result = result.filter((f) => {
+        if (filter === "favourites") return isFavourite(f)
         const kcal = Math.round(f.calories / KJ_PER_KCAL)
         const pGrade = proteinPer100Cal(f.protein, kcal).grade
         const dGrade = calorieDensity(kcal, parseServingWeight(f.servingSize)).grade

@@ -20,7 +20,7 @@ import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
+import { ArrowDown, Bookmark, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -495,13 +495,19 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             <div className="flex shrink-0 items-center gap-2">
               <Button
                 type="button"
-                variant={isFavourite ? "default" : "outline"}
+                variant="outline"
                 size="sm"
                 aria-pressed={isFavourite}
                 onClick={() => setIsFavourite((v) => !v)}
-                className="h-9 rounded-xl px-4 font-semibold"
+                title="Toggle as favourite"
+                className={cn(
+                  "h-9 rounded-xl px-3 font-semibold border-2 transition-colors",
+                  isFavourite
+                    ? "bg-green-500 border-green-600 text-white hover:bg-green-600"
+                    : "bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600"
+                )}
               >
-                <Star
+                <Bookmark
                   className="size-4"
                   fill={isFavourite ? "currentColor" : "none"}
                 />

@@ -503,7 +503,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 className={cn(
                   "h-9 rounded-xl px-3 font-semibold border-2 transition-colors",
                   isFavourite
-                    ? "bg-green-500 border-green-600 text-white hover:bg-green-600"
+                    ? "bg-green-500 border-green-600 text-green-500 hover:bg-green-600"
                     : "bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600"
                 )}
               >

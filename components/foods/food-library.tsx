@@ -33,10 +33,10 @@ const ROW_GRID =
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
+  { key: "favourites", label: "Favs" },
   { key: "high-protein", label: "High protein" },
   { key: "low-calorie", label: "Low calorie" },
   { key: "ab-scores", label: "A & B scores" },
-  { key: "favourites", label: "Favs" },
 ]
 
 export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: ProfileDTO | null }) {

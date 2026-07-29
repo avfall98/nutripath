@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { createFood, updateFood, type FoodInput } from "@/app/actions/foods"
+import { createFood, updateFood, toggleFavourite, type FoodInput } from "@/app/actions/foods"
 import type { FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
@@ -20,7 +20,7 @@ import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, X } from "lucide-react"
+import { ArrowDown, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -99,6 +99,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [photoMode, setPhotoMode] = useState<"upload" | "url">("upload")
   const [form, setForm] = useState(empty)
+  const [isFavourite, setIsFavourite] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -158,6 +159,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       setImportQuery("")
       setSource(null)
       setShowImport(false)
+      setIsFavourite(food?.favourite ?? false)
       // Always clear any stale saving state when (re)opening the dialog
       setSaving(false)
     }
@@ -404,9 +406,17 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       try {
         if (food) {
           await updateFood(food.id, input)
+          // Update favourite status if it changed
+          if (isFavourite !== food.favourite) {
+            await toggleFavourite(food.id, isFavourite)
+          }
           toast.success("Food updated.")
         } else {
-          await createFood(input)
+          const createdFood = await createFood(input)
+          // Set favourite status for newly created food
+          if (isFavourite && createdFood) {
+            await toggleFavourite(createdFood.id, true)
+          }
           toast.success("Food added to your library.")
         }
       } catch (err) {
@@ -482,17 +492,32 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 Save foods you eat often with their nutrition, a photo, and a reference link.
               </DialogDescription>
             </div>
-            <Button
-              type="button"
-              variant={showImport ? "default" : "outline"}
-              size="sm"
-              aria-pressed={showImport}
-              onClick={() => setShowImport((v) => !v)}
-              className="h-9 shrink-0 rounded-xl px-4 font-semibold"
-            >
-              <Download data-icon="inline-start" />
-              Import
-            </Button>
+            <div className="flex shrink-0 items-center gap-2">
+              <Button
+                type="button"
+                variant={isFavourite ? "default" : "outline"}
+                size="sm"
+                aria-pressed={isFavourite}
+                onClick={() => setIsFavourite((v) => !v)}
+                className="h-9 rounded-xl px-4 font-semibold"
+              >
+                <Star
+                  className="size-4"
+                  fill={isFavourite ? "currentColor" : "none"}
+                />
+              </Button>
+              <Button
+                type="button"
+                variant={showImport ? "default" : "outline"}
+                size="sm"
+                aria-pressed={showImport}
+                onClick={() => setShowImport((v) => !v)}
+                className="h-9 rounded-xl px-4 font-semibold"
+              >
+                <Download data-icon="inline-start" />
+                Import
+              </Button>
+            </div>
           </div>
         </DialogHeader>
 

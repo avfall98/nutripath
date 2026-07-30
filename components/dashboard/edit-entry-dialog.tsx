@@ -6,6 +6,7 @@ import { round } from "@/lib/format"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,8 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Apple, Plus, Search } from "lucide-react"
 
@@ -51,6 +52,56 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   function num(v: string, fallback = 0): number {
     const n = Number(v)
     return Number.isFinite(n) && v.trim() !== "" ? n : fallback
+  }
+
+  function renderQuantityControls() {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+          {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+            const active = qtyMode === mode
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setQtyMode(mode)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                )}
+              >
+                {mode}
+              </button>
+            )
+          })}
+        </div>
+        {qtyMode === "servings" ? (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.5"
+            aria-label="Servings"
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="1"
+          />
+        ) : (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            aria-label="Weight in grams"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="g"
+          />
+        )}
+      </div>
+    )
   }
 
   function updateFromLibrary(food: FoodDTO) {
@@ -267,116 +318,46 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
+            {/* Food item display matching meal-section layout */}
             <button
               type="button"
               onClick={() => setActiveTab("library")}
-              className="rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50 active:bg-accent/70"
+              className="flex flex-col gap-2 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50"
             >
-              <p className="text-sm font-medium">{entry.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {Math.round(entry.calories / KJ_PER_KCAL)} kcal · {Math.round(entry.protein)}g protein
-              </p>
+              <div className="flex items-start gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                  {foods.find((f) => f.id === entry.foodId)?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={foods.find((f) => f.id === entry.foodId)?.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                  ) : (
+                    <Apple className="size-5 text-muted-foreground" />
+                  )}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-semibold leading-tight">{entry.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {round(entry.quantity, 1) % 1 === 0 ? Math.floor(entry.quantity) : round(entry.quantity, 1)} serving{entry.quantity === 1 ? "" : "s"}
+                    {foods.find((f) => f.id === entry.foodId)?.servingSize && (
+                      <>
+                        {" − "}
+                        {foods.find((f) => f.id === entry.foodId)?.servingSize}
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <MacroBadges
+                kcal={Math.round(entry.calories / KJ_PER_KCAL)}
+                protein={Math.round(entry.protein)}
+                carbs={entry.carbs != null ? Math.round(entry.carbs) : null}
+                fat={entry.fat != null ? Math.round(entry.fat) : null}
+              />
             </button>
 
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {qtyMode === "servings" ? "Servings" : "Weight"}
-                </label>
-                <ToggleGroup
-                  value={[qtyMode]}
-                  onValueChange={(v) => {
-                    const mode = v[0] as QuantityMode | undefined
-                    if (mode) setQtyMode(mode)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  spacing={0}
-                >
-                  <ToggleGroupItem value="servings" aria-label="Servings">
-                    Servings
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="weight" aria-label="Weight">
-                    Weight
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-
-              {qtyMode === "servings" ? (
-                <div>
-                  <label htmlFor="qty-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Servings
-                  </label>
-                  <Input
-                    id="qty-servings"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.5"
-                    value={servings}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      const num = Number(val)
-                      if (Number.isFinite(num)) {
-                        setServings(String(round(num, 1)))
-                      } else {
-                        setServings(val)
-                      }
-                    }}
-                  />
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label htmlFor="qty-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
-                      Weight
-                    </label>
-                    <Input
-                      id="qty-weight"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={weight}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        const num = Number(val)
-                        if (Number.isFinite(num)) {
-                          setWeight(String(round(num, 1)))
-                        } else {
-                          setWeight(val)
-                        }
-                      }}
-                      placeholder="e.g. 150"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("g")}
-                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "g"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      g
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("ml")}
-                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "ml"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      ml
-                    </button>
-                  </div>
-                </>
-              )}
-
+            {/* Quantity controls in single row */}
+            <div className="flex flex-col gap-3">
+              {renderQuantityControls()}
+              
               {entry.foodId && (
                 <Button
                   onClick={() => {

@@ -358,25 +358,21 @@ export function MealSection({
                   <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
                   <button
                     type="button"
-                    disabled={!food}
                     onClick={() => {
-                      if (!food) return
-                      setSelectedFood(food)
-                      setFoodEditOpen(true)
+                      setSelectedEntry(entry)
+                      setEditOpen(true)
                     }}
-                    className="flex items-center justify-center rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    className="flex items-center justify-center rounded-[4px] transition-opacity hover:opacity-80"
                   >
                     {thumb(food)}
                   </button>
                   <button
                     type="button"
-                    disabled={!food}
                     onClick={() => {
-                      if (!food) return
-                      setSelectedFood(food)
-                      setFoodEditOpen(true)
+                      setSelectedEntry(entry)
+                      setEditOpen(true)
                     }}
-                    className="min-w-0 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                    className="min-w-0 text-left transition-opacity hover:opacity-80"
                   >
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
@@ -422,25 +418,21 @@ export function MealSection({
                   <div className="flex items-start gap-2">
                     <button
                       type="button"
-                      disabled={!food}
                       onClick={() => {
-                        if (!food) return
-                        setSelectedFood(food)
-                        setFoodEditOpen(true)
+                        setSelectedEntry(entry)
+                        setEditOpen(true)
                       }}
-                      className="flex size-10 shrink-0 rounded-[4px] transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                      className="flex size-10 shrink-0 rounded-[4px] transition-opacity hover:opacity-80"
                     >
                       {thumb(food)}
                     </button>
                     <button
                       type="button"
-                      disabled={!food}
                       onClick={() => {
-                        if (!food) return
-                        setSelectedFood(food)
-                        setFoodEditOpen(true)
+                        setSelectedEntry(entry)
+                        setEditOpen(true)
                       }}
-                      className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                      className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80"
                     >
                       <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                         {food?.name || entry.name}

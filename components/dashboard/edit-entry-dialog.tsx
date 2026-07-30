@@ -1,11 +1,12 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { updateEntry } from "@/app/actions/entries"
 import { round } from "@/lib/format"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
+import { MacroBadges } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -15,8 +16,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Apple, Plus, Search } from "lucide-react"
 
@@ -38,6 +39,17 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [servings, setServings] = useState(entry.quantity.toString())
   const [weight, setWeight] = useState("")
   const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
+  const [activeTab, setActiveTab] = useState<"library" | "quantity">("quantity")
+
+  // Sync servings/weight when dialog opens or entry changes
+  useEffect(() => {
+    if (open) {
+      setServings(entry.quantity.toString())
+      setWeight("")
+      setQtyMode("servings")
+      setActiveTab("quantity")
+    }
+  }, [open, entry])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -47,9 +59,90 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     )
   }, [foods, query])
 
+  // Calculate adjusted nutrition based on current servings/weight input
+  const adjustedNutrition = useMemo(() => {
+    const food = foods.find((f) => f.id === entry.foodId)
+    if (!food) return entry
+    
+    let quantity = entry.quantity
+    
+    if (qtyMode === "servings") {
+      quantity = num(servings, entry.quantity)
+    } else {
+      const weightValue = num(weight, 0)
+      if (food.servingSize && weightValue > 0) {
+        const servingSizeMatch = food.servingSize.match(/^([\d.]+)/)
+        const servingSizeValue = servingSizeMatch ? parseFloat(servingSizeMatch[1]) : null
+        if (servingSizeValue && servingSizeValue > 0) {
+          quantity = weightValue / servingSizeValue
+        }
+      }
+    }
+    
+    // Scale the nutrition values
+    const ratio = quantity / entry.quantity
+    return {
+      ...entry,
+      calories: entry.calories * ratio,
+      protein: entry.protein * ratio,
+      carbs: entry.carbs ? entry.carbs * ratio : null,
+      fat: entry.fat ? entry.fat * ratio : null,
+    }
+  }, [entry, foods, qtyMode, servings, weight])
+
   function num(v: string, fallback = 0): number {
     const n = Number(v)
     return Number.isFinite(n) && v.trim() !== "" ? n : fallback
+  }
+
+  function renderQuantityControls() {
+    return (
+      <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+          {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+            const active = qtyMode === mode
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setQtyMode(mode)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                )}
+              >
+                {mode}
+              </button>
+            )
+          })}
+        </div>
+        {qtyMode === "servings" ? (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="0.5"
+            aria-label="Servings"
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="1"
+          />
+        ) : (
+          <Input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step="any"
+            aria-label="Weight in grams"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="h-11 w-24 rounded-full text-center"
+            placeholder="g"
+          />
+        )}
+      </div>
+    )
   }
 
   function updateFromLibrary(food: FoodDTO) {
@@ -96,17 +189,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="library" className="min-h-0">
-          <TabsList className="w-full">
-            <TabsTrigger value="library" className="flex-1">
-              Change food
-            </TabsTrigger>
-            <TabsTrigger value="quantity" className="flex-1">
-              Quantity only
-            </TabsTrigger>
-          </TabsList>
-
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "library" | "quantity")} className="min-h-0">
           <TabsContent value="library" className="mt-4 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab("quantity")}
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground mb-2"
+            >
+              ← Back
+            </button>
             <div className="flex items-end gap-3">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -117,108 +208,8 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                   onChange={(e) => setQuery(e.target.value)}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {qtyMode === "servings" ? "Servings" : "Weight"}
-                </label>
-                <ToggleGroup
-                  value={[qtyMode]}
-                  onValueChange={(v) => {
-                    const mode = v[0] as QuantityMode | undefined
-                    if (mode) setQtyMode(mode)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  spacing={0}
-                >
-                  <ToggleGroupItem value="servings" aria-label="Servings">
-                    Servings
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="weight" aria-label="Weight">
-                    Weight
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
             </div>
             
-            <div className="flex items-end gap-3">
-              {qtyMode === "servings" ? (
-                <div className="flex-1">
-                  <label htmlFor="lib-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Servings
-                  </label>
-                  <Input
-                    id="lib-servings"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.5"
-                    value={servings}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      const num = Number(val)
-                      if (Number.isFinite(num)) {
-                        setServings(String(round(num, 1)))
-                      } else {
-                        setServings(val)
-                      }
-                    }}
-                    placeholder="1.0"
-                  />
-                </div>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <label htmlFor="lib-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
-                      Weight
-                    </label>
-                    <Input
-                      id="lib-weight"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={weight}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        const num = Number(val)
-                        if (Number.isFinite(num)) {
-                          setWeight(String(round(num, 1)))
-                        } else {
-                          setWeight(val)
-                        }
-                      }}
-                      placeholder="e.g. 150"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("g")}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "g"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      g
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("ml")}
-                      className={`px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "ml"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      ml
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-
             <div className="-mx-1 max-h-72 overflow-y-auto px-1">
               {foods.length === 0 ? (
                 <p className="py-8 text-center text-sm text-muted-foreground">
@@ -268,123 +259,89 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-sm font-medium">{entry.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {Math.round(entry.calories / KJ_PER_KCAL)} kcal · {Math.round(entry.protein)}g protein
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium text-muted-foreground">
-                  {qtyMode === "servings" ? "Servings" : "Weight"}
-                </label>
-                <ToggleGroup
-                  value={[qtyMode]}
-                  onValueChange={(v) => {
-                    const mode = v[0] as QuantityMode | undefined
-                    if (mode) setQtyMode(mode)
-                  }}
-                  size="sm"
-                  variant="outline"
-                  spacing={0}
+            {/* Food item display - stacked: thumb + name on top, macros below */}
+            {(() => {
+              const food = foods.find((f) => f.id === entry.foodId) ?? null
+              const adjQty = round(adjustedNutrition.quantity, 1)
+              const qtyLabel = adjQty % 1 === 0 ? String(Math.floor(adjQty)) : String(adjQty)
+              return (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("library")}
+                  className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
                 >
-                  <ToggleGroupItem value="servings" aria-label="Servings">
-                    Servings
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="weight" aria-label="Weight">
-                    Weight
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-
-              {qtyMode === "servings" ? (
-                <div>
-                  <label htmlFor="qty-servings" className="mb-1 block text-xs font-medium text-muted-foreground">
-                    Servings
-                  </label>
-                  <Input
-                    id="qty-servings"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.5"
-                    value={servings}
-                    onChange={(e) => {
-                      const val = e.target.value
-                      const num = Number(val)
-                      if (Number.isFinite(num)) {
-                        setServings(String(round(num, 1)))
-                      } else {
-                        setServings(val)
-                      }
-                    }}
+                  <div className="flex items-center gap-3">
+                    <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-muted">
+                      {food?.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={food.imageUrl} alt="" className="size-full object-cover" />
+                      ) : (
+                        <Apple className="size-5 text-muted-foreground" />
+                      )}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-semibold leading-tight">{entry.name}</p>
+                      <p className="text-[12px] text-faint">
+                        {qtyLabel} serving{adjQty === 1 ? "" : "s"}
+                        {food?.servingSize && <>{" − "}{food.servingSize}</>}
+                      </p>
+                    </div>
+                  </div>
+                  <MacroBadges
+                    kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                    protein={Math.round(adjustedNutrition.protein)}
+                    carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
+                    fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
                   />
-                </div>
-              ) : (
-                <>
-                  <div>
-                    <label htmlFor="qty-weight" className="mb-1 block text-xs font-medium text-muted-foreground">
-                      Weight
-                    </label>
-                    <Input
-                      id="qty-weight"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={weight}
-                      onChange={(e) => {
-                        const val = e.target.value
-                        const num = Number(val)
-                        if (Number.isFinite(num)) {
-                          setWeight(String(round(num, 1)))
-                        } else {
-                          setWeight(val)
-                        }
-                      }}
-                      placeholder="e.g. 150"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("g")}
-                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "g"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      g
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setWeightUnit("ml")}
-                      className={`flex-1 px-3 py-2 rounded text-sm font-medium transition-colors ${
-                        weightUnit === "ml"
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      ml
-                    </button>
-                  </div>
-                </>
-              )}
+                </button>
+              )
+            })()}
 
+            {/* Read-only food reference information */}
+            {(() => {
+              const food = foods.find((f) => f.id === entry.foodId)
+              if (!food) return null
+              return (
+                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
+                  {food.servingSize && (
+                    <div className="flex justify-between">
+                      <span>Serving size:</span>
+                      <span className="text-foreground font-medium">{food.servingSize}</span>
+                    </div>
+                  )}
+                  {food.servingsPack && (
+                    <div className="flex justify-between">
+                      <span>Servings/pack:</span>
+                      <span className="text-foreground font-medium">{food.servingsPack}</span>
+                    </div>
+                  )}
+                  {food.packSize && (
+                    <div className="flex justify-between">
+                      <span>Pack size:</span>
+                      <span className="text-foreground font-medium">{food.packSize}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* Quantity controls in single row */}
+            <div className="flex flex-col gap-4">
+              {renderQuantityControls()}
+              
               {entry.foodId && (
-                <Button
-                  onClick={() => {
-                    const food = foods.find((f) => f.id === entry.foodId)
-                    if (food) updateFromLibrary(food)
-                  }}
-                  disabled={pending}
-                  className="w-full"
-                >
-                  Save changes
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => {
+                      const food = foods.find((f) => f.id === entry.foodId)
+                      if (food) updateFromLibrary(food)
+                    }}
+                    disabled={pending}
+                    className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  >
+                    Save changes
+                  </Button>
+                </div>
               )}
             </div>
           </TabsContent>

@@ -99,6 +99,13 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "library" | "quantity")} className="min-h-0">
           <TabsContent value="library" className="mt-4 flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab("quantity")}
+              className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground mb-2"
+            >
+              ← Back
+            </button>
             <div className="flex items-end gap-3">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />

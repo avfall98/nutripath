@@ -41,13 +41,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
   const [activeTab, setActiveTab] = useState<"library" | "quantity">("quantity")
 
-  // Sync servings/weight when entry changes
+  // Sync servings/weight when dialog opens or entry changes
   useEffect(() => {
-    setServings(entry.quantity.toString())
-    setWeight("")
-    setQtyMode("servings")
-    setActiveTab("quantity")
-  }, [entry])
+    if (open) {
+      setServings(entry.quantity.toString())
+      setWeight("")
+      setQtyMode("servings")
+      setActiveTab("quantity")
+    }
+  }, [open, entry])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

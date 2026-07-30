@@ -6,7 +6,7 @@ import { round } from "@/lib/format"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
-import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
+import { MacroIcon } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -249,41 +249,61 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
-            {/* Food item display - horizontal layout */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("library")}
-              className="flex items-center gap-3 rounded-lg bg-muted/60 p-3 text-left transition-colors hover:bg-muted/80"
-            >
-              <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted border border-border/50">
-                {foods.find((f) => f.id === entry.foodId)?.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={foods.find((f) => f.id === entry.foodId)?.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                ) : (
-                  <Apple className="size-5 text-muted-foreground" />
-                )}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold leading-tight">{entry.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {round(adjustedNutrition.quantity, 1) % 1 === 0 ? Math.floor(adjustedNutrition.quantity) : round(adjustedNutrition.quantity, 1)} serving{adjustedNutrition.quantity === 1 ? "" : "s"}
-                  {foods.find((f) => f.id === entry.foodId)?.servingSize && (
-                    <>
-                      {" − "}
-                      {foods.find((f) => f.id === entry.foodId)?.servingSize}
-                    </>
-                  )}
-                </p>
-              </div>
-              <div className="shrink-0">
-                <MacroBadges
-                  kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
-                  protein={Math.round(adjustedNutrition.protein)}
-                  carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
-                  fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
-                />
-              </div>
-            </button>
+            {/* Food item display - matching meal-section row exactly */}
+            {(() => {
+              const food = foods.find((f) => f.id === entry.foodId) ?? null
+              const adjKcal = Math.round(adjustedNutrition.calories / KJ_PER_KCAL)
+              const adjProtein = Math.round(adjustedNutrition.protein)
+              const adjCarbs = adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null
+              const adjFat = adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null
+              const adjQty = round(adjustedNutrition.quantity, 1)
+              const qtyLabel = adjQty % 1 === 0 ? String(Math.floor(adjQty)) : String(adjQty)
+              return (
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("library")}
+                  className="grid grid-cols-[44px_1fr_120px_112px_60px_60px] items-center gap-x-3 rounded-lg bg-muted/60 px-3 py-3 text-left transition-colors hover:bg-muted/80"
+                >
+                  {/* Thumbnail */}
+                  <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px]">
+                    {food?.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={food.imageUrl} alt="" className="size-full object-cover" />
+                    ) : (
+                      <Apple className="size-5 text-muted-foreground" />
+                    )}
+                  </span>
+                  {/* Name + serving */}
+                  <span className="min-w-0">
+                    <p className="truncate text-[14px] font-semibold leading-tight">{entry.name}</p>
+                    <p className="text-[11.5px] text-faint">
+                      {qtyLabel} serving{adjQty === 1 ? "" : "s"}
+                      {food?.servingSize && <>{" − "}{food.servingSize}</>}
+                    </p>
+                  </span>
+                  {/* Calories */}
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="calories" />
+                    {adjKcal}
+                  </span>
+                  {/* Protein */}
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="protein" />
+                    {adjProtein}
+                  </span>
+                  {/* Carbs */}
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="carbs" />
+                    {adjCarbs ?? "—"}
+                  </span>
+                  {/* Fat */}
+                  <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                    <MacroIcon macro="fat" />
+                    {adjFat ?? "—"}
+                  </span>
+                </button>
+              )
+            })()}
 
             {/* Quantity controls in single row */}
             <div className="flex flex-col gap-4">

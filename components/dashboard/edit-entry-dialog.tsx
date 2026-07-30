@@ -297,6 +297,34 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
               )
             })()}
 
+            {/* Read-only food reference information */}
+            {(() => {
+              const food = foods.find((f) => f.id === entry.foodId)
+              if (!food) return null
+              return (
+                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
+                  {food.servingSize && (
+                    <div className="flex justify-between">
+                      <span>Serving size:</span>
+                      <span className="text-foreground font-medium">{food.servingSize}</span>
+                    </div>
+                  )}
+                  {food.servingsPack && (
+                    <div className="flex justify-between">
+                      <span>Servings/pack:</span>
+                      <span className="text-foreground font-medium">{food.servingsPack}</span>
+                    </div>
+                  )}
+                  {food.packSize && (
+                    <div className="flex justify-between">
+                      <span>Pack size:</span>
+                      <span className="text-foreground font-medium">{food.packSize}</span>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
             {/* Quantity controls in single row */}
             <div className="flex flex-col gap-4">
               {renderQuantityControls()}

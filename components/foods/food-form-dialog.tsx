@@ -167,7 +167,16 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
 
   function set<K extends keyof typeof empty>(key: K, value: string) {
     setForm((f) => {
-      const updated = { ...f, [key]: value }
+      // Round numeric fields to 1 decimal place to avoid floating point issues
+      let roundedValue = value
+      if (value.trim() !== "") {
+        const numValue = num(value)
+        if (numValue !== null) {
+          roundedValue = String(round(numValue, 1))
+        }
+      }
+      
+      const updated = { ...f, [key]: roundedValue }
       
       // Map of per-100g fields to per-serving fields
       const syncMap: Record<string, string> = {

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { updateEntry } from "@/app/actions/entries"
+import { round } from "@/lib/format"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
@@ -153,7 +154,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                     min={0}
                     step="0.5"
                     value={servings}
-                    onChange={(e) => setServings(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      const num = Number(val)
+                      if (Number.isFinite(num)) {
+                        setServings(String(round(num, 1)))
+                      } else {
+                        setServings(val)
+                      }
+                    }}
                     placeholder="1.0"
                   />
                 </div>
@@ -170,7 +179,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                       min={0}
                       step="any"
                       value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        const num = Number(val)
+                        if (Number.isFinite(num)) {
+                          setWeight(String(round(num, 1)))
+                        } else {
+                          setWeight(val)
+                        }
+                      }}
                       placeholder="e.g. 150"
                     />
                   </div>
@@ -294,7 +311,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                     min={0}
                     step="0.5"
                     value={servings}
-                    onChange={(e) => setServings(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value
+                      const num = Number(val)
+                      if (Number.isFinite(num)) {
+                        setServings(String(round(num, 1)))
+                      } else {
+                        setServings(val)
+                      }
+                    }}
                   />
                 </div>
               ) : (
@@ -310,7 +335,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                       min={0}
                       step="any"
                       value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value
+                        const num = Number(val)
+                        if (Number.isFinite(num)) {
+                          setWeight(String(round(num, 1)))
+                        } else {
+                          setWeight(val)
+                        }
+                      }}
                       placeholder="e.g. 150"
                     />
                   </div>

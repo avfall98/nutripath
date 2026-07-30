@@ -38,6 +38,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [servings, setServings] = useState(entry.quantity.toString())
   const [weight, setWeight] = useState("")
   const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
+  const [activeTab, setActiveTab] = useState<"library" | "quantity">("quantity")
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -96,16 +97,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="library" className="min-h-0">
-          <TabsList className="w-full">
-            <TabsTrigger value="library" className="flex-1">
-              Change food
-            </TabsTrigger>
-            <TabsTrigger value="quantity" className="flex-1">
-              Quantity only
-            </TabsTrigger>
-          </TabsList>
-
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "library" | "quantity")} className="min-h-0">
           <TabsContent value="library" className="mt-4 flex flex-col gap-3">
             <div className="flex items-end gap-3">
               <div className="relative flex-1">
@@ -268,12 +260,16 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
-            <div className="rounded-lg border border-border p-3">
+            <button
+              type="button"
+              onClick={() => setActiveTab("library")}
+              className="rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50 active:bg-accent/70"
+            >
               <p className="text-sm font-medium">{entry.name}</p>
               <p className="text-xs text-muted-foreground">
                 {Math.round(entry.calories / KJ_PER_KCAL)} kcal · {Math.round(entry.protein)}g protein
               </p>
-            </div>
+            </button>
 
             <div className="space-y-3">
               <div className="flex flex-col gap-2">

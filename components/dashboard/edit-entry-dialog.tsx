@@ -49,6 +49,37 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     )
   }, [foods, query])
 
+  // Calculate adjusted nutrition based on current servings/weight input
+  const adjustedNutrition = useMemo(() => {
+    const food = foods.find((f) => f.id === entry.foodId)
+    if (!food) return entry
+    
+    let quantity = entry.quantity
+    
+    if (qtyMode === "servings") {
+      quantity = num(servings, entry.quantity)
+    } else {
+      const weightValue = num(weight, 0)
+      if (food.servingSize && weightValue > 0) {
+        const servingSizeMatch = food.servingSize.match(/^([\d.]+)/)
+        const servingSizeValue = servingSizeMatch ? parseFloat(servingSizeMatch[1]) : null
+        if (servingSizeValue && servingSizeValue > 0) {
+          quantity = weightValue / servingSizeValue
+        }
+      }
+    }
+    
+    // Scale the nutrition values
+    const ratio = quantity / entry.quantity
+    return {
+      ...entry,
+      calories: entry.calories * ratio,
+      protein: entry.protein * ratio,
+      carbs: entry.carbs ? entry.carbs * ratio : null,
+      fat: entry.fat ? entry.fat * ratio : null,
+    }
+  }, [entry, foods, qtyMode, servings, weight])
+
   function num(v: string, fallback = 0): number {
     const n = Number(v)
     return Number.isFinite(n) && v.trim() !== "" ? n : fallback
@@ -218,25 +249,25 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
-            {/* Food item display matching meal-section layout */}
+            {/* Food item display */}
             <button
               type="button"
               onClick={() => setActiveTab("library")}
-              className="flex flex-col gap-2 rounded-lg border border-border p-3 text-left transition-colors hover:bg-accent/50"
+              className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
             >
               <div className="flex items-start gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
+                <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted border border-border/50">
                   {foods.find((f) => f.id === entry.foodId)?.imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={foods.find((f) => f.id === entry.foodId)?.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
                   ) : (
-                    <Apple className="size-5 text-muted-foreground" />
+                    <Apple className="size-6 text-muted-foreground" />
                   )}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-semibold leading-tight">{entry.name}</p>
+                  <p className="truncate text-base font-semibold leading-tight">{entry.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {round(entry.quantity, 1) % 1 === 0 ? Math.floor(entry.quantity) : round(entry.quantity, 1)} serving{entry.quantity === 1 ? "" : "s"}
+                    {round(adjustedNutrition.quantity, 1) % 1 === 0 ? Math.floor(adjustedNutrition.quantity) : round(adjustedNutrition.quantity, 1)} serving{adjustedNutrition.quantity === 1 ? "" : "s"}
                     {foods.find((f) => f.id === entry.foodId)?.servingSize && (
                       <>
                         {" − "}
@@ -247,28 +278,30 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                 </div>
               </div>
               <MacroBadges
-                kcal={Math.round(entry.calories / KJ_PER_KCAL)}
-                protein={Math.round(entry.protein)}
-                carbs={entry.carbs != null ? Math.round(entry.carbs) : null}
-                fat={entry.fat != null ? Math.round(entry.fat) : null}
+                kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                protein={Math.round(adjustedNutrition.protein)}
+                carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
+                fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
               />
             </button>
 
             {/* Quantity controls in single row */}
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               {renderQuantityControls()}
               
               {entry.foodId && (
-                <Button
-                  onClick={() => {
-                    const food = foods.find((f) => f.id === entry.foodId)
-                    if (food) updateFromLibrary(food)
-                  }}
-                  disabled={pending}
-                  className="w-full"
-                >
-                  Save changes
-                </Button>
+                <div className="flex justify-center">
+                  <Button
+                    onClick={() => {
+                      const food = foods.find((f) => f.id === entry.foodId)
+                      if (food) updateFromLibrary(food)
+                    }}
+                    disabled={pending}
+                    className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                  >
+                    Save changes
+                  </Button>
+                </div>
               )}
             </div>
           </TabsContent>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { updateEntry } from "@/app/actions/entries"
 import { round } from "@/lib/format"
 import type { EntryDTO, FoodDTO } from "@/lib/types"
@@ -40,6 +40,14 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [weight, setWeight] = useState("")
   const [weightUnit, setWeightUnit] = useState<"g" | "ml">("g")
   const [activeTab, setActiveTab] = useState<"library" | "quantity">("quantity")
+
+  // Sync servings/weight when entry changes
+  useEffect(() => {
+    setServings(entry.quantity.toString())
+    setWeight("")
+    setQtyMode("servings")
+    setActiveTab("quantity")
+  }, [entry])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()

@@ -249,40 +249,40 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </TabsContent>
 
           <TabsContent value="quantity" className="mt-4 flex flex-col gap-4">
-            {/* Food item display */}
+            {/* Food item display - horizontal layout */}
             <button
               type="button"
               onClick={() => setActiveTab("library")}
-              className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
+              className="flex items-center gap-3 rounded-lg bg-muted/60 p-3 text-left transition-colors hover:bg-muted/80"
             >
-              <div className="flex items-start gap-3">
-                <span className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted border border-border/50">
-                  {foods.find((f) => f.id === entry.foodId)?.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={foods.find((f) => f.id === entry.foodId)?.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
-                  ) : (
-                    <Apple className="size-6 text-muted-foreground" />
+              <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-muted border border-border/50">
+                {foods.find((f) => f.id === entry.foodId)?.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={foods.find((f) => f.id === entry.foodId)?.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                ) : (
+                  <Apple className="size-5 text-muted-foreground" />
+                )}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold leading-tight">{entry.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {round(adjustedNutrition.quantity, 1) % 1 === 0 ? Math.floor(adjustedNutrition.quantity) : round(adjustedNutrition.quantity, 1)} serving{adjustedNutrition.quantity === 1 ? "" : "s"}
+                  {foods.find((f) => f.id === entry.foodId)?.servingSize && (
+                    <>
+                      {" − "}
+                      {foods.find((f) => f.id === entry.foodId)?.servingSize}
+                    </>
                   )}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-base font-semibold leading-tight">{entry.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {round(adjustedNutrition.quantity, 1) % 1 === 0 ? Math.floor(adjustedNutrition.quantity) : round(adjustedNutrition.quantity, 1)} serving{adjustedNutrition.quantity === 1 ? "" : "s"}
-                    {foods.find((f) => f.id === entry.foodId)?.servingSize && (
-                      <>
-                        {" − "}
-                        {foods.find((f) => f.id === entry.foodId)?.servingSize}
-                      </>
-                    )}
-                  </p>
-                </div>
+                </p>
               </div>
-              <MacroBadges
-                kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
-                protein={Math.round(adjustedNutrition.protein)}
-                carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
-                fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
-              />
+              <div className="shrink-0">
+                <MacroBadges
+                  kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                  protein={Math.round(adjustedNutrition.protein)}
+                  carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
+                  fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
+                />
+              </div>
             </button>
 
             {/* Quantity controls in single row */}

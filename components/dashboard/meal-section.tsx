@@ -181,14 +181,24 @@ export function MealSection({
             {group.name}
           </h3>
           {isReal && entries.length === 0 && (
-            <button
-              type="button"
-              onClick={() => setAddOpen(true)}
-              aria-label="Add food"
-              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
-            >
-              <Plus className="size-4" />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                aria-label="Add food"
+                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+              >
+                <Plus className="size-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setAddOpen(true)}
+                aria-label="Add food"
+                className="hidden size-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:flex"
+              >
+                <Plus className="size-4" />
+              </button>
+            </>
           )}
         </div>
         {entries.length > 0 ? (
@@ -491,13 +501,8 @@ export function MealSection({
       )}
 
       {/* Desktop add-food button centered at bottom of table */}
-      {isReal && (
-        <div
-          className={cn(
-            "hidden justify-center md:flex",
-            entries.length > 0 ? "border-t border-white/10 pt-2" : "pt-1",
-          )}
-        >
+      {isReal && entries.length > 0 && (
+        <div className="hidden justify-center border-t border-white/10 pt-2 md:flex">
           <button
             type="button"
             onClick={() => setAddOpen(true)}

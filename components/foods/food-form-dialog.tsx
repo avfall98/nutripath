@@ -746,25 +746,28 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     value={form.servingSize}
                     onChange={(e) => set("servingSize", e.target.value)}
                     placeholder="e.g. 100"
-                    className={cn(fieldInput, "flex-1")}
+                    className={cn(fieldInput, "w-24")}
                   />
                   <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
-                    {(["g", "ml"] as ServingUnit[]).map((u) => (
-                      <button
-                        key={u}
-                        type="button"
-                        onClick={() => setServingUnit(u)}
-                        aria-pressed={servingUnit === u}
-                        className={cn(
-                          "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
-                          servingUnit === u
-                            ? "bg-primary text-primary-foreground"
-                            : "text-muted-foreground hover:text-foreground",
-                        )}
-                      >
-                        {u}
-                      </button>
-                    ))}
+                    {(["g", "ml"] as ServingUnit[]).map((u) => {
+                      const label = u === "g" ? "Servings" : "g/ml"
+                      return (
+                        <button
+                          key={u}
+                          type="button"
+                          onClick={() => setServingUnit(u)}
+                          aria-pressed={servingUnit === u}
+                          className={cn(
+                            "rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                            servingUnit === u
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
               </div>

@@ -39,7 +39,7 @@ type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 
-const ROW_GRID = "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+const ROW_GRID = "grid grid-cols-[28px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
 
 export function AddFoodDialog({
   open,
@@ -238,7 +238,7 @@ export function AddFoodDialog({
                       disabled={pending}
                       onClick={() => addFromLibrary(food)}
                       aria-label={`Add ${food.name}`}
-                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
                     >
                       <Plus className="size-4" />
                     </button>

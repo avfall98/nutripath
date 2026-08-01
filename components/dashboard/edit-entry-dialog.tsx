@@ -101,17 +101,18 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
         <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
           {(["servings", "weight"] as QuantityMode[]).map((mode) => {
             const active = qtyMode === mode
+            const displayText = mode === "weight" ? "g/ml" : mode
             return (
               <button
                 key={mode}
                 type="button"
                 onClick={() => setQtyMode(mode)}
                 className={cn(
-                  "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
+                  "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
                   active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
                 )}
               >
-                {mode}
+                {displayText}
               </button>
             )
           })}

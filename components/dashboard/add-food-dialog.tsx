@@ -35,6 +35,7 @@ type Props = {
 
 type QuantityMode = "servings" | "weight"
 type TabKey = "library" | "recent" | "favourites" | "quick"
+type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 
@@ -68,7 +69,8 @@ export function AddFoodDialog({
   }, [tab])
   const [servings, setServings] = useState("1")
   const [weight, setWeight] = useState("")
-  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+  const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
+  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g" as ServingUnit, quantity: "1" })
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -145,7 +147,7 @@ export function AddFoodDialog({
         quantity: num(quick.quantity, 1) || 1,
       })
       toast.success(`Added ${quick.name} to ${group.name}.`)
-      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g", quantity: "1" })
       onAdded()
       onOpenChange(false)
     })
@@ -212,7 +214,7 @@ export function AddFoodDialog({
               "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
             )}
           >
-            <span className="text-right">#</span>
+            <span className="text-right"></span>
             <span />
             <span>Food</span>
             <span>Kcal</span>
@@ -230,7 +232,17 @@ export function AddFoodDialog({
               const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
               return (
                 <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
-                  <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => addFromLibrary(food)}
+                      aria-label={`Add ${food.name}`}
+                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
                   <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
                     {food.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -272,17 +284,6 @@ export function AddFoodDialog({
                   </div>
                   <div className="flex items-center justify-end">
                     <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => addFromLibrary(food)}
-                      aria-label={`Add ${food.name}`}
-                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                    >
-                      <Plus className="size-4" />
-                    </button>
                   </div>
                 </li>
               )
@@ -490,6 +491,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.calories}
                       onChange={(e) => setQuick((s) => ({ ...s, calories: e.target.value }))}
                     />
@@ -501,6 +503,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.protein}
                       onChange={(e) => setQuick((s) => ({ ...s, protein: e.target.value }))}
                     />
@@ -512,6 +515,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.carbs}
                       onChange={(e) => setQuick((s) => ({ ...s, carbs: e.target.value }))}
                     />
@@ -523,28 +527,66 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.fat}
                       onChange={(e) => setQuick((s) => ({ ...s, fat: e.target.value }))}
                     />
                   </Field>
                 </div>
-                <Field>
-                  <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
-                  <Input
-                    id="q-qty"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="0.5"
-                    value={quick.quantity}
-                    onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
-                    className="w-28"
-                  />
-                </Field>
-                <Button type="submit" disabled={pending} className="w-full">
-                  <Plus data-icon="inline-start" />
-                  Add to {group.name}
-                </Button>
+                <div className="grid grid-cols-[1fr_100px_100px] gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="q-serving">Serving Size</FieldLabel>
+                    <Input
+                      id="q-serving"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={quick.servingSize}
+                      onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
+                      placeholder="e.g. 100"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel>Unit</FieldLabel>
+                    <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                      {(["g", "ml"] as ServingUnit[]).map((unit) => {
+                        const active = quick.servingUnitCustom === unit
+                        return (
+                          <button
+                            key={unit}
+                            type="button"
+                            onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
+                            className={cn(
+                              "rounded-full px-3 py-1 text-[13px] font-bold transition-colors",
+                              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                            )}
+                          >
+                            {unit}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
+                    <Input
+                      id="q-qty"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={quick.quantity}
+                      onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
+                    />
+                  </Field>
+                </div>
+                <div className="flex justify-center pt-2">
+                  <Button type="submit" disabled={pending} className="rounded-full bg-primary px-6 py-2 text-primary-foreground hover:bg-primary/90">
+                    <Plus data-icon="inline-start" />
+                    Add to {group.name}
+                  </Button>
+                </div>
               </FieldGroup>
             </form>
           </div>

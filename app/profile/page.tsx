@@ -9,7 +9,7 @@ export default async function ProfilePage() {
   const [profile, groups] = await Promise.all([getProfile(), getMealGroups()])
 
   return (
-    <main className="mx-auto w-full max-w-[900px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+    <main className="mx-auto w-full max-w-[900px] px-0 pb-16 pt-6 md:px-8 md:pt-8">
       {/* Mobile header */}
       <header className="mb-6 md:hidden">
         <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Profile &amp; goals</h1>

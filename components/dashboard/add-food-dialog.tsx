@@ -18,13 +18,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Clock, Loader2, Plus, Search, Star, UtensilsCrossed } from "lucide-react"
@@ -556,16 +549,25 @@ export function AddFoodDialog({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="q-unit">Unit</FieldLabel>
-                    <Select value={quick.servingUnitCustom} onValueChange={(value) => setQuick((s) => ({ ...s, servingUnitCustom: value as ServingUnit }))}>
-                      <SelectTrigger id="q-unit" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent align="start">
-                        <SelectItem value="g">g</SelectItem>
-                        <SelectItem value="ml">ml</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FieldLabel>Unit</FieldLabel>
+                    <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                      {(["g", "ml"] as ServingUnit[]).map((unit) => {
+                        const active = quick.servingUnitCustom === unit
+                        return (
+                          <button
+                            key={unit}
+                            type="button"
+                            onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
+                            className={cn(
+                              "rounded-full px-3 py-1 text-[13px] font-bold transition-colors",
+                              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                            )}
+                          >
+                            {unit}
+                          </button>
+                        )
+                      })}
+                    </div>
                   </Field>
                   <Field>
                     <FieldLabel htmlFor="q-qty">Servings</FieldLabel>

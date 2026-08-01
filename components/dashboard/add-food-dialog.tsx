@@ -18,6 +18,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
 import { Clock, Loader2, Plus, Search, Star, UtensilsCrossed } from "lucide-react"
@@ -35,6 +42,7 @@ type Props = {
 
 type QuantityMode = "servings" | "weight"
 type TabKey = "library" | "recent" | "favourites" | "quick"
+type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 
@@ -68,7 +76,8 @@ export function AddFoodDialog({
   }, [tab])
   const [servings, setServings] = useState("1")
   const [weight, setWeight] = useState("")
-  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+  const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
+  const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g" as ServingUnit, quantity: "1" })
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -145,7 +154,7 @@ export function AddFoodDialog({
         quantity: num(quick.quantity, 1) || 1,
       })
       toast.success(`Added ${quick.name} to ${group.name}.`)
-      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", quantity: "1" })
+      setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g", quantity: "1" })
       onAdded()
       onOpenChange(false)
     })
@@ -490,6 +499,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.calories}
                       onChange={(e) => setQuick((s) => ({ ...s, calories: e.target.value }))}
                     />
@@ -501,6 +511,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.protein}
                       onChange={(e) => setQuick((s) => ({ ...s, protein: e.target.value }))}
                     />
@@ -512,6 +523,7 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.carbs}
                       onChange={(e) => setQuick((s) => ({ ...s, carbs: e.target.value }))}
                     />
@@ -523,9 +535,37 @@ export function AddFoodDialog({
                       type="number"
                       inputMode="decimal"
                       min={0}
+                      step="any"
                       value={quick.fat}
                       onChange={(e) => setQuick((s) => ({ ...s, fat: e.target.value }))}
                     />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-[1fr_100px] gap-3">
+                  <Field>
+                    <FieldLabel htmlFor="q-serving">Serving Size</FieldLabel>
+                    <Input
+                      id="q-serving"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={quick.servingSize}
+                      onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
+                      placeholder="e.g. 100"
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-unit">Unit</FieldLabel>
+                    <Select value={quick.servingUnitCustom} onValueChange={(value) => setQuick((s) => ({ ...s, servingUnitCustom: value as ServingUnit }))}>
+                      <SelectTrigger id="q-unit" size="sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent align="start">
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </Field>
                 </div>
                 <Field>
@@ -535,16 +575,18 @@ export function AddFoodDialog({
                     type="number"
                     inputMode="decimal"
                     min={0}
-                    step="0.5"
+                    step="any"
                     value={quick.quantity}
                     onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
                     className="w-28"
                   />
                 </Field>
-                <Button type="submit" disabled={pending} className="w-full">
-                  <Plus data-icon="inline-start" />
-                  Add to {group.name}
-                </Button>
+                <div className="flex justify-center pt-2">
+                  <Button type="submit" disabled={pending} className="bg-primary text-primary-foreground hover:bg-primary/80">
+                    <Plus data-icon="inline-start" />
+                    Add to {group.name}
+                  </Button>
+                </div>
               </FieldGroup>
             </form>
           </div>

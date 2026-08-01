@@ -29,7 +29,7 @@ type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores" | "favouri
 const KJ_PER_KCAL = 4.184
 
 const ROW_GRID =
-  "grid grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+  "grid grid-cols-[32px_20px_44px_1fr_120px_112px_60px_60px_80px_80px] items-center gap-x-3"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
@@ -406,6 +406,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
                 return (
                   <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
+                    <div className="flex justify-start">{foodMenu(food)}</div>
                     <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
                     <button
                       type="button"
@@ -465,7 +466,6 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <div className="flex items-center justify-end">
                       <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                     </div>
-                    <div className="flex justify-start">{foodMenu(food)}</div>
                   </li>
                 )
               })}

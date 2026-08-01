@@ -305,8 +305,8 @@ export function DaySummary({
       </div>
 
       {/* ---------- Mobile card ---------- */}
-      <Card className="md:hidden">
-        <CardContent className="flex flex-col gap-5">
+      <Card className="md:hidden border-0 bg-transparent">
+        <CardContent className="flex flex-col gap-5 p-0 md:p-6">
           <div className="flex flex-col gap-4">
             {/* Calories */}
             <div className="flex flex-col gap-2">

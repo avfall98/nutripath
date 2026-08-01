@@ -11,7 +11,7 @@ export default async function ProfilePage() {
   return (
     <main className="mx-auto w-full max-w-[900px] px-0 pb-16 pt-6 md:px-8 md:pt-8">
       {/* Mobile header */}
-      <header className="mb-6 md:hidden">
+      <header className="mb-6 px-4 md:hidden">
         <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Profile &amp; goals</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Your details, daily targets, and meal groups.

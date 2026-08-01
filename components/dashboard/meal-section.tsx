@@ -171,14 +171,26 @@ export function MealSection({
     <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
       {/* Header: name + (mobile-only) summary + meal score pills */}
       <div className="flex flex-col gap-2">
-        <h3
-          className={cn(
-            "text-lg font-extrabold tracking-[-0.3px]",
-            entries.length === 0 && "text-muted-foreground",
+        <div className="flex items-center justify-between gap-2">
+          <h3
+            className={cn(
+              "text-lg font-extrabold tracking-[-0.3px]",
+              entries.length === 0 && "text-muted-foreground",
+            )}
+          >
+            {group.name}
+          </h3>
+          {isReal && entries.length === 0 && (
+            <button
+              type="button"
+              onClick={() => setAddOpen(true)}
+              aria-label="Add food"
+              className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+            >
+              <Plus className="size-4" />
+            </button>
           )}
-        >
-          {group.name}
-        </h3>
+        </div>
         {entries.length > 0 ? (
           <div className="flex flex-col gap-2 md:hidden">
             {/* Macro badges row */}
@@ -497,9 +509,9 @@ export function MealSection({
         </div>
       )}
 
-      {/* Mobile add-food dashed pill (kept from existing structure) */}
-      {isReal ? (
-        <div className={cn("md:hidden", entries.length > 0 ? "mt-1 border-t border-border pt-3" : "pt-1")}>
+      {/* Mobile add-food dashed pill (shown only when entries exist) */}
+      {isReal && entries.length > 0 && (
+        <div className="md:hidden mt-1 border-t border-border pt-3">
           <button
             type="button"
             onClick={() => setAddOpen(true)}
@@ -509,9 +521,8 @@ export function MealSection({
             <Plus className="size-4" />
           </button>
         </div>
-      ) : (
-        entries.length === 0 && <p className="py-2 text-[13px] text-faint">Items whose meal group was removed.</p>
       )}
+      {!isReal && entries.length === 0 && <p className="py-2 text-[13px] text-faint">Items whose meal group was removed.</p>}
 
       {isReal && (
         <>

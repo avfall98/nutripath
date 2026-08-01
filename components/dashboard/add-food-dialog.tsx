@@ -214,7 +214,7 @@ export function AddFoodDialog({
               "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
             )}
           >
-            <span className="text-right">#</span>
+            <span className="text-right"></span>
             <span />
             <span>Food</span>
             <span>Kcal</span>
@@ -232,7 +232,17 @@ export function AddFoodDialog({
               const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
               return (
                 <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
-                  <span className="text-right text-[13px] tabular-nums text-faint">{i + 1}</span>
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      disabled={pending}
+                      onClick={() => addFromLibrary(food)}
+                      aria-label={`Add ${food.name}`}
+                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                    >
+                      <Plus className="size-4" />
+                    </button>
+                  </div>
                   <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
                     {food.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -274,17 +284,6 @@ export function AddFoodDialog({
                   </div>
                   <div className="flex items-center justify-end">
                     <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                  </div>
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      disabled={pending}
-                      onClick={() => addFromLibrary(food)}
-                      aria-label={`Add ${food.name}`}
-                      className="flex size-7 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
-                    >
-                      <Plus className="size-4" />
-                    </button>
                   </div>
                 </li>
               )

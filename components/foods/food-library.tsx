@@ -465,7 +465,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <div className="flex items-center justify-end">
                       <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                     </div>
-                    <div className="flex justify-end">{foodMenu(food)}</div>
+                    <div className="flex justify-start">{foodMenu(food)}</div>
                   </li>
                 )
               })}

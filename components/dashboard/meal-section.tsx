@@ -168,7 +168,7 @@ export function MealSection({
   }
 
   return (
-    <section className="flex flex-col gap-2 rounded-lg bg-card p-4 md:bg-transparent md:p-0">
+    <section className="flex flex-col gap-2 rounded-lg md:rounded-lg bg-transparent p-0 md:bg-transparent md:p-0">
       {/* Header: name + (mobile-only) summary + meal score pills */}
       <div className="flex flex-col gap-2">
         <div className="relative flex items-center justify-between gap-2">

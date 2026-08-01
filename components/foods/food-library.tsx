@@ -472,8 +472,8 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
           </div>
 
           {/* Mobile stacked cards */}
-          <Card className="md:hidden">
-            <CardContent>
+          <Card className="border-0 bg-transparent md:border md:bg-card md:hidden">
+            <CardContent className="p-0 md:p-6">
               <ul className="flex flex-col">
                 {filtered.map((food) => {
                   const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)

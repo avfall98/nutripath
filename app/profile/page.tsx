@@ -9,9 +9,9 @@ export default async function ProfilePage() {
   const [profile, groups] = await Promise.all([getProfile(), getMealGroups()])
 
   return (
-    <main className="mx-auto w-full max-w-[900px] px-4 pb-16 pt-6 md:px-8 md:pt-8">
+    <main className="mx-auto w-full max-w-[900px] px-0 pb-16 pt-6 md:px-8 md:pt-8">
       {/* Mobile header */}
-      <header className="mb-6 md:hidden">
+      <header className="mb-6 px-4 md:hidden">
         <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Profile &amp; goals</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Your details, daily targets, and meal groups.
@@ -31,7 +31,7 @@ export default async function ProfilePage() {
         <MealGroupsManager initialGroups={groups} />
       </ProfileForm>
 
-      <Card className="mt-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+      <Card className="mt-5 flex flex-col gap-4 border-0 bg-transparent p-0 sm:border sm:bg-card sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div>
           <h2 className="text-xl font-bold">Install NutriTrack</h2>
           <p className="mt-1 text-sm text-muted-foreground">

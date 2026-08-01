@@ -107,7 +107,7 @@ export function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-      <Card className="p-6 sm:p-7">
+      <Card className="border-0 bg-transparent p-0 sm:border sm:bg-card sm:p-7">
         <CardHeader className="p-0">
           <CardTitle className="text-xl font-bold">Your details</CardTitle>
           <CardDescription>Used to personalize your daily targets. Units are metric.</CardDescription>
@@ -200,7 +200,7 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
-      <Card className="p-6 sm:p-7">
+      <Card className="border-0 bg-transparent p-0 sm:border sm:bg-card sm:p-7">
         <CardHeader className="p-0">
           <CardTitle className="text-xl font-bold">Daily targets</CardTitle>
           <CardDescription>Set your daily calorie and protein goals.</CardDescription>

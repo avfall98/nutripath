@@ -583,7 +583,7 @@ export function AddFoodDialog({
                   </Field>
                 </div>
                 <div className="flex justify-center pt-2">
-                  <Button type="submit" disabled={pending} className="bg-primary text-primary-foreground hover:bg-primary/80">
+                  <Button type="submit" disabled={pending} className="rounded-full bg-primary px-6 py-2 text-primary-foreground hover:bg-primary/90">
                     <Plus data-icon="inline-start" />
                     Add to {group.name}
                   </Button>

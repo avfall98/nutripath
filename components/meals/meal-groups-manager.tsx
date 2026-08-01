@@ -75,7 +75,7 @@ export function MealGroupsManager({ initialGroups }: { initialGroups: MealGroupD
   }
 
   return (
-    <Card className="p-6 sm:p-7">
+    <Card className="border-0 bg-transparent p-0 sm:border sm:bg-card sm:p-7">
       <CardHeader className="p-0">
         <CardTitle className="text-xl font-bold">Meal groups</CardTitle>
         <CardDescription>Customize how your day is divided. Reorder, rename, or add your own.</CardDescription>

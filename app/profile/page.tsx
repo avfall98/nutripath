@@ -31,7 +31,7 @@ export default async function ProfilePage() {
         <MealGroupsManager initialGroups={groups} />
       </ProfileForm>
 
-      <Card className="mt-5 flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+      <Card className="mt-5 flex flex-col gap-4 border-0 bg-transparent p-0 sm:border sm:bg-card sm:flex-row sm:items-center sm:justify-between sm:p-7">
         <div>
           <h2 className="text-xl font-bold">Install NutriTrack</h2>
           <p className="mt-1 text-sm text-muted-foreground">

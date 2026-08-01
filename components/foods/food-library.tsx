@@ -157,7 +157,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button size="icon" variant="ghost" className="size-7 text-muted-foreground" aria-label="Food options" />}
+          render={<Button size="icon" variant="ghost" className="size-7 rounded-md text-muted-foreground" aria-label="Food options" />}
         >
           <MoreVertical />
         </DropdownMenuTrigger>

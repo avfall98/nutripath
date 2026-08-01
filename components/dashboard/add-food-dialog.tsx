@@ -541,7 +541,7 @@ export function AddFoodDialog({
                     />
                   </Field>
                 </div>
-                <div className="grid grid-cols-[1fr_100px] gap-3">
+                <div className="grid grid-cols-[1fr_100px_100px] gap-3">
                   <Field>
                     <FieldLabel htmlFor="q-serving">Serving Size</FieldLabel>
                     <Input
@@ -567,20 +567,19 @@ export function AddFoodDialog({
                       </SelectContent>
                     </Select>
                   </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
+                    <Input
+                      id="q-qty"
+                      type="number"
+                      inputMode="decimal"
+                      min={0}
+                      step="any"
+                      value={quick.quantity}
+                      onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
+                    />
+                  </Field>
                 </div>
-                <Field>
-                  <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
-                  <Input
-                    id="q-qty"
-                    type="number"
-                    inputMode="decimal"
-                    min={0}
-                    step="any"
-                    value={quick.quantity}
-                    onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
-                    className="w-28"
-                  />
-                </Field>
                 <div className="flex justify-center pt-2">
                   <Button type="submit" disabled={pending} className="bg-primary text-primary-foreground hover:bg-primary/80">
                     <Plus data-icon="inline-start" />

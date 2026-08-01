@@ -194,7 +194,7 @@ export function MealSection({
                 type="button"
                 onClick={() => setAddOpen(true)}
                 aria-label="Add food"
-                className="absolute left-1/2 top-1/2 hidden size-8 shrink-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:flex"
+                className="absolute left-1/2 top-1/2 hidden size-8 shrink-0 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/40 text-white/80 transition-colors hover:border-primary hover:text-primary md:flex"
               >
                 <Plus className="size-4" />
               </button>

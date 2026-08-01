@@ -306,7 +306,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       <Card className="hidden p-6 md:block">{chart()}</Card>
 
       {/* Mobile: combined stats + chart card */}
-      <Card className="gap-0 p-5 md:hidden">
+      <Card className="gap-0 border-0 bg-transparent p-0 md:border md:bg-card md:p-5 md:hidden">
         <div className="grid grid-cols-2 gap-x-4 gap-y-6">
           {statCards.map((s, i) => (
             <div key={s.label} className={cn("flex flex-col", i % 2 === 1 && "border-l border-border pl-4")}>
@@ -431,7 +431,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         </div>
 
         {/* Mobile stacked list */}
-        <Card className="gap-0 p-0 md:hidden">
+        <Card className="gap-0 border-0 bg-transparent p-0 md:border md:bg-card md:hidden">
           <ul className="flex flex-col">
             {byDay.map((d) => {
               const empty = d.entries === 0

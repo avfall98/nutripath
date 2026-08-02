@@ -246,6 +246,11 @@ export function DaySummary({
               <span className="text-lg font-medium text-faint">
                 / {targetCalories != null ? targetCalories.toLocaleString() : "—"} kcal
               </span>
+              {targetCalories != null && (
+                <span className="font-bold" style={{ color: calColor }}>
+                  {Math.round(calPct)}%
+                </span>
+              )}
               <div className="flex items-center gap-2">
                 {servingWeightG ? <CalorieDensityBadge kcal={caloriesKcal} servingSize={`${servingWeightG}g`} size="lg" /> : null}
               </div>
@@ -254,7 +259,7 @@ export function DaySummary({
               <span className="text-sm tabular-nums text-faint">
                 {calRemaining != null && (calOver ? `${Math.abs(calRemaining)} over` : `${calRemaining} left`)} ·{" "}
                 <span className="font-bold" style={{ color: calColor }}>
-                  {Math.round(calPct)}%
+                  {Math.round(100 - calPct)}%
                 </span>
               </span>
             )}
@@ -271,6 +276,11 @@ export function DaySummary({
               <span className="text-lg font-medium text-faint">
                 / {targetProtein != null ? targetProtein : "—"} g
               </span>
+              {targetProtein != null && (
+                <span className="font-bold" style={{ color: proteinOver ? "var(--cal-over)" : "var(--primary)" }}>
+                  {Math.round(proteinPct)}%
+                </span>
+              )}
               <div className="flex items-center gap-2">
                 <ProteinScoreBadges proteinG={totals.protein} kcal={caloriesKcal} size="lg" />
               </div>
@@ -279,7 +289,7 @@ export function DaySummary({
               <span className="text-sm tabular-nums text-faint">
                 {proteinRemaining != null && (proteinOver ? `${Math.abs(proteinRemaining)}g over` : `${proteinRemaining}g left`)} ·{" "}
                 <span className="font-bold" style={{ color: proteinOver ? "var(--cal-over)" : "var(--primary)" }}>
-                  {Math.round(proteinPct)}%
+                  {Math.round(100 - proteinPct)}%
                 </span>
               </span>
             )}

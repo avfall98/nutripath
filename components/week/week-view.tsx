@@ -285,10 +285,13 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
               )}
             </div>
-            <p className="mt-2 text-3xl font-extrabold tabular-nums leading-none">
-              {s.value}
+            <div className="mt-2 flex items-baseline gap-1">
+              <p className="text-3xl font-extrabold tabular-nums leading-none">
+                {s.value}
+              </p>
               {s.unit ? <span className="text-lg font-semibold text-faint">{s.unit}</span> : null}
-            </p>
+              <span className="text-xs text-faint">/ day</span>
+            </div>
             <p className="mt-2 flex flex-wrap items-baseline gap-1 text-xs text-faint">
               <span>{s.caption}</span>
               {s.ofTarget != null ? (
@@ -318,10 +321,13 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                   <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
                 )}
               </div>
-              <p className="mt-1.5 text-2xl font-extrabold leading-none tabular-nums">
-                {s.value}
+              <div className="mt-1.5 flex items-baseline gap-1">
+                <p className="text-2xl font-extrabold leading-none tabular-nums">
+                  {s.value}
+                </p>
                 {s.unit ? <span className="text-base font-semibold text-faint">{s.unit}</span> : null}
-              </p>
+                <span className="text-xs text-faint">/ day</span>
+              </div>
               <p className="mt-1.5 flex flex-wrap items-baseline gap-1 text-xs text-faint">
                 <span>{s.caption}</span>
                 {s.ofTarget != null ? (

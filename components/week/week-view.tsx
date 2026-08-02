@@ -119,33 +119,33 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
     {
       label: "Calories",
       color: "var(--stat-calories)",
-      value: Math.round(totals.kcal).toLocaleString(),
+      value: Math.round(avg.kcal).toLocaleString(),
       unit: "",
-      caption: `avg ${Math.round(avg.kcal).toLocaleString()}/day`,
+      caption: `${Math.round(totals.kcal).toLocaleString()} total`,
       ofTarget: ofTargetCal,
     },
     {
       label: "Protein",
       color: "var(--stat-protein)",
-      value: Math.round(totals.protein).toLocaleString(),
+      value: Math.round(avg.protein).toLocaleString(),
       unit: "g",
-      caption: `avg ${Math.round(avg.protein)}g/day`,
+      caption: `${Math.round(totals.protein).toLocaleString()}g total`,
       ofTarget: ofTargetProtein,
     },
     {
       label: "Carbs",
       color: "var(--stat-carbs)",
-      value: Math.round(totals.carbs).toLocaleString(),
+      value: Math.round(avg.carbs).toLocaleString(),
       unit: "g",
-      caption: `avg ${Math.round(avg.carbs)}g/day`,
+      caption: `${Math.round(totals.carbs).toLocaleString()}g total`,
       ofTarget: null as number | null,
     },
     {
       label: "Fat",
       color: "var(--stat-fat)",
-      value: Math.round(totals.fat).toLocaleString(),
+      value: Math.round(avg.fat).toLocaleString(),
       unit: "g",
-      caption: `avg ${Math.round(avg.fat)}g/day`,
+      caption: `${Math.round(totals.fat).toLocaleString()}g total`,
       ofTarget: null as number | null,
     },
   ]
@@ -289,12 +289,12 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               {s.value}
               {s.unit ? <span className="text-lg font-semibold text-faint">{s.unit}</span> : null}
             </p>
-            <p className="mt-2 text-xs text-faint">
-              {s.caption}
+            <p className="mt-2 flex flex-wrap items-baseline gap-1 text-xs text-faint">
+              <span>{s.caption}</span>
               {s.ofTarget != null ? (
                 <>
-                  {" · "}
-                  <span className="font-semibold text-primary">{s.ofTarget}%</span> of target
+                  <span>·</span>
+                  <span className="font-bold text-primary">{s.ofTarget}%</span>
                 </>
               ) : null}
             </p>
@@ -322,12 +322,12 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 {s.value}
                 {s.unit ? <span className="text-base font-semibold text-faint">{s.unit}</span> : null}
               </p>
-              <p className="mt-1.5 text-xs text-faint">
-                {s.caption}
+              <p className="mt-1.5 flex flex-wrap items-baseline gap-1 text-xs text-faint">
+                <span>{s.caption}</span>
                 {s.ofTarget != null ? (
                   <>
-                    {" · "}
-                    <span className="font-semibold text-primary">{s.ofTarget}%</span>
+                    <span>·</span>
+                    <span className="font-bold text-primary">{s.ofTarget}%</span>
                   </>
                 ) : null}
               </p>

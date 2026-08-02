@@ -25,6 +25,7 @@ import { PageLoading } from "@/components/page-loading"
 const KJ_PER_KCAL = 4.184
 
   const ROW_GRID = "grid grid-cols-[40px_1fr_120px_112px_60px_60px_132px_20px] items-center gap-x-3"
+  const FOOD_ROW_GRID = "grid grid-cols-[1fr_60px_90px_120px_112px_60px_60px] items-center gap-x-3"
 
 type DayTotals = {
   date: Date
@@ -35,6 +36,17 @@ type DayTotals = {
   fat: number
   weightG: number
   entries: number
+}
+
+type FoodTotals = {
+  key: string
+  name: string
+  count: number
+  weightG: number
+  kcal: number
+  protein: number
+  carbs: number
+  fat: number
 }
 
 export function WeekView({ profile }: { profile: ProfileDTO }) {
@@ -99,6 +111,31 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
     carbs: totals.carbs / n,
     fat: totals.fat / n,
   }
+
+  const topFoods = useMemo<FoodTotals[]>(() => {
+    const map = new Map<string, FoodTotals>()
+    for (const e of entries) {
+      const key = e.foodId != null ? `food-${e.foodId}` : `name-${e.name.trim().toLowerCase()}`
+      const q = e.quantity || 1
+      const kcal = (e.calories / KJ_PER_KCAL) * q
+      const protein = e.protein * q
+      const carbs = (e.carbs ?? 0) * q
+      const fat = (e.fat ?? 0) * q
+      const weight = e.servingWeightG ? e.servingWeightG * q : 0
+      const existing = map.get(key)
+      if (existing) {
+        existing.count += 1
+        existing.weightG += weight
+        existing.kcal += kcal
+        existing.protein += protein
+        existing.carbs += carbs
+        existing.fat += fat
+      } else {
+        map.set(key, { key, name: e.name, count: 1, weightG: weight, kcal, protein, carbs, fat })
+      }
+    }
+    return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
+  }, [entries])
 
   const calTarget = profile.targetCalories ?? null
   const proteinTarget = profile.targetProtein ?? null
@@ -496,6 +533,97 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
           </ul>
         </Card>
       </div>
+
+      {/* Most common foods */}
+      {topFoods.length > 0 ? (
+        <div className="flex flex-col gap-3">
+          <h2 className="text-[11px] font-bold uppercase tracking-[.08em] text-faint">Most common foods</h2>
+
+          {/* Desktop table */}
+          <div className="hidden flex-col md:flex">
+            <div
+              className={cn(
+                FOOD_ROW_GRID,
+                "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
+              )}
+            >
+              <span>Food</span>
+              <span className="text-right">Times</span>
+              <span>Amount</span>
+              <span>Kcal</span>
+              <span>Protein</span>
+              <span>Carbs</span>
+              <span>Fat</span>
+            </div>
+            <ul className="mt-1 flex flex-col">
+              {topFoods.map((f) => {
+                const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
+                const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
+                return (
+                  <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
+                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
+                    <span className="text-right text-[13px] font-bold tabular-nums">
+                      {f.count}
+                      <span className="font-normal text-faint">×</span>
+                    </span>
+                    <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
+                      {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}g` : "—"}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                      <MacroIcon macro="calories" />
+                      {Math.round(f.kcal).toLocaleString()}
+                      {kcalPct != null ? <span className="font-normal text-faint">({kcalPct}%)</span> : null}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                      <MacroIcon macro="protein" />
+                      {Math.round(f.protein)}
+                      {proteinPct != null ? <span className="font-normal text-faint">({proteinPct}%)</span> : null}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                      <MacroIcon macro="carbs" />
+                      {Math.round(f.carbs)}
+                    </span>
+                    <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+                      <MacroIcon macro="fat" />
+                      {Math.round(f.fat)}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+
+          {/* Mobile stacked list */}
+          <Card className="gap-0 border-0 bg-transparent p-0 md:border md:bg-card md:hidden">
+            <ul className="flex flex-col">
+              {topFoods.map((f) => {
+                const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
+                const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
+                return (
+                  <li key={f.key} className="border-t border-border/60 px-5 py-4 first:border-t-0">
+                    <div className="flex items-center gap-2">
+                      <span className="min-w-0 truncate font-bold">{f.name}</span>
+                      <span className="ml-auto shrink-0 text-xs font-semibold tabular-nums text-faint">
+                        {f.count}×{f.weightG > 0 ? ` · ${Math.round(f.weightG).toLocaleString()}g` : ""}
+                      </span>
+                    </div>
+                    <div className="mt-1.5">
+                      <MacroBadges
+                        kcal={Math.round(f.kcal)}
+                        kcalPct={kcalPct}
+                        protein={f.protein}
+                        proteinPct={proteinPct}
+                        carbs={f.carbs}
+                        fat={f.fat}
+                      />
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          </Card>
+        </div>
+      ) : null}
       </>
       )}
     </div>

@@ -29,7 +29,7 @@ type FilterKey = "all" | "high-protein" | "low-calorie" | "ab-scores" | "favouri
 const KJ_PER_KCAL = 4.184
 
 const ROW_GRID =
-  "grid grid-cols-[32px_44px_1fr_120px_112px_60px_60px_80px_80px] items-center gap-x-3"
+  "grid grid-cols-[44px_1fr_120px_112px_60px_60px_80px_80px_28px] items-center gap-x-3"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
@@ -325,7 +325,6 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
               )}
             >
-              <span className="text-right">#</span>
               <span />
               <button
                 type="button"
@@ -406,7 +405,6 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
                 return (
                   <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
-                    <span />
                     <button
                       type="button"
                       onClick={() => openEdit(food)}
@@ -462,10 +460,10 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <div className="flex items-center justify-end">
                       <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                     </div>
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end">
                       <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
-                      {foodMenu(food)}
                     </div>
+                    <div className="flex items-center justify-end">{foodMenu(food)}</div>
                   </li>
                 )
               })}

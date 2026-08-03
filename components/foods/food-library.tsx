@@ -406,7 +406,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                 const proteinPct = profile?.targetProtein ? Math.round((food.protein / profile.targetProtein) * 100) : 0
                 return (
                   <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
-                    <div className="flex justify-start">{foodMenu(food)}</div>
+                    <span />
                     <button
                       type="button"
                       onClick={() => openEdit(food)}
@@ -462,8 +462,9 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                     <div className="flex items-center justify-end">
                       <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
                     </div>
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-2">
                       <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
+                      {foodMenu(food)}
                     </div>
                   </li>
                 )

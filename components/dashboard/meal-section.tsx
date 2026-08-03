@@ -170,7 +170,7 @@ export function MealSection({
   return (
     <section className={cn("flex flex-col gap-2 rounded-lg md:rounded-lg bg-transparent md:bg-transparent", entries.length === 0 && "border-t border-white/10 pt-4")}>
       {/* Header: name + (mobile-only) summary + meal score pills */}
-      <div className={cn("flex flex-col gap-2", entries.length === 0 && "border-b border-white/5 pb-4")}>
+      <div className={cn("flex flex-col gap-2", entries.length === 0 && "md:border-none border-b border-white/5 pb-8")}>
         <div className="relative flex items-center justify-between gap-2">
           <h3
             className={cn(

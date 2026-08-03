@@ -170,7 +170,7 @@ export function MealSection({
   return (
     <section className={cn("flex flex-col gap-2 rounded-lg md:rounded-lg bg-transparent md:bg-transparent", entries.length === 0 && "border-t border-white/10 pt-4")}>
       {/* Header: name + (mobile-only) summary + meal score pills */}
-      <div className="flex flex-col gap-2">
+      <div className={cn("flex flex-col gap-2", entries.length === 0 && "md:border-none border-b border-white/5 pb-8")}>
         <div className="relative flex items-center justify-between gap-2">
           <h3
             className={cn(
@@ -186,7 +186,7 @@ export function MealSection({
                 type="button"
                 onClick={() => setAddOpen(true)}
                 aria-label="Add food"
-                className="flex size-9 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
+                className="absolute left-1/2 top-1/2 flex size-9 -translate-x-1/2 -translate-y-1/2 shrink-0 items-center justify-center rounded-full border border-dashed border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary md:hidden"
               >
                 <Plus className="size-4" />
               </button>

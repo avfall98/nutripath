@@ -45,7 +45,14 @@ export default function RootLayout({
         {children}
         <InstallBanner />
         <ServiceWorkerRegister />
-        <Toaster position="top-center" richColors />
+        <Toaster
+          position="bottom-center"
+          richColors
+          closeButton
+          swipeDirections={["down", "left", "right"]}
+          offset={{ bottom: 16 }}
+          mobileOffset={{ bottom: "calc(5.5rem + env(safe-area-inset-bottom))", left: 12, right: 12 }}
+        />
         {process.env.NODE_ENV === "production" && <Analytics />}
       </body>
     </html>

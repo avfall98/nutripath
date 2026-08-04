@@ -179,23 +179,22 @@ function StatCard({
   target?: number | null
   unit: string
 }) {
-  const calPct = target != null && target > 0 ? (value / target) * 100 : 0
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
       <span className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: labelColor }}>
         {label}
       </span>
-      <span className="text-[36px] font-extrabold tabular-nums leading-none">
+      <span className="text-[28px] font-extrabold tabular-nums leading-none">
         {round(value).toLocaleString()}
+        {target != null && target > 0 ? (
+          <span className="ml-1 text-sm font-medium text-faint">
+            / {Math.round(target).toLocaleString()}
+            {unit === "g" ? "g" : ""}
+          </span>
+        ) : (
+          <span className="ml-1 text-sm font-medium text-faint">{unit}</span>
+        )}
       </span>
-      {target != null && target > 0 ? (
-        <span className="text-base font-medium text-faint">
-          / {Math.round(target).toLocaleString()}
-          {unit === "g" ? "g" : ""} <span className="font-bold" style={{ color: labelColor }}>{Math.round(calPct)}%</span>
-        </span>
-      ) : (
-        <span className="text-base font-medium text-faint">{unit}</span>
-      )}
     </div>
   )
 }

@@ -323,21 +323,20 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               )}
             </div>
             <div className="mt-2 flex items-baseline gap-1">
-              <p className="text-3xl font-extrabold tabular-nums leading-none">
+              <p className="text-4xl font-extrabold tabular-nums leading-none">
                 {s.value}
               </p>
               {s.unit ? <span className="text-lg font-semibold text-faint">{s.unit}</span> : null}
-              <span className="text-xs text-faint">/ day</span>
             </div>
-            <p className="mt-2 flex flex-wrap items-baseline gap-1 text-xs text-faint">
-              <span>{s.caption}</span>
+            <p className="mt-1.5 flex flex-wrap items-baseline gap-1 text-sm text-faint">
+              <span>/ day</span>
               {s.ofTarget != null ? (
-                <>
-                  <span>·</span>
-                  <span className="font-bold text-primary">{s.ofTarget}%</span>
-                </>
+                <span className="font-bold text-primary">{s.ofTarget}%</span>
               ) : null}
             </p>
+            {s.caption ? (
+              <p className="mt-1 text-xs text-faint">{s.caption}</p>
+            ) : null}
           </div>
         ))}
       </div>

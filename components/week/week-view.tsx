@@ -562,7 +562,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                   <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
                     <span className="text-right text-[13px] font-bold tabular-nums">
                       {f.count}
-                      <span className="font-normal text-faint">×</span>
+                      <span className="font-normal text-faint"> ×</span>
                     </span>
                     <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">

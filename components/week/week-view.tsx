@@ -313,15 +313,15 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       {/* Desktop: 4 stat cards */}
       <div className="hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
         {statCards.map((s, idx) => (
-          <div key={s.label} className="rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
-                {s.label}
-              </p>
-              {idx === 1 && (
+          <div key={s.label} className="relative rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
+            <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
+              {s.label}
+            </p>
+            {idx === 1 && (
+              <div className="absolute right-5 top-5">
                 <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
-              )}
-            </div>
+              </div>
+            )}
             <div className="mt-2 flex items-baseline gap-1.5">
               <p className="text-3xl font-extrabold tabular-nums leading-none">
                 {s.value}

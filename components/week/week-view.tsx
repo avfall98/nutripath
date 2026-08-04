@@ -25,17 +25,18 @@ import { PageLoading } from "@/components/page-loading"
 const KJ_PER_KCAL = 4.184
 
   const ROW_GRID = "grid grid-cols-[40px_1fr_120px_112px_60px_60px_132px_20px] items-center gap-x-3"
-  const FOOD_ROW_GRID = "grid grid-cols-[1fr_60px_90px_120px_112px_60px_60px] items-center gap-x-3"
+  const FOOD_ROW_GRID = "grid grid-cols-[60px_1fr_80px_90px_120px_112px_60px_60px] items-center gap-x-3"
 
-type DayTotals = {
-  date: Date
+type FoodTotals = {
   key: string
+  name: string
+  count: number
+  servings: number
+  weightG: number
   kcal: number
   protein: number
   carbs: number
   fat: number
-  weightG: number
-  entries: number
 }
 
 type FoodTotals = {
@@ -125,13 +126,14 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       const existing = map.get(key)
       if (existing) {
         existing.count += 1
+        existing.servings += q
         existing.weightG += weight
         existing.kcal += kcal
         existing.protein += protein
         existing.carbs += carbs
         existing.fat += fat
       } else {
-        map.set(key, { key, name: e.name, count: 1, weightG: weight, kcal, protein, carbs, fat })
+        map.set(key, { key, name: e.name, count: 1, servings: q, weightG: weight, kcal, protein, carbs, fat })
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
@@ -313,31 +315,28 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       {/* Desktop: 4 stat cards */}
       <div className="hidden grid-cols-2 gap-4 md:grid lg:grid-cols-4">
         {statCards.map((s, idx) => (
-          <div key={s.label} className="rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
-                {s.label}
-              </p>
-              {idx === 1 && (
+          <div key={s.label} className="relative rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
+            <p className="text-[11px] font-bold uppercase tracking-[.08em]" style={{ color: s.color }}>
+              {s.label}
+            </p>
+            {idx === 1 && (
+              <div className="absolute right-5 top-5">
                 <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} size="sm" />
-              )}
-            </div>
-            <div className="mt-2 flex items-baseline gap-1">
+              </div>
+            )}
+            <div className="mt-2 flex items-baseline gap-1.5">
               <p className="text-3xl font-extrabold tabular-nums leading-none">
                 {s.value}
               </p>
-              {s.unit ? <span className="text-lg font-semibold text-faint">{s.unit}</span> : null}
-              <span className="text-xs text-faint">/ day</span>
-            </div>
-            <p className="mt-2 flex flex-wrap items-baseline gap-1 text-xs text-faint">
-              <span>{s.caption}</span>
+              {s.unit ? <span className="text-sm font-semibold text-faint">{s.unit}</span> : null}
+              <span className="text-sm font-medium text-faint">/ day</span>
               {s.ofTarget != null ? (
-                <>
-                  <span>·</span>
-                  <span className="font-bold text-primary">{s.ofTarget}%</span>
-                </>
+                <span className="text-sm font-bold text-primary">{s.ofTarget}%</span>
               ) : null}
-            </p>
+            </div>
+            {s.caption ? (
+              <p className="mt-2 text-[14px] text-faint">{s.caption}</p>
+            ) : null}
           </div>
         ))}
       </div>
@@ -547,8 +546,9 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
               )}
             >
-              <span>Food</span>
               <span className="text-right">Times</span>
+              <span>Food</span>
+              <span>Servings</span>
               <span>Amount</span>
               <span>Kcal</span>
               <span>Protein</span>
@@ -559,15 +559,20 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               {topFoods.map((f) => {
                 const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
                 const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
+                const isMlBased = f.name.toLowerCase().includes('ml')
+                const unit = isMlBased ? 'ml' : 'g'
                 return (
                   <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
-                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
                     <span className="text-right text-[13px] font-bold tabular-nums">
                       {f.count}
-                      <span className="font-normal text-faint">×</span>
+                      <span className="font-normal text-faint"> ×</span>
+                    </span>
+                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
+                    <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
+                      {f.servings > 0 ? Math.round(f.servings * 10) / 10 : "—"}
                     </span>
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
-                      {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}g` : "—"}
+                      {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}${unit}` : "—"}
                     </span>
                     <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
                       <MacroIcon macro="calories" />

@@ -333,7 +333,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               ) : null}
             </div>
             {s.caption ? (
-              <p className="mt-1 text-xs text-faint">{s.caption}</p>
+              <p className="mt-2 text-[14px] text-faint">{s.caption}</p>
             ) : null}
           </div>
         ))}

@@ -25,17 +25,18 @@ import { PageLoading } from "@/components/page-loading"
 const KJ_PER_KCAL = 4.184
 
   const ROW_GRID = "grid grid-cols-[40px_1fr_120px_112px_60px_60px_132px_20px] items-center gap-x-3"
-  const FOOD_ROW_GRID = "grid grid-cols-[60px_1fr_90px_120px_112px_60px_60px] items-center gap-x-3"
+  const FOOD_ROW_GRID = "grid grid-cols-[60px_1fr_80px_90px_120px_112px_60px_60px] items-center gap-x-3"
 
-type DayTotals = {
-  date: Date
+type FoodTotals = {
   key: string
+  name: string
+  count: number
+  servings: number
+  weightG: number
   kcal: number
   protein: number
   carbs: number
   fat: number
-  weightG: number
-  entries: number
 }
 
 type FoodTotals = {
@@ -125,13 +126,14 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       const existing = map.get(key)
       if (existing) {
         existing.count += 1
+        existing.servings += q
         existing.weightG += weight
         existing.kcal += kcal
         existing.protein += protein
         existing.carbs += carbs
         existing.fat += fat
       } else {
-        map.set(key, { key, name: e.name, count: 1, weightG: weight, kcal, protein, carbs, fat })
+        map.set(key, { key, name: e.name, count: 1, servings: q, weightG: weight, kcal, protein, carbs, fat })
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
@@ -546,6 +548,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
             >
               <span className="text-right">Times</span>
               <span>Food</span>
+              <span className="text-right">Servings</span>
               <span>Amount</span>
               <span>Kcal</span>
               <span>Protein</span>
@@ -565,6 +568,9 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                       <span className="font-normal text-faint"> ×</span>
                     </span>
                     <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
+                    <span className="text-right text-[13px] font-bold tabular-nums text-muted-foreground">
+                      {f.servings > 0 ? Math.round(f.servings * 10) / 10 : "—"}
+                    </span>
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
                       {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}${unit}` : "—"}
                     </span>

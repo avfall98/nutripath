@@ -750,7 +750,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   />
                   <div className="flex shrink-0 items-center gap-0.5 rounded-lg bg-muted/60 p-0.5">
                     {(["g", "ml"] as ServingUnit[]).map((u) => {
-                      const label = u === "g" ? "Servings" : "g/ml"
+                      const label = u === "g" ? "g" : "ml"
                       return (
                         <button
                           key={u}

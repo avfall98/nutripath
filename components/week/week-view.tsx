@@ -548,7 +548,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
             >
               <span className="text-right">Times</span>
               <span>Food</span>
-              <span className="text-right">Servings</span>
+              <span>Servings</span>
               <span>Amount</span>
               <span>Kcal</span>
               <span>Protein</span>
@@ -568,7 +568,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                       <span className="font-normal text-faint"> ×</span>
                     </span>
                     <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
-                    <span className="text-right text-[13px] font-bold tabular-nums text-muted-foreground">
+                    <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
                       {f.servings > 0 ? Math.round(f.servings * 10) / 10 : "—"}
                     </span>
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">

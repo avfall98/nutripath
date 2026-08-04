@@ -25,7 +25,7 @@ import { PageLoading } from "@/components/page-loading"
 const KJ_PER_KCAL = 4.184
 
   const ROW_GRID = "grid grid-cols-[40px_1fr_120px_112px_60px_60px_132px_20px] items-center gap-x-3"
-  const FOOD_ROW_GRID = "grid grid-cols-[1fr_60px_90px_120px_112px_60px_60px] items-center gap-x-3"
+  const FOOD_ROW_GRID = "grid grid-cols-[60px_1fr_90px_120px_112px_60px_60px] items-center gap-x-3"
 
 type DayTotals = {
   date: Date
@@ -544,8 +544,8 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
               )}
             >
-              <span>Food</span>
               <span className="text-right">Times</span>
+              <span>Food</span>
               <span>Amount</span>
               <span>Kcal</span>
               <span>Protein</span>
@@ -556,15 +556,17 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               {topFoods.map((f) => {
                 const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
                 const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
+                const isMlBased = f.name.toLowerCase().includes('ml')
+                const unit = isMlBased ? 'ml' : 'g'
                 return (
                   <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
-                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
                     <span className="text-right text-[13px] font-bold tabular-nums">
                       {f.count}
                       <span className="font-normal text-faint">×</span>
                     </span>
+                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
-                      {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}g` : "—"}
+                      {f.weightG > 0 ? `${Math.round(f.weightG).toLocaleString()}${unit}` : "—"}
                     </span>
                     <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
                       <MacroIcon macro="calories" />

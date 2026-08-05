@@ -417,6 +417,15 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
             </DialogDescription>
           </DialogHeader>
 
+          {/* Back link */}
+          <button
+            type="button"
+            onClick={() => setStep("edit")}
+            className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            ← Back
+          </button>
+
           {/* Pill tabs */}
           <div className="flex items-center gap-2">
             {(
@@ -505,20 +514,10 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
             </div>
           </div>
 
-          {/* Back link */}
-          <div className="pt-1">
-            <button
-              type="button"
-              onClick={() => setStep("edit")}
-              className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-            >
-              ← Back
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    )
-  }
+          </DialogContent>
+          </Dialog>
+          )
+          }
 
   // ── Edit step (first view — existing entry) ──────────────────────────────────
   if (step === "edit") {

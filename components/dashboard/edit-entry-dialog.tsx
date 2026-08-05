@@ -133,13 +133,13 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     })
   }
 
-  // Adjusted nutrition preview for the quantity step
+  // Adjusted nutrition preview — always based on selectedFood's per-serving values × quantity
   const adjustedNutrition = useMemo(() => {
     const food = selectedFood
     if (!food) return entry
-    let quantity = entry.quantity
+    let quantity = 1
     if (qtyMode === "servings") {
-      quantity = num(servings, entry.quantity)
+      quantity = num(servings, 1)
     } else {
       const weightValue = num(weight, 0)
       if (food.servingSize && weightValue > 0) {
@@ -148,13 +148,11 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
         if (ssVal && ssVal > 0) quantity = weightValue / ssVal
       }
     }
-    const ratio = quantity / (entry.quantity || 1)
     return {
-      ...entry,
-      calories: entry.calories * ratio,
-      protein: entry.protein * ratio,
-      carbs: entry.carbs != null ? entry.carbs * ratio : null,
-      fat: entry.fat != null ? entry.fat * ratio : null,
+      calories: food.calories * quantity,
+      protein: food.protein * quantity,
+      carbs: food.carbs != null ? food.carbs * quantity : null,
+      fat: food.fat != null ? food.fat * quantity : null,
     }
   }, [entry, selectedFood, qtyMode, servings, weight])
 
@@ -580,31 +578,50 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
               onClick={() => setStep("select")}
               className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
             >
-              <div className="flex items-center gap-3">
-                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-muted">
-                  {editFood?.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={editFood.imageUrl} alt="" className="size-full object-cover" />
-                  ) : (
-                    <Apple className="size-5 text-muted-foreground" />
+              {/* Top row: thumbnail + name/subtitle + badges inline on desktop */}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+                {/* Left: thumbnail + name */}
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-muted">
+                    {editFood?.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={editFood.imageUrl} alt="" className="size-full object-cover" />
+                    ) : (
+                      <Apple className="size-5 text-muted-foreground" />
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="truncate text-[15px] font-semibold leading-tight">
+                      {editFood?.name ?? entry.name}
+                    </p>
+                    <p className="text-[12px] text-faint">
+                      {editQtyLabel} serving{editAdjQty === 1 ? "" : "s"}
+                      {editFood?.servingSize && <>{" − "}{editFood.servingSize}</>}
+                    </p>
+                  </div>
+                </div>
+                {/* Right: macro + scoring badges */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <MacroBadges
+                    kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                    protein={Math.round(adjustedNutrition.protein)}
+                    carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
+                    fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
+                  />
+                  {editFood && (
+                    <>
+                      <CalorieDensityBadge
+                        kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                        servingSize={editFood.servingSize}
+                      />
+                      <ProteinScoreBadges
+                        proteinG={adjustedNutrition.protein}
+                        kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                      />
+                    </>
                   )}
-                </span>
-                <div className="min-w-0">
-                  <p className="truncate text-[15px] font-semibold leading-tight">
-                    {editFood?.name ?? entry.name}
-                  </p>
-                  <p className="text-[12px] text-faint">
-                    {editQtyLabel} serving{editAdjQty === 1 ? "" : "s"}
-                    {editFood?.servingSize && <>{" − "}{editFood.servingSize}</>}
-                  </p>
                 </div>
               </div>
-              <MacroBadges
-                kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
-                protein={Math.round(adjustedNutrition.protein)}
-                carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
-                fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
-              />
             </button>
 
             {/* Quantity controls */}

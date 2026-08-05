@@ -660,10 +660,4 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     )
   }
 
-  // Should never reach here — all steps handled above
-  return null
-  /* eslint-disable-next-line no-unreachable */
-  ;
-    </Dialog>
-  )
 }

@@ -98,24 +98,6 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   function renderQuantityControls() {
     return (
       <div className="flex items-center gap-3">
-        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
-          {(["servings", "weight"] as QuantityMode[]).map((mode) => {
-            const active = qtyMode === mode
-            return (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setQtyMode(mode)}
-                className={cn(
-                  "rounded-full px-4 py-2 text-[13px] font-bold capitalize transition-colors",
-                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
-                )}
-              >
-                {mode}
-              </button>
-            )
-          })}
-        </div>
         {qtyMode === "servings" ? (
           <Input
             type="number"
@@ -141,6 +123,25 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
             placeholder="g"
           />
         )}
+        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+          {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+            const active = qtyMode === mode
+            const label = mode === "servings" ? "Servings" : "g/ml"
+            return (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setQtyMode(mode)}
+                className={cn(
+                  "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                  active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                )}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
       </div>
     )
   }

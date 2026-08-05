@@ -20,7 +20,7 @@ import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, Bookmark, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
+import { ArrowDown, Bookmark, Download, ExternalLink, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -53,6 +53,17 @@ type LookupSource = "woolworths" | "openfoodfacts"
 
 const KJ_PER_KCAL = 4.184
 type ServingUnit = "g" | "ml"
+
+function isValidUrl(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
 
 type Props = {
   open: boolean
@@ -798,11 +809,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 <Input
                   id="food-url"
                   type="url"
-                  className={cn(fieldInput, "pl-10")}
+                  className={cn(fieldInput, "pl-10", isValidUrl(form.infoUrl) && "pr-10")}
                   value={form.infoUrl}
                   onChange={(e) => set("infoUrl", e.target.value)}
                   placeholder="https://..."
                 />
+                {isValidUrl(form.infoUrl) && (
+                  <a
+                    href={form.infoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open reference link in a new tab"
+                    className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <ExternalLink className="size-4" />
+                  </a>
+                )}
               </div>
             </div>
 

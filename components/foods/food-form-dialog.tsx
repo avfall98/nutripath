@@ -20,7 +20,7 @@ import { round } from "@/lib/format"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { BarcodeScanner } from "@/components/foods/barcode-scanner"
-import { ArrowDown, Bookmark, Download, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
+import { ArrowDown, Bookmark, Download, ExternalLink, ImagePlus, Link2, Loader2, Plus, ScanBarcode, Star, X } from "lucide-react"
 
 type ImportedProduct = {
   name: string
@@ -53,6 +53,17 @@ type LookupSource = "woolworths" | "openfoodfacts"
 
 const KJ_PER_KCAL = 4.184
 type ServingUnit = "g" | "ml"
+
+function isValidUrl(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return false
+  try {
+    const url = new URL(trimmed)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
 
 type Props = {
   open: boolean
@@ -220,6 +231,12 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               updated[perServingKey as K] = String(perServingValue)
             }
           })
+
+          // Keep pack size in sync: packSize = servingsPack × servingSize
+          const servingsPackNum = num(f.servingsPack ?? "")
+          if (servingsPackNum !== null && servingsPackNum > 0) {
+            updated.packSize = fmtNum(round(servingsPackNum * newServingSizeNum, 1))
+          }
         }
       }
       
@@ -229,8 +246,29 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         const servingsPackNum = num(value)
         const servingSizeNum = num(f.servingSize)
         if (servingsPackNum !== null && servingSizeNum && servingSizeNum > 0) {
-          const packSizeNum = round(servingsPackNum * servingSizeNum, 1)
-          updated.packSize = String(packSizeNum === Math.floor(packSizeNum) ? Math.floor(packSizeNum) : packSizeNum)
+          updated.packSize = fmtNum(round(servingsPackNum * servingSizeNum, 1))
+        }
+      }
+
+      // Case 4: User is editing pack size
+      // Back-calculate serving size = packSize / servingsPack, then resync per-serving values
+      if (key === "packSize") {
+        const packSizeNum = num(value)
+        const servingsPackNum = num(f.servingsPack ?? "")
+        if (packSizeNum !== null && packSizeNum > 0 && servingsPackNum && servingsPackNum > 0) {
+          const newServingSizeNum = round(packSizeNum / servingsPackNum, 1)
+          updated.servingSize = fmtNum(newServingSizeNum)
+
+          if (newServingSizeNum > 0) {
+            const multiplier = newServingSizeNum / 100
+            Object.entries(syncMap).forEach(([per100Key, perServingKey]) => {
+              const per100Value = num(f[per100Key as keyof typeof f] as string)
+              if (per100Value !== null) {
+                const perServingValue = round(per100Value * multiplier, 1)
+                updated[perServingKey as K] = String(perServingValue)
+              }
+            })
+          }
         }
       }
       
@@ -242,6 +280,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     if (v.trim() === "") return null
     const n = Number(v)
     return Number.isFinite(n) ? n : null
+  }
+
+  function fmtNum(n: number): string {
+    return String(n === Math.floor(n) ? Math.floor(n) : n)
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -798,11 +840,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 <Input
                   id="food-url"
                   type="url"
-                  className={cn(fieldInput, "pl-10")}
+                  className={cn(fieldInput, "pl-10", isValidUrl(form.infoUrl) && "pr-10")}
                   value={form.infoUrl}
                   onChange={(e) => set("infoUrl", e.target.value)}
                   placeholder="https://..."
                 />
+                {isValidUrl(form.infoUrl) && (
+                  <a
+                    href={form.infoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Open reference link in a new tab"
+                    className="absolute right-2 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-faint transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <ExternalLink className="size-4" />
+                  </a>
+                )}
               </div>
             </div>
 

@@ -257,9 +257,13 @@ export function AddFoodDialog({
                   </span>
                   <div className="min-w-0">
                     <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{food.name}</p>
-                    {(food.brand || food.servingSize) && (
+                    {(food.brand || food.servingSize || food.servingsPack || food.packSize) && (
                       <p className="truncate text-[11.5px] text-faint">
-                        {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                        {food.servingsPack && food.servingSize && food.packSize
+                          ? `${food.servingsPack} x ${food.servingSize} servings / ${food.packSize}`
+                          : food.brand && food.servingSize
+                          ? `${food.brand} · ${food.servingSize}`
+                          : food.brand || food.servingSize || ""}
                       </p>
                     )}
                   </div>
@@ -337,9 +341,13 @@ export function AddFoodDialog({
                     >
                       <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                         {food.name}
-                        {(food.brand || food.servingSize) && (
+                        {(food.brand || food.servingSize || food.servingsPack || food.packSize) && (
                           <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
-                            {[food.brand, food.servingSize].filter(Boolean).join(" · ")}
+                            {food.servingsPack && food.servingSize && food.packSize
+                              ? `${food.servingsPack} x ${food.servingSize} servings / ${food.packSize}`
+                              : food.brand && food.servingSize
+                              ? `${food.brand} · ${food.servingSize}`
+                              : food.brand || food.servingSize || ""}
                           </span>
                         )}
                       </p>

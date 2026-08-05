@@ -231,6 +231,12 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               updated[perServingKey as K] = String(perServingValue)
             }
           })
+
+          // Keep pack size in sync: packSize = servingsPack × servingSize
+          const servingsPackNum = num(f.servingsPack ?? "")
+          if (servingsPackNum !== null && servingsPackNum > 0) {
+            updated.packSize = fmtNum(round(servingsPackNum * newServingSizeNum, 1))
+          }
         }
       }
       
@@ -240,8 +246,29 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
         const servingsPackNum = num(value)
         const servingSizeNum = num(f.servingSize)
         if (servingsPackNum !== null && servingSizeNum && servingSizeNum > 0) {
-          const packSizeNum = round(servingsPackNum * servingSizeNum, 1)
-          updated.packSize = String(packSizeNum === Math.floor(packSizeNum) ? Math.floor(packSizeNum) : packSizeNum)
+          updated.packSize = fmtNum(round(servingsPackNum * servingSizeNum, 1))
+        }
+      }
+
+      // Case 4: User is editing pack size
+      // Back-calculate serving size = packSize / servingsPack, then resync per-serving values
+      if (key === "packSize") {
+        const packSizeNum = num(value)
+        const servingsPackNum = num(f.servingsPack ?? "")
+        if (packSizeNum !== null && packSizeNum > 0 && servingsPackNum && servingsPackNum > 0) {
+          const newServingSizeNum = round(packSizeNum / servingsPackNum, 1)
+          updated.servingSize = fmtNum(newServingSizeNum)
+
+          if (newServingSizeNum > 0) {
+            const multiplier = newServingSizeNum / 100
+            Object.entries(syncMap).forEach(([per100Key, perServingKey]) => {
+              const per100Value = num(f[per100Key as keyof typeof f] as string)
+              if (per100Value !== null) {
+                const perServingValue = round(per100Value * multiplier, 1)
+                updated[perServingKey as K] = String(perServingValue)
+              }
+            })
+          }
         }
       }
       
@@ -253,6 +280,10 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     if (v.trim() === "") return null
     const n = Number(v)
     return Number.isFinite(n) ? n : null
+  }
+
+  function fmtNum(n: number): string {
+    return String(n === Math.floor(n) ? Math.floor(n) : n)
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {

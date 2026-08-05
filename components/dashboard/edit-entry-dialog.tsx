@@ -297,53 +297,98 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
               )
             })()}
 
-            {/* Read-only food reference information */}
+            {/* Quantity controls above the nutrition table */}
+            {renderQuantityControls()}
+
+            {/* Read-only nutrition information table */}
             {(() => {
               const food = foods.find((f) => f.id === entry.foodId)
               if (!food) return null
+
+              const unit = food.servingSize?.match(/(g|ml)\s*$/i)?.[1]?.toLowerCase() ?? "g"
+              const gridCols =
+                "grid grid-cols-[1fr_minmax(0,6rem)_minmax(0,6rem)] gap-3 sm:grid-cols-[1fr_minmax(0,9rem)_minmax(0,9rem)] sm:gap-4"
+
+              const fmt = (v: number | null | undefined) =>
+                v == null ? "—" : String(round(v, 1))
+
+              const cell = (v: number | null | undefined, faint = false) => (
+                <div
+                  className={cn(
+                    "flex h-10 items-center justify-end rounded-md bg-inset px-3 text-sm tabular-nums",
+                    faint ? "text-faint" : "text-foreground",
+                  )}
+                >
+                  {fmt(v)}
+                </div>
+              )
+
+              const row = (
+                label: string,
+                serving: number | null | undefined,
+                hundred: number | null | undefined,
+                indent = false,
+              ) => (
+                <div key={label} className={cn(gridCols, "items-center border-t border-border/40 py-2.5")}>
+                  <span
+                    className={cn("text-sm", indent ? "pl-4 text-muted-foreground" : "font-medium text-foreground")}
+                  >
+                    {label}
+                  </span>
+                  {cell(serving)}
+                  {cell(hundred)}
+                </div>
+              )
+
               return (
-                <div className="rounded-lg bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
-                  {food.servingSize && (
-                    <div className="flex justify-between">
-                      <span>Serving size:</span>
-                      <span className="text-foreground font-medium">{food.servingSize}</span>
-                    </div>
-                  )}
-                  {food.servingsPack && (
-                    <div className="flex justify-between">
-                      <span>Servings/pack:</span>
-                      <span className="text-foreground font-medium">{food.servingsPack}</span>
-                    </div>
-                  )}
-                  {food.packSize && (
-                    <div className="flex justify-between">
-                      <span>Pack size:</span>
-                      <span className="text-foreground font-medium">{food.packSize}</span>
-                    </div>
-                  )}
+                <div className="flex flex-col">
+                  <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                    Nutrition information
+                  </h3>
+                  <div className={cn(gridCols, "pb-1")}>
+                    <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-faint">Nutrient</span>
+                    <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                      Per serving
+                    </span>
+                    <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                      Per 100{unit}
+                    </span>
+                  </div>
+
+                  {row("Energy (kJ)", food.calories, food.caloriesPerHundred)}
+
+                  {/* Calories (kcal), derived from kJ */}
+                  <div className={cn(gridCols, "items-center border-t border-border/40 py-2.5")}>
+                    <span className="text-sm text-faint">Calories (kcal)</span>
+                    {cell(food.calories != null ? food.calories / KJ_PER_KCAL : null, true)}
+                    {cell(food.caloriesPerHundred != null ? food.caloriesPerHundred / KJ_PER_KCAL : null, true)}
+                  </div>
+
+                  {row("Protein (g)", food.protein, food.proteinPerHundred)}
+                  {row("Fat (g)", food.fat, food.fatPerHundred)}
+                  {row("— Saturated (g)", food.saturatedFat, food.saturatedFatPerHundred, true)}
+                  {row("Carbs (g)", food.carbs, food.carbsPerHundred)}
+                  {row("— Sugars (g)", food.sugars, food.sugarsPerHundred, true)}
+                  {row("Dietary fibre (g)", food.dietaryFiber, food.dietaryFiberPerHundred)}
+                  {row("Sodium (mg)", food.sodium, food.sodiumPerHundred)}
                 </div>
               )
             })()}
 
-            {/* Quantity controls in single row */}
-            <div className="flex flex-col gap-4">
-              {renderQuantityControls()}
-              
-              {entry.foodId && (
-                <div className="flex justify-center">
-                  <Button
-                    onClick={() => {
-                      const food = foods.find((f) => f.id === entry.foodId)
-                      if (food) updateFromLibrary(food)
-                    }}
-                    disabled={pending}
-                    className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                  >
-                    Save changes
-                  </Button>
-                </div>
-              )}
-            </div>
+            {entry.foodId && (
+              <div className="flex justify-center">
+                <Button
+                  onClick={() => {
+                    const food = foods.find((f) => f.id === entry.foodId)
+                    if (food) updateFromLibrary(food)
+                  }}
+                  disabled={pending}
+                  className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+                >
+                  Save changes
+                </Button>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </DialogContent>

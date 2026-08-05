@@ -5,6 +5,13 @@ import useSWR from "swr"
 import { updateEntry } from "@/app/actions/entries"
 import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
 import { round } from "@/lib/format"
+
+// Local num helper with optional fallback (mirrors add-food-dialog pattern)
+function num(v: string | number | null | undefined, fallback = 0): number {
+  if (v === null || v === undefined || v === "") return fallback
+  const n = Number(v)
+  return Number.isFinite(n) ? n : fallback
+}
 import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
@@ -402,7 +409,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     </div>
   )
 
-  // ── Select step ──────────────────────────────────────────────────────────────
+  // ── Select step ───��──────────────────────────────────────────────────────────
   if (step === "select") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

@@ -32,7 +32,7 @@ type Props = {
 
 type QuantityMode = "servings" | "weight"
 type TabKey = "library" | "recent" | "favourites"
-type Step = "select" | "quantity"
+type Step = "edit" | "select" | "quantity"
 
 const KJ_PER_KCAL = 4.184
 const ROW_GRID =
@@ -42,7 +42,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [pending, startTransition] = useTransition()
 
   // Step state
-  const [step, setStep] = useState<Step>("select")
+  const [step, setStep] = useState<Step>("edit")
 
   // Select-step state
   const [tab, setTab] = useState<TabKey>("library")
@@ -72,7 +72,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   // Reset when dialog opens
   useEffect(() => {
     if (open) {
-      setStep("select")
+      setStep("edit")
       setTab("library")
       setQuery("")
       setServings(entry.quantity.toString())
@@ -100,6 +100,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     setServings("1")
     setWeight("")
     setQtyMode("servings")
+    // If the food is the same as the current entry food, go back to edit; otherwise show quantity step
     setStep("quantity")
   }
 
@@ -504,15 +505,157 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
             </div>
           </div>
 
-          {/* Cancel link */}
+          {/* Back link */}
           <div className="pt-1">
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={() => setStep("edit")}
               className="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              ← Cancel
+              ← Back
             </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  // ── Edit step (first view — existing entry) ──────────────────────────────────
+  if (step === "edit") {
+    const editFood = selectedFood
+    const editUnit = editFood?.servingSize?.match(/(g|ml)\s*$/i)?.[1]?.toLowerCase() ?? "g"
+    const editGridCols =
+      "grid grid-cols-[1fr_minmax(0,6rem)_minmax(0,6rem)] gap-3 sm:grid-cols-[1fr_minmax(0,9rem)_minmax(0,9rem)] sm:gap-4"
+    const editFmt = (v: number | null | undefined) => (v == null ? "—" : String(round(v, 1)))
+    const editCell = (v: number | null | undefined, faint = false) => (
+      <div
+        className={cn(
+          "flex h-10 items-center justify-end rounded-md bg-inset px-3 text-sm tabular-nums",
+          faint ? "text-faint" : "text-foreground",
+        )}
+      >
+        {editFmt(v)}
+      </div>
+    )
+    const editRow = (
+      label: string,
+      serving: number | null | undefined,
+      hundred: number | null | undefined,
+      indent = false,
+    ) => (
+      <div key={label} className={cn(editGridCols, "items-center border-t border-border/40 py-2.5")}>
+        <span className={cn("text-sm", indent ? "pl-4 text-muted-foreground" : "font-medium text-foreground")}>
+          {label}
+        </span>
+        {editCell(serving)}
+        {editCell(hundred)}
+      </div>
+    )
+
+    const editAdjQty = round(
+      qtyMode === "servings"
+        ? num(servings, entry.quantity)
+        : (() => {
+            const wv = num(weight, 0)
+            if (!editFood?.servingSize || wv <= 0) return entry.quantity
+            const m = editFood.servingSize.match(/^([\d.]+)/)
+            const ss = m ? parseFloat(m[1]) : null
+            return ss && ss > 0 ? wv / ss : entry.quantity
+          })(),
+      1,
+    )
+    const editQtyLabel =
+      editAdjQty % 1 === 0 ? String(Math.floor(editAdjQty)) : String(editAdjQty)
+
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit entry</DialogTitle>
+            <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-4 overflow-y-auto">
+            {/* Food card — clicking it navigates to food selection */}
+            <button
+              type="button"
+              onClick={() => setStep("select")}
+              className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
+            >
+              <div className="flex items-center gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-muted">
+                  {editFood?.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={editFood.imageUrl} alt="" className="size-full object-cover" />
+                  ) : (
+                    <Apple className="size-5 text-muted-foreground" />
+                  )}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-[15px] font-semibold leading-tight">
+                    {editFood?.name ?? entry.name}
+                  </p>
+                  <p className="text-[12px] text-faint">
+                    {editQtyLabel} serving{editAdjQty === 1 ? "" : "s"}
+                    {editFood?.servingSize && <>{" − "}{editFood.servingSize}</>}
+                  </p>
+                </div>
+              </div>
+              <MacroBadges
+                kcal={Math.round(adjustedNutrition.calories / KJ_PER_KCAL)}
+                protein={Math.round(adjustedNutrition.protein)}
+                carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
+                fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
+              />
+            </button>
+
+            {/* Quantity controls */}
+            {renderQuantityControls()}
+
+            {/* Nutrition table */}
+            {editFood && (
+              <div className="flex flex-col">
+                <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                  Nutrition information
+                </h3>
+                <div className={cn(editGridCols, "pb-1")}>
+                  <span className="text-[11px] font-semibold uppercase tracking-[.08em] text-faint">Nutrient</span>
+                  <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                    Per serving
+                  </span>
+                  <span className="text-right text-[11px] font-semibold uppercase tracking-[.08em] text-faint">
+                    Per 100{editUnit}
+                  </span>
+                </div>
+                {editRow("Energy (kJ)", editFood.calories, editFood.caloriesPerHundred)}
+                <div className={cn(editGridCols, "items-center border-t border-border/40 py-2.5")}>
+                  <span className="text-sm text-faint">Calories (kcal)</span>
+                  {editCell(editFood.calories != null ? editFood.calories / KJ_PER_KCAL : null, true)}
+                  {editCell(
+                    editFood.caloriesPerHundred != null ? editFood.caloriesPerHundred / KJ_PER_KCAL : null,
+                    true,
+                  )}
+                </div>
+                {editRow("Protein (g)", editFood.protein, editFood.proteinPerHundred)}
+                {editRow("Fat (g)", editFood.fat, editFood.fatPerHundred)}
+                {editRow("— Saturated (g)", editFood.saturatedFat, editFood.saturatedFatPerHundred, true)}
+                {editRow("Carbs (g)", editFood.carbs, editFood.carbsPerHundred)}
+                {editRow("— Sugars (g)", editFood.sugars, editFood.sugarsPerHundred, true)}
+                {editRow("Dietary fibre (g)", editFood.dietaryFiber, editFood.dietaryFiberPerHundred)}
+                {editRow("Sodium (mg)", editFood.sodium, editFood.sodiumPerHundred)}
+              </div>
+            )}
+
+            {/* Save button */}
+            <div className="flex justify-center pb-2">
+              <Button
+                onClick={handleSave}
+                disabled={pending || !editFood}
+                className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+              >
+                Save changes
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -584,11 +727,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
           </button>
 
           {/* Food card */}
-          <button
-            type="button"
-            onClick={() => setStep("select")}
-            className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4 text-left transition-colors hover:bg-muted/80"
-          >
+          <div className="flex flex-col gap-3 rounded-lg bg-muted/60 p-4">
             <div className="flex items-center gap-3">
               <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[6px] bg-muted">
                 {food?.imageUrl ? (
@@ -612,7 +751,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
               carbs={adjustedNutrition.carbs != null ? Math.round(adjustedNutrition.carbs) : null}
               fat={adjustedNutrition.fat != null ? Math.round(adjustedNutrition.fat) : null}
             />
-          </button>
+          </div>
 
           {/* Quantity controls */}
           {renderQuantityControls()}

@@ -42,6 +42,11 @@ export async function getFoods(): Promise<FoodDTO[]> {
   return rows.map(serialize)
 }
 
+export async function getFoodById(id: number): Promise<FoodDTO | null> {
+  const rows = await db.select().from(foods).where(eq(foods.id, id)).limit(1)
+  return rows[0] ? serialize(rows[0]) : null
+}
+
 // The N most recently logged library foods (deduped by food, newest first).
 export async function getRecentFoods(limit = 10): Promise<FoodDTO[]> {
   const rows = await db

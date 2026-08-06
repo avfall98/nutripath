@@ -1,11 +1,7 @@
 "use client"
 
 import { Cell, Pie, PieChart, Tooltip } from "recharts"
-import {
-  ChartContainer,
-  ChartTooltip,
-  type ChartConfig,
-} from "@/components/ui/chart"
+import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 
 const CHART_COLORS = [
   "var(--chart-1)",
@@ -18,10 +14,13 @@ const CHART_COLORS = [
   "var(--chart-8)",
   "var(--chart-9)",
   "var(--chart-10)",
-  "var(--chart-11)",
 ]
 
+const OTHER_KEY = "__other__"
+const OTHER_COLOR = "var(--chart-11)"
+
 type FoodEntry = {
+  key: string
   name: string
   kcal: number
   protein: number
@@ -29,38 +28,49 @@ type FoodEntry = {
 
 interface TopFoodsDonutChartProps {
   foods: FoodEntry[]
+  totalKcal: number
+  totalProtein: number
+  activeKey: string | null
+  onActiveChange: (key: string | null) => void
 }
 
-type Slice = { name: string; value: number }
+type Slice = { key: string; name: string; value: number; color: string }
 
-function buildSlices(foods: FoodEntry[], key: "kcal" | "protein"): Slice[] {
-  const sorted = [...foods].sort((a, b) => b[key] - a[key])
-  const top10 = sorted.slice(0, 10)
-  const rest = sorted.slice(10)
-  const slices: Slice[] = top10.map((f) => ({ name: f.name, value: Math.round(f[key]) }))
-  if (rest.length > 0) {
-    slices.push({ name: "Other", value: Math.round(rest.reduce((s, f) => s + f[key], 0)) })
+function colorForIndex(i: number) {
+  return CHART_COLORS[i % CHART_COLORS.length]
+}
+
+function buildSlices(foods: FoodEntry[], total: number, metric: "kcal" | "protein"): Slice[] {
+  const slices: Slice[] = foods.map((f, i) => ({
+    key: f.key,
+    name: f.name,
+    value: Math.round(f[metric]),
+    color: colorForIndex(i),
+  }))
+  const top = foods.reduce((s, f) => s + f[metric], 0)
+  const other = total - top
+  if (other > 0.5) {
+    slices.push({ key: OTHER_KEY, name: "Other", value: Math.round(other), color: OTHER_COLOR })
   }
   return slices
 }
 
 function buildConfig(slices: Slice[]): ChartConfig {
-  return Object.fromEntries(
-    slices.map((s, i) => [
-      s.name,
-      { label: s.name, color: CHART_COLORS[i % CHART_COLORS.length] },
-    ]),
-  )
+  return Object.fromEntries(slices.map((s) => [s.key, { label: s.name, color: s.color }]))
 }
 
 function DonutChart({
   slices,
   label,
   unit,
+  activeKey,
+  onActiveChange,
 }: {
   slices: Slice[]
   label: string
   unit: string
+  activeKey: string | null
+  onActiveChange: (key: string | null) => void
 }) {
   const total = slices.reduce((s, d) => s + d.value, 0)
   const config = buildConfig(slices)
@@ -78,9 +88,17 @@ function DonutChart({
             paddingAngle={slices.length > 1 ? 2 : 0}
             dataKey="value"
             strokeWidth={0}
+            isAnimationActive={false}
           >
-            {slices.map((_, i) => (
-              <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+            {slices.map((s) => (
+              <Cell
+                key={s.key}
+                fill={s.color}
+                fillOpacity={activeKey && activeKey !== s.key ? 0.25 : 1}
+                onMouseEnter={() => onActiveChange(s.key)}
+                onMouseLeave={() => onActiveChange(null)}
+                style={{ transition: "fill-opacity 150ms ease", cursor: "pointer" }}
+              />
             ))}
           </Pie>
           <Tooltip
@@ -105,27 +123,41 @@ function DonutChart({
       </ChartContainer>
       {/* Centre label */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold tabular-nums leading-none">
-          {total.toLocaleString()}
-        </span>
-        <span className="mt-0.5 text-[10px] font-bold uppercase tracking-[.08em] text-faint">
-          {label}
-        </span>
+        <span className="text-xl font-bold tabular-nums leading-none">{total.toLocaleString()}</span>
+        <span className="mt-0.5 text-[10px] font-bold uppercase tracking-[.08em] text-faint">{label}</span>
       </div>
     </div>
   )
 }
 
-export function TopFoodsDonutChart({ foods }: TopFoodsDonutChartProps) {
+export function TopFoodsDonutChart({
+  foods,
+  totalKcal,
+  totalProtein,
+  activeKey,
+  onActiveChange,
+}: TopFoodsDonutChartProps) {
   if (!foods.length) return null
 
-  const kcalSlices = buildSlices(foods, "kcal")
-  const proteinSlices = buildSlices(foods, "protein")
+  const kcalSlices = buildSlices(foods, totalKcal, "kcal")
+  const proteinSlices = buildSlices(foods, totalProtein, "protein")
 
   return (
-    <div className="flex items-center gap-8">
-      <DonutChart slices={kcalSlices} label="kcal" unit=" kcal" />
-      <DonutChart slices={proteinSlices} label="protein" unit="g" />
+    <div className="flex items-center justify-center gap-8">
+      <DonutChart
+        slices={kcalSlices}
+        label="kcal"
+        unit=" kcal"
+        activeKey={activeKey}
+        onActiveChange={onActiveChange}
+      />
+      <DonutChart
+        slices={proteinSlices}
+        label="protein"
+        unit="g"
+        activeKey={activeKey}
+        onActiveChange={onActiveChange}
+      />
     </div>
   )
 }

@@ -233,7 +233,14 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                     style={{ height: `${proH}%`, backgroundColor: proColor, opacity: isToday && !empty ? 0.6 : 1 }}
                     title={`${Math.round(d.protein)}g protein`}
                   />
-    </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6">

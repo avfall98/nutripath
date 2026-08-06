@@ -84,6 +84,12 @@ const DENSITY_LABELS: Record<CalorieDensityGrade, string> = {
   F: "Very High Density",
 }
 
+// Parse the unit ("ml" or "g") from a serving size string like "100g" or "250 ml".
+export function parseServingUnit(servingSize: string | null | undefined): "g" | "ml" | null {
+  if (!servingSize) return null
+  return /ml/i.test(servingSize) ? "ml" : "g"
+}
+
 // Parse a serving size string like "100g" or "250 ml" into grams/millilitres.
 export function parseServingWeight(servingSize: string | null | undefined): number | null {
   if (!servingSize) return null

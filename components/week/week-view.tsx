@@ -13,7 +13,9 @@ import {
 } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { getEntriesInRange } from "@/app/actions/entries"
-import type { EntryDTO, ProfileDTO } from "@/lib/types"
+import { getFoodById } from "@/app/actions/foods"
+import type { EntryDTO, FoodDTO, ProfileDTO } from "@/lib/types"
+import { FoodFormDialog } from "@/components/foods/food-form-dialog"
 import { Card } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 import { round } from "@/lib/format"
@@ -30,20 +32,11 @@ const KJ_PER_KCAL = 4.184
 type FoodTotals = {
   key: string
   name: string
+  foodId: number | null
   count: number
   servings: number
   weightG: number
-  kcal: number
-  protein: number
-  carbs: number
-  fat: number
-}
-
-type FoodTotals = {
-  key: string
-  name: string
-  count: number
-  weightG: number
+  servingUnit: "g" | "ml" | null
   kcal: number
   protein: number
   carbs: number
@@ -55,6 +48,16 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [hasLoaded, setHasLoaded] = useState(false)
   const [, startTransition] = useTransition()
+  const [editFood, setEditFood] = useState<FoodDTO | null>(null)
+  const [editFoodOpen, setEditFoodOpen] = useState(false)
+
+  async function openFoodEdit(foodId: number | null) {
+    if (!foodId) return
+    const food = await getFoodById(foodId)
+    if (!food) return
+    setEditFood(food)
+    setEditFoodOpen(true)
+  }
 
   const weekStart = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
   const weekEnd = useMemo(() => endOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
@@ -133,7 +136,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         existing.carbs += carbs
         existing.fat += fat
       } else {
-        map.set(key, { key, name: e.name, count: 1, servings: q, weightG: weight, kcal, protein, carbs, fat })
+        map.set(key, { key, name: e.name, foodId: e.foodId ?? null, count: 1, servings: q, weightG: weight, servingUnit: e.servingUnit ?? null, kcal, protein, carbs, fat })
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
@@ -234,19 +237,6 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               )
             })}
           </div>
-        </div>
-        <div className="mt-2 grid grid-cols-7">
-          {byDay.map((d) => {
-            const isToday = isSameDay(d.date, today)
-            return (
-              <span
-                key={d.key}
-                className={cn("text-center text-xs font-medium", isToday ? "font-bold text-primary" : "text-faint")}
-              >
-                {format(d.date, "EEE")}
-              </span>
-            )
-          })}
         </div>
       </>
     )
@@ -559,15 +549,24 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               {topFoods.map((f) => {
                 const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
                 const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
-                const isMlBased = f.name.toLowerCase().includes('ml')
-                const unit = isMlBased ? 'ml' : 'g'
+                const unit = f.servingUnit ?? 'g'
                 return (
                   <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
                     <span className="text-right text-[13px] font-bold tabular-nums">
                       {f.count}
                       <span className="font-normal text-faint"> ×</span>
                     </span>
-                    <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
+                    {f.foodId ? (
+                      <button
+                        type="button"
+                        onClick={() => openFoodEdit(f.foodId)}
+                        className="min-w-0 truncate text-left text-sm font-bold hover:underline"
+                      >
+                        {f.name}
+                      </button>
+                    ) : (
+                      <span className="min-w-0 truncate text-sm font-bold">{f.name}</span>
+                    )}
                     <span className="text-[13px] font-bold tabular-nums text-muted-foreground">
                       {f.servings > 0 ? Math.round(f.servings * 10) / 10 : "—"}
                     </span>
@@ -607,9 +606,19 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 return (
                   <li key={f.key} className="border-t border-border/60 px-5 py-4 first:border-t-0">
                     <div className="flex items-center gap-2">
-                      <span className="min-w-0 truncate font-bold">{f.name}</span>
+                      {f.foodId ? (
+                        <button
+                          type="button"
+                          onClick={() => openFoodEdit(f.foodId)}
+                          className="min-w-0 truncate text-left font-bold hover:underline"
+                        >
+                          {f.name}
+                        </button>
+                      ) : (
+                        <span className="min-w-0 truncate font-bold">{f.name}</span>
+                      )}
                       <span className="ml-auto shrink-0 text-xs font-semibold tabular-nums text-faint">
-                        {f.count}×{f.weightG > 0 ? ` · ${Math.round(f.weightG).toLocaleString()}g` : ""}
+                        {f.count}×{f.weightG > 0 ? ` · ${Math.round(f.weightG).toLocaleString()}${f.servingUnit ?? 'g'}` : ""}
                       </span>
                     </div>
                     <div className="mt-1.5">
@@ -631,6 +640,13 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       ) : null}
       </>
       )}
+
+      <FoodFormDialog
+        open={editFoodOpen}
+        onOpenChange={setEditFoodOpen}
+        food={editFood}
+        onSaved={() => setEditFoodOpen(false)}
+      />
     </div>
   )
 }

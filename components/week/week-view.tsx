@@ -23,6 +23,7 @@ import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { PageLoading } from "@/components/page-loading"
+import { TopFoodsDonutChart } from "@/components/week/top-foods-donut-chart"
 
 const KJ_PER_KCAL = 4.184
 
@@ -527,6 +528,8 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       {topFoods.length > 0 ? (
         <div className="flex flex-col gap-3">
           <h2 className="text-[11px] font-bold uppercase tracking-[.08em] text-faint">Most common foods</h2>
+
+          <TopFoodsDonutChart foods={topFoods} />
 
           {/* Desktop table */}
           <div className="hidden flex-col md:flex">

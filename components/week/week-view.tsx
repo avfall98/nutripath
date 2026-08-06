@@ -23,6 +23,7 @@ import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { PageLoading } from "@/components/page-loading"
+import { TopFoodsDonutChart } from "@/components/week/top-foods-donut-chart"
 
 const KJ_PER_KCAL = 4.184
 
@@ -50,6 +51,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
   const [, startTransition] = useTransition()
   const [editFood, setEditFood] = useState<FoodDTO | null>(null)
   const [editFoodOpen, setEditFoodOpen] = useState(false)
+  const [activeFoodKey, setActiveFoodKey] = useState<string | null>(null)
 
   async function openFoodEdit(foodId: number | null) {
     if (!foodId) return
@@ -528,6 +530,14 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         <div className="flex flex-col gap-3">
           <h2 className="text-[11px] font-bold uppercase tracking-[.08em] text-faint">Most common foods</h2>
 
+          <TopFoodsDonutChart
+            foods={topFoods}
+            totalKcal={totals.kcal}
+            totalProtein={totals.protein}
+            activeKey={activeFoodKey}
+            onActiveChange={setActiveFoodKey}
+          />
+
           {/* Desktop table */}
           <div className="hidden flex-col md:flex">
             <div
@@ -551,7 +561,16 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                 const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
                 const unit = f.servingUnit ?? 'g'
                 return (
-                  <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
+                  <li
+                    key={f.key}
+                    onMouseEnter={() => setActiveFoodKey(f.key)}
+                    onMouseLeave={() => setActiveFoodKey(null)}
+                    className={cn(
+                      FOOD_ROW_GRID,
+                      "rounded-[4px] px-2 py-3 transition-colors hover:bg-white/[0.08]",
+                      activeFoodKey === f.key && "bg-white/[0.08]",
+                    )}
+                  >
                     <span className="text-right text-[13px] font-bold tabular-nums">
                       {f.count}
                       <span className="font-normal text-faint"> ×</span>

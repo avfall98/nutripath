@@ -5,7 +5,7 @@ import { entries, foods } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
-import { parseServingWeight } from "@/lib/nutrition"
+import { parseServingUnit, parseServingWeight } from "@/lib/nutrition"
 import type { EntryDTO } from "@/lib/types"
 
 function serialize(r: typeof entries.$inferSelect): EntryDTO {
@@ -43,6 +43,7 @@ export async function getEntriesInRange(startKey: string, endKey: string): Promi
   return rows.map(({ entry, servingSize }) => ({
     ...serialize(entry),
     servingWeightG: parseServingWeight(servingSize),
+    servingUnit: parseServingUnit(servingSize),
   }))
 }
 

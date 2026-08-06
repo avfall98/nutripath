@@ -33,17 +33,7 @@ type FoodTotals = {
   count: number
   servings: number
   weightG: number
-  kcal: number
-  protein: number
-  carbs: number
-  fat: number
-}
-
-type FoodTotals = {
-  key: string
-  name: string
-  count: number
-  weightG: number
+  servingUnit: "g" | "ml" | null
   kcal: number
   protein: number
   carbs: number
@@ -133,7 +123,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         existing.carbs += carbs
         existing.fat += fat
       } else {
-        map.set(key, { key, name: e.name, count: 1, servings: q, weightG: weight, kcal, protein, carbs, fat })
+        map.set(key, { key, name: e.name, count: 1, servings: q, weightG: weight, servingUnit: e.servingUnit ?? null, kcal, protein, carbs, fat })
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
@@ -559,8 +549,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               {topFoods.map((f) => {
                 const kcalPct = totals.kcal > 0 ? Math.round((f.kcal / totals.kcal) * 100) : null
                 const proteinPct = totals.protein > 0 ? Math.round((f.protein / totals.protein) * 100) : null
-                const isMlBased = f.name.toLowerCase().includes('ml')
-                const unit = isMlBased ? 'ml' : 'g'
+                const unit = f.servingUnit ?? 'g'
                 return (
                   <li key={f.key} className={cn(FOOD_ROW_GRID, "rounded-[4px] px-2 py-3 hover:bg-white/[0.08]")}>
                     <span className="text-right text-[13px] font-bold tabular-nums">
@@ -609,7 +598,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
                     <div className="flex items-center gap-2">
                       <span className="min-w-0 truncate font-bold">{f.name}</span>
                       <span className="ml-auto shrink-0 text-xs font-semibold tabular-nums text-faint">
-                        {f.count}×{f.weightG > 0 ? ` · ${Math.round(f.weightG).toLocaleString()}g` : ""}
+                        {f.count}×{f.weightG > 0 ? ` · ${Math.round(f.weightG).toLocaleString()}${f.servingUnit ?? 'g'}` : ""}
                       </span>
                     </div>
                     <div className="mt-1.5">

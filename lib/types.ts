@@ -56,4 +56,5 @@ export type EntryDTO = {
   fat: number | null
   quantity: number
   servingWeightG?: number | null
+  servingUnit?: "g" | "ml" | null
 }

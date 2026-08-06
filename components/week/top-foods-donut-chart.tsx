@@ -1,6 +1,7 @@
 "use client"
 
-import { Cell, Pie, PieChart, Tooltip } from "recharts"
+// Donut charts for the most common foods (kcal + protein breakdown).
+import { Cell, Pie, PieChart } from "recharts"
 import { ChartContainer, type ChartConfig } from "@/components/ui/chart"
 
 const CHART_COLORS = [
@@ -62,13 +63,11 @@ function buildConfig(slices: Slice[]): ChartConfig {
 function DonutChart({
   slices,
   label,
-  unit,
   activeKey,
   onActiveChange,
 }: {
   slices: Slice[]
   label: string
-  unit: string
   activeKey: string | null
   onActiveChange: (key: string | null) => void
 }) {
@@ -101,24 +100,6 @@ function DonutChart({
               />
             ))}
           </Pie>
-          <Tooltip
-            cursor={false}
-            content={({ active, payload }) => {
-              if (!active || !payload?.length) return null
-              const d = payload[0]
-              const pct = total > 0 ? Math.round(((d.value as number) / total) * 100) : 0
-              return (
-                <div className="rounded-md border border-border bg-popover px-3 py-2 text-[13px] shadow-md">
-                  <p className="font-semibold text-foreground">{d.name}</p>
-                  <p className="text-muted-foreground">
-                    {(d.value as number).toLocaleString()}
-                    {unit}
-                    <span className="ml-1 text-faint">({pct}%)</span>
-                  </p>
-                </div>
-              )
-            }}
-          />
         </PieChart>
       </ChartContainer>
       {/* Centre label */}
@@ -142,22 +123,48 @@ export function TopFoodsDonutChart({
   const kcalSlices = buildSlices(foods, totalKcal, "kcal")
   const proteinSlices = buildSlices(foods, totalProtein, "protein")
 
+  const kcalTotal = kcalSlices.reduce((s, d) => s + d.value, 0)
+  const proteinTotal = proteinSlices.reduce((s, d) => s + d.value, 0)
+
+  const activeKcal = activeKey ? kcalSlices.find((s) => s.key === activeKey) : undefined
+  const activeProtein = activeKey ? proteinSlices.find((s) => s.key === activeKey) : undefined
+  const activeSlice = activeKcal ?? activeProtein
+
+  const pct = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0)
+
   return (
-    <div className="flex items-center justify-center gap-8">
-      <DonutChart
-        slices={kcalSlices}
-        label="kcal"
-        unit=" kcal"
-        activeKey={activeKey}
-        onActiveChange={onActiveChange}
-      />
-      <DonutChart
-        slices={proteinSlices}
-        label="protein"
-        unit="g"
-        activeKey={activeKey}
-        onActiveChange={onActiveChange}
-      />
+    <div className="flex flex-col items-center gap-2">
+      <div className="flex items-center justify-center gap-8">
+        <DonutChart slices={kcalSlices} label="kcal" activeKey={activeKey} onActiveChange={onActiveChange} />
+        <DonutChart slices={proteinSlices} label="protein" activeKey={activeKey} onActiveChange={onActiveChange} />
+      </div>
+      {/* Fixed caption below the donuts so it never overlaps the chart */}
+      <div className="flex h-9 items-center justify-center">
+        {activeSlice ? (
+          <div className="flex items-center gap-3 rounded-md border border-border bg-popover px-3 py-1.5 text-[13px] shadow-sm">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-foreground">
+              <span
+                className="inline-block h-2.5 w-2.5 rounded-full"
+                style={{ backgroundColor: activeSlice.color }}
+                aria-hidden="true"
+              />
+              {activeSlice.name}
+            </span>
+            {activeKcal ? (
+              <span className="text-muted-foreground">
+                {activeKcal.value.toLocaleString()} kcal
+                <span className="ml-1 text-faint">({pct(activeKcal.value, kcalTotal)}%)</span>
+              </span>
+            ) : null}
+            {activeProtein ? (
+              <span className="text-muted-foreground">
+                {activeProtein.value.toLocaleString()}g protein
+                <span className="ml-1 text-faint">({pct(activeProtein.value, proteinTotal)}%)</span>
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
     </div>
   )
 }

@@ -141,7 +141,8 @@ export function AddFoodDialog({
         mealGroupId: group.id,
         mealGroupName: group.name,
         name: quick.name,
-        calories: num(quick.calories),
+        // The input is entered in kcal, but entries are stored in kJ.
+        calories: num(quick.calories) * KJ_PER_KCAL,
         protein: num(quick.protein),
         carbs: quick.carbs.trim() === "" ? null : num(quick.carbs),
         fat: quick.fat.trim() === "" ? null : num(quick.fat),

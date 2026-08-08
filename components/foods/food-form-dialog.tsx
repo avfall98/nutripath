@@ -759,22 +759,6 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           <div className="flex flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
-                <label htmlFor="food-servings-pack" className={labelClass}>
-                  Servings / pack <span className="font-normal text-faint">(optional)</span>
-                </label>
-                <Input
-                  id="food-servings-pack"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.servingsPack}
-                  onChange={(e) => set("servingsPack", e.target.value)}
-                  placeholder="e.g. 4"
-                  className={fieldInput}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
                 <label htmlFor="food-serving" className={labelClass}>
                   Serving size
                 </label>
@@ -812,6 +796,22 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                     })}
                   </div>
                 </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <label htmlFor="food-servings-pack" className={labelClass}>
+                  Servings / pack <span className="font-normal text-faint">(optional)</span>
+                </label>
+                <Input
+                  id="food-servings-pack"
+                  type="number"
+                  inputMode="decimal"
+                  min={0}
+                  step="any"
+                  value={form.servingsPack}
+                  onChange={(e) => set("servingsPack", e.target.value)}
+                  placeholder="e.g. 4"
+                  className={fieldInput}
+                />
               </div>
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-pack-size" className={labelClass}>

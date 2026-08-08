@@ -65,6 +65,7 @@ export const entries = pgTable("entries", {
   mealGroupName: text("meal_group_name").notNull(),
   foodId: integer("food_id"),
   name: text("name").notNull(),
+  servingSize: text("serving_size"),
   calories: numeric("calories").notNull().default("0"),
   protein: numeric("protein").notNull().default("0"),
   carbs: numeric("carbs"),

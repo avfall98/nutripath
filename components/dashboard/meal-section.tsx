@@ -399,10 +399,10 @@ export function MealSection({
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
                       {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                      {food?.servingSize && (
+                      {(food?.servingSize || entry.servingSize) && (
                         <>
                           {" − "}
-                          {food.servingSize}
+                          {food?.servingSize || entry.servingSize}
                         </>
                       )}
                     </p>
@@ -426,7 +426,7 @@ export function MealSection({
                     {entryFat ?? "—"}
                   </span>
                   <div className="flex items-center justify-end">
-                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || entry.servingSize || null} />
                   </div>
                   <div className="flex items-center justify-end">
                     <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
@@ -460,10 +460,10 @@ export function MealSection({
                         {food?.name || entry.name}
                         <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                          {food?.servingSize && (
+                          {(food?.servingSize || entry.servingSize) && (
                             <>
                               {" − "}
-                              {food.servingSize}
+                              {food?.servingSize || entry.servingSize}
                             </>
                           )}
                           {entry.servingWeightG && (
@@ -491,7 +491,7 @@ export function MealSection({
                   {/* Row 3: Score badges */}
                   <div className="flex shrink-0 items-center gap-1.5">
                     <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || null} />
+                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || entry.servingSize || null} />
                   </div>
                 </div>
               </li>

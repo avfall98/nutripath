@@ -181,6 +181,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
         carbs: custom.carbs.trim() === "" ? null : num(custom.carbs),
         fat: custom.fat.trim() === "" ? null : num(custom.fat),
         quantity: num(custom.quantity, 1) || 1,
+        servingSize: custom.servingSize.trim() === "" ? null : `${custom.servingSize.trim()}${custom.servingUnit}`,
       })
       toast.success(`Updated ${custom.name}.`)
       onUpdated()

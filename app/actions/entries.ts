@@ -21,6 +21,9 @@ function serialize(r: typeof entries.$inferSelect): EntryDTO {
     carbs: num(r.carbs),
     fat: num(r.fat),
     quantity: num0(r.quantity),
+    servingSize: r.servingSize ?? null,
+    servingWeightG: parseServingWeight(r.servingSize),
+    servingUnit: r.servingSize ? parseServingUnit(r.servingSize) : null,
   }
 }
 
@@ -40,11 +43,16 @@ export async function getEntriesInRange(startKey: string, endKey: string): Promi
     .leftJoin(foods, eq(entries.foodId, foods.id))
     .where(and(gte(entries.entryDate, startKey), lte(entries.entryDate, endKey)))
     .orderBy(asc(entries.entryDate), asc(entries.createdAt))
-  return rows.map(({ entry, servingSize }) => ({
-    ...serialize(entry),
-    servingWeightG: parseServingWeight(servingSize),
-    servingUnit: parseServingUnit(servingSize),
-  }))
+  return rows.map(({ entry, servingSize }) => {
+    // Prefer the entry's own serving size (custom entries); fall back to the linked food's.
+    const effectiveServing = entry.servingSize ?? servingSize
+    return {
+      ...serialize(entry),
+      servingSize: effectiveServing ?? null,
+      servingWeightG: parseServingWeight(effectiveServing),
+      servingUnit: effectiveServing ? parseServingUnit(effectiveServing) : null,
+    }
+  })
 }
 
 // Add an entry from an existing reusable food.
@@ -83,6 +91,7 @@ export async function addQuickEntry(input: {
   carbs?: number | null
   fat?: number | null
   quantity: number
+  servingSize?: string | null
 }) {
   await db.insert(entries).values({
     entryDate: input.dateKey,
@@ -90,6 +99,7 @@ export async function addQuickEntry(input: {
     mealGroupName: input.mealGroupName,
     foodId: null,
     name: input.name.trim(),
+    servingSize: input.servingSize?.trim() || null,
     calories: toNumeric(input.calories) ?? "0",
     protein: toNumeric(input.protein) ?? "0",
     carbs: toNumeric(input.carbs),
@@ -145,12 +155,14 @@ export async function updateQuickEntry(id: number, input: {
   carbs?: number | null
   fat?: number | null
   quantity: number
+  servingSize?: string | null
 }) {
   await db
     .update(entries)
     .set({
       foodId: null,
       name: input.name.trim(),
+      servingSize: input.servingSize?.trim() || null,
       calories: toNumeric(input.calories) ?? "0",
       protein: toNumeric(input.protein) ?? "0",
       carbs: toNumeric(input.carbs),

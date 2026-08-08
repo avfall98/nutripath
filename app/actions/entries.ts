@@ -137,6 +137,30 @@ export async function updateEntry(id: number, input: {
   revalidatePath("/")
 }
 
+// Update a one-off (custom) entry — the fields typed in directly, no linked food.
+export async function updateQuickEntry(id: number, input: {
+  name: string
+  calories: number
+  protein: number
+  carbs?: number | null
+  fat?: number | null
+  quantity: number
+}) {
+  await db
+    .update(entries)
+    .set({
+      foodId: null,
+      name: input.name.trim(),
+      calories: toNumeric(input.calories) ?? "0",
+      protein: toNumeric(input.protein) ?? "0",
+      carbs: toNumeric(input.carbs),
+      fat: toNumeric(input.fat),
+      quantity: toNumeric(input.quantity) ?? "1",
+    })
+    .where(eq(entries.id, id))
+  revalidatePath("/")
+}
+
 export async function deleteEntry(id: number) {
   await db.delete(entries).where(eq(entries.id, id))
   revalidatePath("/")

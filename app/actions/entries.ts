@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { entries, foods } from "@/lib/db/schema"
+import { entries, foods, skippedDays } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
@@ -176,4 +176,35 @@ export async function updateQuickEntry(id: number, input: {
 export async function deleteEntry(id: number) {
   await db.delete(entries).where(eq(entries.id, id))
   revalidatePath("/")
+}
+
+// Whether a single day is marked as skipped (excluded from weekly totals).
+export async function isDaySkipped(dateKey: string): Promise<boolean> {
+  const [row] = await db
+    .select({ entryDate: skippedDays.entryDate })
+    .from(skippedDays)
+    .where(eq(skippedDays.entryDate, dateKey))
+    .limit(1)
+  return !!row
+}
+
+// Return the set of skipped dates within an inclusive range.
+export async function getSkippedDaysInRange(startKey: string, endKey: string): Promise<string[]> {
+  const rows = await db
+    .select({ entryDate: skippedDays.entryDate })
+    .from(skippedDays)
+    .where(and(gte(skippedDays.entryDate, startKey), lte(skippedDays.entryDate, endKey)))
+  return rows.map((r) => r.entryDate)
+}
+
+// Toggle a day's skipped state. Skipping does NOT delete any food entries — it
+// only excludes the day from weekly totals until it's included again.
+export async function setDaySkipped(dateKey: string, skipped: boolean) {
+  if (skipped) {
+    await db.insert(skippedDays).values({ entryDate: dateKey }).onConflictDoNothing()
+  } else {
+    await db.delete(skippedDays).where(eq(skippedDays.entryDate, dateKey))
+  }
+  revalidatePath("/")
+  revalidatePath("/week")
 }

@@ -12,7 +12,7 @@ import {
   startOfWeek,
 } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { getEntriesInRange } from "@/app/actions/entries"
+import { getEntriesInRange, getSkippedDaysInRange } from "@/app/actions/entries"
 import { getFoodById } from "@/app/actions/foods"
 import type { EntryDTO, FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
@@ -47,6 +47,7 @@ type FoodTotals = {
 export function WeekView({ profile }: { profile: ProfileDTO }) {
   const [anchor, setAnchor] = useState(() => new Date())
   const [entries, setEntries] = useState<EntryDTO[]>([])
+  const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
   const [hasLoaded, setHasLoaded] = useState(false)
   const [, startTransition] = useTransition()
   const [editFood, setEditFood] = useState<FoodDTO | null>(null)
@@ -69,13 +70,17 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
     const startKey = format(weekStart, "yyyy-MM-dd")
     const endKey = format(weekEnd, "yyyy-MM-dd")
     startTransition(async () => {
-      const rows = await getEntriesInRange(startKey, endKey)
+      const [rows, skipped] = await Promise.all([
+        getEntriesInRange(startKey, endKey),
+        getSkippedDaysInRange(startKey, endKey),
+      ])
       setEntries(rows)
+      setSkippedKeys(new Set(skipped))
       setHasLoaded(true)
     })
   }, [weekStart, weekEnd])
 
-  const byDay = useMemo<DayTotals[]>(() => {
+  const byDay = useMemo(() => {
     return days.map((date) => {
       const key = format(date, "yyyy-MM-dd")
       const dayEntries = entries.filter((e) => e.entryDate === key)
@@ -92,11 +97,22 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
         fat += (e.fat ?? 0) * q
         if (e.servingWeightG) weightG += e.servingWeightG * q
       }
-      return { date, key, kcal, protein, carbs, fat, weightG, entries: dayEntries.length }
+      return {
+        date,
+        key,
+        kcal,
+        protein,
+        carbs,
+        fat,
+        weightG,
+        entries: dayEntries.length,
+        skipped: skippedKeys.has(key),
+      }
     })
-  }, [days, entries])
+  }, [days, entries, skippedKeys])
 
-  const loggedDays = byDay.filter((d) => d.entries > 0)
+  // Skipped days are excluded from weekly totals/averages even if they have entries.
+  const loggedDays = byDay.filter((d) => d.entries > 0 && !d.skipped)
   const totals = useMemo(
     () =>
       loggedDays.reduce(
@@ -121,6 +137,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
   const topFoods = useMemo<FoodTotals[]>(() => {
     const map = new Map<string, FoodTotals>()
     for (const e of entries) {
+      if (skippedKeys.has(e.entryDate)) continue
       const key = e.foodId != null ? `food-${e.foodId}` : `name-${e.name.trim().toLowerCase()}`
       const q = e.quantity || 1
       const kcal = (e.calories / KJ_PER_KCAL) * q
@@ -142,7 +159,7 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
-  }, [entries])
+  }, [entries, skippedKeys])
 
   const calTarget = profile.targetCalories ?? null
   const proteinTarget = profile.targetProtein ?? null
@@ -217,22 +234,27 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
           <div className="absolute inset-0 grid grid-cols-7">
             {byDay.map((d) => {
               const empty = d.entries === 0
+              const inactive = empty || d.skipped
               const over = anyOver && calTarget != null && d.kcal > calTarget * 1.05
               const isToday = isSameDay(d.date, today)
-              const calH = empty ? 1.5 : Math.max(4, Math.min(100, (d.kcal / calMax) * 100))
-              const proH = empty ? 1.5 : Math.max(4, Math.min(100, (d.protein / proteinMax) * 100))
-              const calColor = empty ? "var(--track)" : over ? "var(--cal-over)" : "var(--primary)"
-              const proColor = empty ? "var(--track)" : "var(--protein-bar)"
+              const calH = inactive ? 1.5 : Math.max(4, Math.min(100, (d.kcal / calMax) * 100))
+              const proH = inactive ? 1.5 : Math.max(4, Math.min(100, (d.protein / proteinMax) * 100))
+              const calColor = inactive ? "var(--track)" : over ? "var(--cal-over)" : "var(--primary)"
+              const proColor = inactive ? "var(--track)" : "var(--protein-bar)"
               return (
-                <div key={d.key} className="flex items-end justify-center gap-1 sm:gap-1.5">
+                <div
+                  key={d.key}
+                  className="flex items-end justify-center gap-1 sm:gap-1.5"
+                  title={d.skipped ? "Skipped — not counted" : undefined}
+                >
                   <span
                     className="w-2.5 rounded-t-md sm:w-3.5"
-                    style={{ height: `${calH}%`, backgroundColor: calColor, opacity: isToday && !empty ? 0.6 : 1 }}
+                    style={{ height: `${calH}%`, backgroundColor: calColor, opacity: isToday && !inactive ? 0.6 : 1 }}
                     title={`${Math.round(d.kcal)} kcal`}
                   />
                   <span
                     className="w-2.5 rounded-t-md sm:w-3.5"
-                    style={{ height: `${proH}%`, backgroundColor: proColor, opacity: isToday && !empty ? 0.6 : 1 }}
+                    style={{ height: `${proH}%`, backgroundColor: proColor, opacity: isToday && !inactive ? 0.6 : 1 }}
                     title={`${Math.round(d.protein)}g protein`}
                   />
                 </div>
@@ -402,6 +424,25 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               const calPct = calTarget ? Math.round((d.kcal / calTarget) * 100) : null
               const proPct = proteinTarget ? Math.round((d.protein / proteinTarget) * 100) : null
 
+              if (d.skipped) {
+                return (
+                  <li key={d.key} className={cn(ROW_GRID, "rounded-[4px] px-2 py-3 opacity-70")}>
+                    <MiniBars empty />
+                    <Link href="/" className="min-w-0 text-sm">
+                      <span className="font-bold text-muted-foreground line-through">{fullDay}</span>{" "}
+                      <span className="text-faint">{dateLabel}</span>
+                      <span className="ml-2 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground no-underline">
+                        Skipped
+                      </span>
+                    </Link>
+                    <span className="col-span-5 text-[13px] text-faint">
+                      Not counted{d.entries > 0 ? ` · ${d.entries} ${d.entries === 1 ? "entry" : "entries"} kept` : ""}
+                    </span>
+                    <ChevronRight className="size-4 justify-self-end text-faint" />
+                  </li>
+                )
+              }
+
               if (empty) {
                 return (
                   <li key={d.key} className={cn(ROW_GRID, "rounded-[4px] px-2 py-3")}>
@@ -473,6 +514,28 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
               const isToday = isSameDay(d.date, today)
               const fullDay = format(d.date, "EEEE")
               const dateLabel = format(d.date, "MMM d")
+
+              if (d.skipped) {
+                return (
+                  <li key={d.key} className="border-t border-border/60 first:border-t-0">
+                    <Link href="/" className="flex items-center gap-3 px-5 py-4 opacity-70 transition-colors hover:bg-white/[0.06]">
+                      <MiniBars empty />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-muted-foreground line-through">{fullDay}</span>
+                          <span className="text-sm text-faint">{dateLabel}</span>
+                          <span className="rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                            Skipped
+                          </span>
+                        </div>
+                        <p className="mt-1 text-xs text-faint">
+                          Not counted{d.entries > 0 ? ` · ${d.entries} ${d.entries === 1 ? "entry" : "entries"} kept` : ""}
+                        </p>
+                      </div>
+                    </Link>
+                  </li>
+                )
+              }
 
               if (empty) {
                 return (

@@ -141,11 +141,13 @@ export function AddFoodDialog({
         mealGroupId: group.id,
         mealGroupName: group.name,
         name: quick.name,
-        calories: num(quick.calories),
+        // The input is entered in kcal, but entries are stored in kJ.
+        calories: num(quick.calories) * KJ_PER_KCAL,
         protein: num(quick.protein),
         carbs: quick.carbs.trim() === "" ? null : num(quick.carbs),
         fat: quick.fat.trim() === "" ? null : num(quick.fat),
         quantity: num(quick.quantity, 1) || 1,
+        servingSize: quick.servingSize.trim() === "" ? null : `${quick.servingSize.trim()}${quick.servingUnitCustom}`,
       })
       toast.success(`Added ${quick.name} to ${group.name}.`)
       setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g", quantity: "1" })

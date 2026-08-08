@@ -219,6 +219,22 @@ function deriveServingSize(perServe: number | null, per100: number | null): numb
   return round(size, 0)
 }
 
+/**
+ * Parse a pack/package size string into a number in the base unit that matches
+ * the serving unit (g for solids, ml for liquids). Normalises kg -> g and
+ * L -> ml so "1kg" and "1.5L" resolve to 1000 and 1500 respectively.
+ */
+function parsePackSize(raw: string, servingUnit: "g" | "ml"): number | null {
+  const value = parseNumber(raw)
+  if (value == null || value <= 0) return null
+  const lower = raw.toLowerCase()
+  // Kilograms / litres are 1000x their base unit.
+  if (/\bkg\b/.test(lower) || (servingUnit === "ml" && (/\bl\b/.test(lower) || lower.includes("litre")))) {
+    return round(value * 1000, 0)
+  }
+  return round(value, 1)
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}))
@@ -326,6 +342,14 @@ export async function POST(request: NextRequest) {
     const isLiquid = packageSize.includes("ml") || packageSize.includes("litre") || /\d\s*l\b/.test(packageSize)
     const servingUnit: "g" | "ml" = isLiquid ? "ml" : "g"
 
+    // Pack size normalised to the serving unit, and servings-per-pack derived
+    // from it: servingsPack = packSize / servingSize.
+    const packSizeNum = packageSize ? parsePackSize(packageSize, servingUnit) : null
+    const servingsPackNum =
+      packSizeNum != null && servingNum != null && servingNum > 0
+        ? round(packSizeNum / servingNum, 1)
+        : null
+
   const result: ImportResult = {
     name,
     brand,
@@ -333,8 +357,8 @@ export async function POST(request: NextRequest) {
     infoUrl: `https://www.woolworths.com.au/shop/productdetails/${stockcode}`,
     servingSize: servingNum != null ? String(servingNum) : "",
     servingUnit,
-    servingsPack: null,
-    packSize: packageSize ? parseNumber(packageSize) ? String(parseNumber(packageSize)) : null : null,
+    servingsPack: servingsPackNum != null ? String(servingsPackNum) : null,
+    packSize: packSizeNum != null ? String(packSizeNum) : null,
     caloriesKj,
     protein: val(perServe.protein),
     fat: val(perServe.fat),

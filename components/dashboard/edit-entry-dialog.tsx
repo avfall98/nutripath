@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import useSWR from "swr"
-import { updateEntry } from "@/app/actions/entries"
+import { updateEntry, updateQuickEntry } from "@/app/actions/entries"
 import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
 import { round } from "@/lib/format"
 
@@ -18,6 +18,7 @@ import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badg
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   Dialog,
   DialogContent,
@@ -40,6 +41,7 @@ type Props = {
 type QuantityMode = "servings" | "weight"
 type TabKey = "library" | "recent" | "favourites"
 type Step = "edit" | "select"
+type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 const ROW_GRID =
@@ -66,6 +68,19 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   const [servings, setServings] = useState(entry.quantity.toString())
   const [weight, setWeight] = useState("")
 
+  // Custom (one-off) entries have no linked food — they are edited inline.
+  const isCustom = entry.foodId == null
+  const [custom, setCustom] = useState({
+    name: "",
+    calories: "",
+    protein: "",
+    carbs: "",
+    fat: "",
+    servingSize: "",
+    servingUnit: "g" as ServingUnit,
+    quantity: "1",
+  })
+
   // Lazy load recent / favourites
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? ["edit-recent-foods"] : null,
@@ -86,6 +101,17 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
       setWeight("")
       setQtyMode("servings")
       setSelectedFood(foods.find((f) => f.id === entry.foodId) ?? null)
+      setCustom({
+        name: entry.name ?? "",
+        // Stored in kJ, edited in kcal.
+        calories: entry.calories ? String(round(entry.calories / KJ_PER_KCAL, 1)) : "",
+        protein: entry.protein != null ? String(round(entry.protein, 1)) : "",
+        carbs: entry.carbs != null ? String(round(entry.carbs, 1)) : "",
+        fat: entry.fat != null ? String(round(entry.fat, 1)) : "",
+        servingSize: entry.servingWeightG != null ? String(entry.servingWeightG) : "",
+        servingUnit: entry.servingUnit === "ml" ? "ml" : "g",
+        quantity: entry.quantity.toString(),
+      })
     }
   }, [open, entry, foods])
 
@@ -135,6 +161,29 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     startTransition(async () => {
       await updateEntry(entry.id, { foodId: food.id, quantity })
       toast.success(`Updated ${food.name}.`)
+      onUpdated()
+      onOpenChange(false)
+    })
+  }
+
+  function handleSaveCustom(e: React.FormEvent) {
+    e.preventDefault()
+    if (!custom.name.trim()) {
+      toast.error("Enter a name for the item.")
+      return
+    }
+    startTransition(async () => {
+      await updateQuickEntry(entry.id, {
+        name: custom.name,
+        // Entered in kcal, stored in kJ.
+        calories: num(custom.calories) * KJ_PER_KCAL,
+        protein: num(custom.protein),
+        carbs: custom.carbs.trim() === "" ? null : num(custom.carbs),
+        fat: custom.fat.trim() === "" ? null : num(custom.fat),
+        quantity: num(custom.quantity, 1) || 1,
+        servingSize: custom.servingSize.trim() === "" ? null : `${custom.servingSize.trim()}${custom.servingUnit}`,
+      })
+      toast.success(`Updated ${custom.name}.`)
       onUpdated()
       onOpenChange(false)
     })
@@ -408,6 +457,143 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
       Loading…
     </div>
   )
+
+  // ── Custom entry ─────────────────────────────────────────────────────────────
+  // One-off entries typed in directly (no linked food) are edited inline with the
+  // same fields used when the item was originally added.
+  if (isCustom) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-h-[90svh] overflow-y-auto sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Edit entry</DialogTitle>
+            <DialogDescription>Edit this custom item&apos;s name, nutrition and serving.</DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSaveCustom}>
+            <FieldGroup>
+              <Field>
+                <FieldLabel htmlFor="edit-q-name">Name</FieldLabel>
+                <Input
+                  id="edit-q-name"
+                  value={custom.name}
+                  onChange={(e) => setCustom((s) => ({ ...s, name: e.target.value }))}
+                  placeholder="e.g. Banana"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <Field>
+                  <FieldLabel htmlFor="edit-q-cal">Calories</FieldLabel>
+                  <Input
+                    id="edit-q-cal"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.calories}
+                    onChange={(e) => setCustom((s) => ({ ...s, calories: e.target.value }))}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-q-pro">Protein</FieldLabel>
+                  <Input
+                    id="edit-q-pro"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.protein}
+                    onChange={(e) => setCustom((s) => ({ ...s, protein: e.target.value }))}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-q-carb">Carbs</FieldLabel>
+                  <Input
+                    id="edit-q-carb"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.carbs}
+                    onChange={(e) => setCustom((s) => ({ ...s, carbs: e.target.value }))}
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-q-fat">Fat</FieldLabel>
+                  <Input
+                    id="edit-q-fat"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.fat}
+                    onChange={(e) => setCustom((s) => ({ ...s, fat: e.target.value }))}
+                  />
+                </Field>
+              </div>
+              <div className="grid grid-cols-[1fr_100px_100px] gap-3">
+                <Field>
+                  <FieldLabel htmlFor="edit-q-serving">Serving Size</FieldLabel>
+                  <Input
+                    id="edit-q-serving"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.servingSize}
+                    onChange={(e) => setCustom((s) => ({ ...s, servingSize: e.target.value }))}
+                    placeholder="e.g. 100"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel>Unit</FieldLabel>
+                  <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                    {(["g", "ml"] as ServingUnit[]).map((unit) => {
+                      const active = custom.servingUnit === unit
+                      return (
+                        <button
+                          key={unit}
+                          type="button"
+                          onClick={() => setCustom((s) => ({ ...s, servingUnit: unit }))}
+                          className={cn(
+                            "rounded-full px-3 py-1 text-[13px] font-bold transition-colors",
+                            active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                          )}
+                        >
+                          {unit}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="edit-q-qty">Servings</FieldLabel>
+                  <Input
+                    id="edit-q-qty"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={custom.quantity}
+                    onChange={(e) => setCustom((s) => ({ ...s, quantity: e.target.value }))}
+                  />
+                </Field>
+              </div>
+              <div className="flex justify-center pt-2">
+                <Button
+                  type="submit"
+                  disabled={pending}
+                  className="rounded-full bg-primary px-8 text-primary-foreground hover:bg-primary/90 font-semibold"
+                >
+                  Save changes
+                </Button>
+              </div>
+            </FieldGroup>
+          </form>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   // ── Select step ───��──────────────────────────────────────────────────────────
   if (step === "select") {

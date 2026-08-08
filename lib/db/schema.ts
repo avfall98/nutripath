@@ -74,7 +74,13 @@ export const entries = pgTable("entries", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 })
 
+export const skippedDays = pgTable("skipped_days", {
+  entryDate: date("entry_date").primaryKey(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+})
+
 export type Profile = typeof profile.$inferSelect
 export type MealGroup = typeof mealGroups.$inferSelect
 export type Food = typeof foods.$inferSelect
 export type Entry = typeof entries.$inferSelect
+export type SkippedDay = typeof skippedDays.$inferSelect

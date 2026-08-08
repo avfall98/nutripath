@@ -1,15 +1,21 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import useSWR from "swr"
 import { addDays, format, isToday, parseISO } from "date-fns"
-import { ChevronLeft, ChevronRight } from "lucide-react"
-import { getEntriesByDate } from "@/app/actions/entries"
+import { ChevronLeft, ChevronRight, MoreHorizontal, CalendarOff, RotateCcw } from "lucide-react"
+import { getEntriesByDate, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
 import { DaySummary } from "@/components/dashboard/day-summary"
 import { DayNavigator } from "@/components/dashboard/day-navigator"
 import { MealSection } from "@/components/dashboard/meal-section"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { parseServingWeight } from "@/lib/nutrition"
 
 export function Dashboard({
@@ -34,6 +40,26 @@ export function Dashboard({
     () => getEntriesByDate(dateKey!),
     { keepPreviousData: true },
   )
+
+  const { data: skipped, mutate: mutateSkipped } = useSWR<boolean>(
+    dateKey ? ["day-skipped", dateKey] : null,
+    () => isDaySkipped(dateKey!),
+    { keepPreviousData: true },
+  )
+  const isSkipped = skipped ?? false
+
+  const [, startSkipTransition] = useTransition()
+
+  function toggleSkipped() {
+    if (!dateKey) return
+    const next = !isSkipped
+    // Optimistically flip the UI, then persist.
+    mutateSkipped(next, { revalidate: false })
+    startSkipTransition(async () => {
+      await setDaySkipped(dateKey, next)
+      mutateSkipped()
+    })
+  }
 
   const list = entries ?? []
 
@@ -147,6 +173,28 @@ export function Dashboard({
     setDateKey(format(addDays(parsed, days), "yyyy-MM-dd"))
   }
 
+  const dayMenu = (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Day options"
+        className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white data-[popup-open]:bg-card-hover data-[popup-open]:text-white"
+      >
+        <MoreHorizontal className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuItem onClick={toggleSkipped}>
+          {isSkipped ? <RotateCcw /> : <CalendarOff />}
+          <span className="flex flex-col">
+            <span className="font-medium">{isSkipped ? "Include this day" : "Skip this day"}</span>
+            <span className="text-xs text-muted-foreground">
+              {isSkipped ? "Count it in weekly totals" : "Exclude from weekly totals"}
+            </span>
+          </span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <header>
@@ -173,15 +221,47 @@ export function Dashboard({
             >
               <ChevronRight className="size-4" />
             </button>
+            <div className="ml-1">{dayMenu}</div>
           </div>
         </div>
         {/* Mobile: title + day navigator pill */}
         <div className="flex flex-col gap-4 md:hidden">
-          <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
+          <div className="flex items-center justify-between gap-2">
+            <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
+            {dayMenu}
+          </div>
           <DayNavigator date={dateKey} onDateChange={setDateKey} />
         </div>
       </header>
 
+      {isSkipped ? (
+        <div className="flex flex-col items-center gap-4 rounded-xl border border-border bg-card px-6 py-14 text-center">
+          <div className="flex size-12 items-center justify-center rounded-full bg-card-hover text-muted-foreground">
+            <CalendarOff className="size-6" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-lg font-bold">Day skipped</p>
+            <p className="max-w-md text-pretty text-sm text-muted-foreground">
+              This day isn&apos;t counting toward your weekly totals. Any food you&apos;ve logged is saved
+              and will reappear as soon as you include the day again.
+            </p>
+            {list.length > 0 ? (
+              <p className="mt-1 text-xs text-faint">
+                {list.length} {list.length === 1 ? "entry" : "entries"} hidden
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            onClick={toggleSkipped}
+            className="mt-1 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:opacity-90"
+          >
+            <RotateCcw className="size-4" />
+            Include this day
+          </button>
+        </div>
+      ) : (
+        <>
       <DaySummary
         totals={totals}
         targetCalories={profile?.targetCalories ?? null}
@@ -227,6 +307,8 @@ export function Dashboard({
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   )
 }

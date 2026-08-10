@@ -147,8 +147,8 @@ export async function createFood(input: FoodInput): Promise<FoodDTO> {
   return serialize(row)
 }
 
-export async function updateFood(id: number, input: FoodInput) {
-  await db
+export async function updateFood(id: number, input: FoodInput): Promise<FoodDTO> {
+  const [row] = await db
     .update(foods)
     .set({
       name: input.name.trim(),
@@ -176,8 +176,10 @@ export async function updateFood(id: number, input: FoodInput) {
       infoUrl: input.infoUrl?.trim() || null,
     })
     .where(eq(foods.id, id))
+    .returning()
   revalidatePath("/foods")
   revalidatePath("/")
+  return serialize(row)
 }
 
 export async function deleteFood(id: number) {

@@ -69,7 +69,7 @@ type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
   food: FoodDTO | null
-  onSaved: () => void
+  onSaved: (food: FoodDTO) => void
 }
 
 const empty = {
@@ -454,13 +454,15 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
     }
     setSaving(true)
     void (async () => {
+      let savedFood: FoodDTO
       try {
         if (food) {
-          await updateFood(food.id, input)
+          const updated = await updateFood(food.id, input)
           // Update favourite status if it changed
           if (isFavourite !== food.favourite) {
             await toggleFavourite(food.id, isFavourite)
           }
+          savedFood = { ...updated, favourite: isFavourite }
           toast.success("Food updated.")
         } else {
           const createdFood = await createFood(input)
@@ -468,6 +470,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
           if (isFavourite && createdFood) {
             await toggleFavourite(createdFood.id, true)
           }
+          savedFood = { ...createdFood, favourite: isFavourite }
           toast.success("Food added to your library.")
         }
       } catch (err) {
@@ -480,7 +483,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
       // can never carry over to the next food opened in this dialog instance.
       setSaving(false)
       onOpenChange(false)
-      onSaved()
+      onSaved(savedFood)
     })()
   }
 

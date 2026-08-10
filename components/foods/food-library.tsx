@@ -1,7 +1,6 @@
 "use client"
 
 import { useMemo, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { deleteFood, toggleFavourite } from "@/app/actions/foods"
 import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
@@ -40,22 +39,21 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 ]
 
 export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: ProfileDTO | null }) {
-  const router = useRouter()
+  const [items, setItems] = useState<FoodDTO[]>(foods)
   const [query, setQuery] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<FoodDTO | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>("name-asc")
   const [filter, setFilter] = useState<FilterKey>("all")
-  const [favOverrides, setFavOverrides] = useState<Record<number, boolean>>({})
   const [, startTransition] = useTransition()
 
-  const isFavourite = (food: FoodDTO) => favOverrides[food.id] ?? food.favourite
+  const isFavourite = (food: FoodDTO) => food.favourite
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    let result = foods
+    let result = items
     if (q) {
-      result = foods.filter((f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q))
+      result = items.filter((f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q))
     }
     if (filter !== "all") {
       result = result.filter((f) => {
@@ -122,7 +120,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
       }
     })
     return sorted
-  }, [foods, query, sortKey, filter, profile])
+  }, [items, query, sortKey, filter, profile])
 
   function openNew() {
     setEditing(null)
@@ -134,22 +132,41 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
     setDialogOpen(true)
   }
 
+  function handleSaved(food: FoodDTO) {
+    setItems((prev) => {
+      const exists = prev.some((f) => f.id === food.id)
+      if (exists) return prev.map((f) => (f.id === food.id ? food : f))
+      return [food, ...prev]
+    })
+  }
+
   function handleDelete(food: FoodDTO) {
     if (!confirm(`Delete "${food.name}" from your library? This won't affect meals already logged.`)) return
+    // Remove immediately so the list updates in place without a full reload.
+    setItems((prev) => prev.filter((f) => f.id !== food.id))
     startTransition(async () => {
-      await deleteFood(food.id)
-      toast.success("Food deleted.")
-      router.refresh()
+      try {
+        await deleteFood(food.id)
+        toast.success("Food deleted.")
+      } catch {
+        // Roll back on failure.
+        setItems((prev) => [...prev, food])
+        toast.error("Could not delete food.")
+      }
     })
   }
 
   function handleToggleFavourite(food: FoodDTO) {
     const next = !isFavourite(food)
-    setFavOverrides((prev) => ({ ...prev, [food.id]: next }))
+    setItems((prev) => prev.map((f) => (f.id === food.id ? { ...f, favourite: next } : f)))
     startTransition(async () => {
-      await toggleFavourite(food.id, next)
-      toast.success(next ? `Added "${food.name}" to favourites.` : `Removed "${food.name}" from favourites.`)
-      router.refresh()
+      try {
+        await toggleFavourite(food.id, next)
+        toast.success(next ? `Added "${food.name}" to favourites.` : `Removed "${food.name}" from favourites.`)
+      } catch {
+        setItems((prev) => prev.map((f) => (f.id === food.id ? { ...f, favourite: !next } : f)))
+        toast.error("Could not update favourite.")
+      }
     })
   }
 
@@ -201,7 +218,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
         }
       >
         <ArrowUpDown className="size-3.5" />
-        Sort · {filtered.length} {foods.length === 1 ? "food" : "foods"}
+        Sort · {filtered.length} {items.length === 1 ? "food" : "foods"}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
@@ -273,7 +290,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
       </div>
 
       {/* Filter chips + sort */}
-      {foods.length > 0 && (
+      {items.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {FILTERS.map((f) => {
             const active = filter === f.key
@@ -297,7 +314,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
         </div>
       )}
 
-      {foods.length === 0 ? (
+      {items.length === 0 ? (
         <Empty className="border border-dashed">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -547,7 +564,7 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
         </>
       )}
 
-      <FoodFormDialog open={dialogOpen} onOpenChange={setDialogOpen} food={editing} onSaved={() => router.refresh()} />
+      <FoodFormDialog open={dialogOpen} onOpenChange={setDialogOpen} food={editing} onSaved={handleSaved} />
     </div>
   )
 }

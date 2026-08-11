@@ -2,10 +2,11 @@
 
 import { db } from "@/lib/db"
 import { entries, foods } from "@/lib/db/schema"
-import { asc, desc, eq, isNotNull } from "drizzle-orm"
+import { and, asc, desc, eq, isNotNull } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
 import type { FoodDTO } from "@/lib/types"
+import { requireUserId } from "@/lib/session"
 
 function serialize(r: typeof foods.$inferSelect): FoodDTO {
   return {
@@ -38,22 +39,29 @@ function serialize(r: typeof foods.$inferSelect): FoodDTO {
 }
 
 export async function getFoods(): Promise<FoodDTO[]> {
-  const rows = await db.select().from(foods).orderBy(asc(foods.name))
+  const userId = await requireUserId()
+  const rows = await db.select().from(foods).where(eq(foods.userId, userId)).orderBy(asc(foods.name))
   return rows.map(serialize)
 }
 
 export async function getFoodById(id: number): Promise<FoodDTO | null> {
-  const rows = await db.select().from(foods).where(eq(foods.id, id)).limit(1)
+  const userId = await requireUserId()
+  const rows = await db
+    .select()
+    .from(foods)
+    .where(and(eq(foods.id, id), eq(foods.userId, userId)))
+    .limit(1)
   return rows[0] ? serialize(rows[0]) : null
 }
 
 // The N most recently logged library foods (deduped by food, newest first).
 export async function getRecentFoods(limit = 10): Promise<FoodDTO[]> {
+  const userId = await requireUserId()
   const rows = await db
     .select({ food: foods, createdAt: entries.createdAt })
     .from(entries)
     .innerJoin(foods, eq(entries.foodId, foods.id))
-    .where(isNotNull(entries.foodId))
+    .where(and(eq(entries.userId, userId), isNotNull(entries.foodId)))
     .orderBy(desc(entries.createdAt))
     .limit(200)
 
@@ -70,10 +78,11 @@ export async function getRecentFoods(limit = 10): Promise<FoodDTO[]> {
 
 // Foods the user has explicitly tagged as favourites, ordered by name.
 export async function getFavouriteFoods(limit = 20): Promise<FoodDTO[]> {
+  const userId = await requireUserId()
   const rows = await db
     .select()
     .from(foods)
-    .where(eq(foods.favourite, true))
+    .where(and(eq(foods.userId, userId), eq(foods.favourite, true)))
     .orderBy(asc(foods.name))
     .limit(limit)
 
@@ -82,7 +91,11 @@ export async function getFavouriteFoods(limit = 20): Promise<FoodDTO[]> {
 
 // Toggle whether a library food is tagged as a favourite.
 export async function toggleFavourite(id: number, favourite: boolean) {
-  await db.update(foods).set({ favourite }).where(eq(foods.id, id))
+  const userId = await requireUserId()
+  await db
+    .update(foods)
+    .set({ favourite })
+    .where(and(eq(foods.id, id), eq(foods.userId, userId)))
   revalidatePath("/foods")
   revalidatePath("/")
 }
@@ -114,9 +127,11 @@ export type FoodInput = {
 }
 
 export async function createFood(input: FoodInput): Promise<FoodDTO> {
+  const userId = await requireUserId()
   const [row] = await db
     .insert(foods)
     .values({
+      userId,
       name: input.name.trim(),
       brand: input.brand?.trim() || null,
       servingSize: input.servingSize?.trim() || null,
@@ -148,6 +163,7 @@ export async function createFood(input: FoodInput): Promise<FoodDTO> {
 }
 
 export async function updateFood(id: number, input: FoodInput): Promise<FoodDTO> {
+  const userId = await requireUserId()
   const [row] = await db
     .update(foods)
     .set({
@@ -175,15 +191,17 @@ export async function updateFood(id: number, input: FoodInput): Promise<FoodDTO>
       imageUrl: input.imageUrl || null,
       infoUrl: input.infoUrl?.trim() || null,
     })
-    .where(eq(foods.id, id))
+    .where(and(eq(foods.id, id), eq(foods.userId, userId)))
     .returning()
+  if (!row) throw new Error("Food not found")
   revalidatePath("/foods")
   revalidatePath("/")
   return serialize(row)
 }
 
 export async function deleteFood(id: number) {
-  await db.delete(foods).where(eq(foods.id, id))
+  const userId = await requireUserId()
+  await db.delete(foods).where(and(eq(foods.id, id), eq(foods.userId, userId)))
   revalidatePath("/foods")
   revalidatePath("/")
 }

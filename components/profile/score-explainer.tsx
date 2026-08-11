@@ -1,3 +1,4 @@
+import { Dna, Flame } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { GRADE_STYLES } from "@/components/dashboard/protein-score-badges"
 import type { ProteinGrade } from "@/lib/nutrition"
@@ -56,7 +57,12 @@ export function ScoreExplainer() {
       <CardContent className="flex flex-col gap-6 p-0">
         <div className="flex flex-col gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Protein score</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Dna className="size-4" aria-hidden="true" />
+              </span>
+              Protein score
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Measures how much protein a food delivers relative to its energy, calculated as grams of protein per
               100 kilocalories. A higher grade means more protein per calorie — useful for hitting your protein
@@ -68,7 +74,12 @@ export function ScoreExplainer() {
 
         <div className="flex flex-col gap-3">
           <div>
-            <h3 className="text-sm font-semibold text-foreground">Calorie score</h3>
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-foreground">
+              <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Flame className="size-4" aria-hidden="true" />
+              </span>
+              Calorie score
+            </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Measures how energy-dense a food is, calculated as kilocalories per 100g (or 100ml) of serving. A
               lower grade means fewer calories for the same amount of food — helpful for staying full while managing

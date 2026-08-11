@@ -550,8 +550,8 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
                             fat={food.fat}
                           />
                           <div className="flex shrink-0 items-center gap-1.5">
-                            <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                             <CalorieDensityBadge kcal={caloriesKcal} servingSize={food.servingSize} />
+                            <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                           </div>
                         </div>
                       </div>

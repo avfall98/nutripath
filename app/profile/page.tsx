@@ -1,5 +1,6 @@
 import { ProfileForm } from "@/components/profile/profile-form"
 import { MealGroupsManager } from "@/components/meals/meal-groups-manager"
+import { ScoreExplainer } from "@/components/profile/score-explainer"
 import { InstallAppButton } from "@/components/pwa/install-app"
 import { Card } from "@/components/ui/card"
 import { getProfile } from "@/app/actions/profile"
@@ -40,6 +41,8 @@ export default async function ProfilePage() {
         </div>
         <InstallAppButton className="self-start sm:self-auto" />
       </Card>
+
+      <ScoreExplainer />
     </main>
   )
 }

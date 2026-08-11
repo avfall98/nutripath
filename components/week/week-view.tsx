@@ -44,7 +44,7 @@ type FoodTotals = {
   fat: number
 }
 
-export function WeekView({ profile }: { profile: ProfileDTO }) {
+export function WeekView({ profile }: { profile: ProfileDTO | null }) {
   const [anchor, setAnchor] = useState(() => new Date())
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
@@ -161,8 +161,8 @@ export function WeekView({ profile }: { profile: ProfileDTO }) {
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
   }, [entries, skippedKeys])
 
-  const calTarget = profile.targetCalories ?? null
-  const proteinTarget = profile.targetProtein ?? null
+  const calTarget = profile?.targetCalories ?? null
+  const proteinTarget = profile?.targetProtein ?? null
   const ofTargetCal = calTarget ? Math.round((avg.kcal / calTarget) * 100) : null
   const ofTargetProtein = proteinTarget ? Math.round((avg.protein / proteinTarget) * 100) : null
 

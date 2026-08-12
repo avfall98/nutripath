@@ -2,16 +2,45 @@ import type { NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 import { NextResponse } from "next/server"
 
-// This project inherited a stale `AUTH_REDIRECT_PROXY_URL` from a previous auth
-// setup (Neon Auth / Supabase). Auth.js auto-adopts that env var as its OAuth
-// `redirectProxyUrl` (see @auth/core setEnvDefaults), which rewrites the Google
-// `redirect_uri` to an origin that isn't registered for this app. In
-// production that makes the OAuth callback fail with `error=Configuration`
-// after sign-in. This is a single-deployment app that does not use a redirect
-// proxy, so we clear the leftover value before Auth.js ever reads it. This
-// module is imported by both the middleware (edge) and the server auth
-// instance, so the cleanup applies everywhere.
-delete (process.env as Record<string, string | undefined>).AUTH_REDIRECT_PROXY_URL
+/**
+ * Resolve the OAuth redirect proxy URL.
+ *
+ * Google (and OAuth providers generally) only allow pre-registered
+ * `redirect_uri`s. Preview and sandbox deployments have dynamic URLs that can
+ * never all be registered, so every OAuth callback must route through ONE
+ * stable, registered URL — the canonical production deployment — using Auth.js's
+ * redirect-proxy feature. Auth.js appends `/callback/google` to this value, so
+ * it must be the auth base path, e.g. `https://your-app.vercel.app/api/auth`,
+ * and the resulting callback URL must be listed in the Google console.
+ *
+ * We derive it from `VERCEL_PROJECT_PRODUCTION_URL` (injected by Vercel and
+ * always the canonical production domain) so it is correct on every deployment
+ * without hardcoding. We fall back to `AUTH_REDIRECT_PROXY_URL` only if it is a
+ * valid absolute URL — a malformed value would otherwise make Auth.js throw and
+ * surface as `error=Configuration`. The stale value this project inherited from
+ * a previous Neon/Supabase auth setup pointed off-domain, which is exactly what
+ * broke the production callback.
+ */
+function resolveRedirectProxyUrl(): string | undefined {
+  const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  const candidates = [
+    productionUrl ? `https://${productionUrl}/api/auth` : undefined,
+    process.env.AUTH_REDIRECT_PROXY_URL,
+  ]
+  for (const candidate of candidates) {
+    if (!candidate) continue
+    try {
+      // Must be a valid absolute URL or @auth/core throws during init.
+      new URL(candidate)
+      return candidate
+    } catch {
+      // Ignore a malformed candidate and try the next one.
+    }
+  }
+  return undefined
+}
+
+const redirectProxyUrl = resolveRedirectProxyUrl()
 
 /**
  * Edge-safe Auth.js config shared by the middleware and the full server auth
@@ -28,6 +57,12 @@ export const authConfig = {
   // breaks the sign-in redirect inside the preview iframe (and any deployment
   // behind a proxy).
   trustHost: true,
+  // Route OAuth callbacks through the canonical (registered) production URL so
+  // preview/sandbox deployments can complete sign-in. On the production
+  // deployment itself this is a no-op (Auth.js detects it is already on the
+  // proxy origin and uses the local callback). Undefined when no canonical URL
+  // is known (e.g. plain `next dev`), in which case the local callback is used.
+  redirectProxyUrl,
   pages: {
     signIn: "/signin",
   },

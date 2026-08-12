@@ -13,19 +13,26 @@ import { NextResponse } from "next/server"
  * it must be the auth base path, e.g. `https://your-app.vercel.app/api/auth`,
  * and the resulting callback URL must be listed in the Google console.
  *
- * We derive it from `VERCEL_PROJECT_PRODUCTION_URL` (injected by Vercel and
- * always the canonical production domain) so it is correct on every deployment
- * without hardcoding. We fall back to `AUTH_REDIRECT_PROXY_URL` only if it is a
- * valid absolute URL — a malformed value would otherwise make Auth.js throw and
- * surface as `error=Configuration`. The stale value this project inherited from
- * a previous Neon/Supabase auth setup pointed off-domain, which is exactly what
- * broke the production callback.
+ * CRITICAL: this value must resolve to the SAME origin on every deployment —
+ * previews AND the production/proxy deployment itself. Auth.js decides whether a
+ * deployment is "on the proxy" by comparing this origin to the request origin
+ * (see @auth/core init.ts `isOnRedirectProxy`). If production doesn't have it
+ * set, it fails to recognize the proxied Google callback, can't find the
+ * sign-in cookies (they live on the preview domain), and throws
+ * `error=Configuration`.
+ *
+ * We prefer the explicit `AUTH_REDIRECT_PROXY_URL` env var because it is the
+ * known-correct, Google-registered origin. We fall back to
+ * `VERCEL_PROJECT_PRODUCTION_URL` only when the env var is absent — note that
+ * fallback can resolve to a different alias than the one registered with Google,
+ * so the env var should be set on ALL environments. Invalid candidates are
+ * skipped so a malformed value can't make Auth.js throw during init.
  */
 function resolveRedirectProxyUrl(): string | undefined {
   const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   const candidates = [
-    productionUrl ? `https://${productionUrl}/api/auth` : undefined,
     process.env.AUTH_REDIRECT_PROXY_URL,
+    productionUrl ? `https://${productionUrl}/api/auth` : undefined,
   ]
   for (const candidate of candidates) {
     if (!candidate) continue

@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -53,12 +54,14 @@ function UserMenu({ user, align = "end" }: { user: NavUser; align?: "end" | "cen
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-56">
-        <DropdownMenuLabel className="flex flex-col gap-0.5">
-          {user.name ? <span className="truncate font-bold">{user.name}</span> : null}
-          {user.email ? (
-            <span className="truncate text-xs font-normal text-muted-foreground">{user.email}</span>
-          ) : null}
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="flex flex-col gap-0.5">
+            {user.name ? <span className="truncate font-bold">{user.name}</span> : null}
+            {user.email ? (
+              <span className="truncate text-xs font-normal text-muted-foreground">{user.email}</span>
+            ) : null}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer gap-2"

@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
+import { NextResponse } from "next/server"
 
 // This project inherited a stale `AUTH_REDIRECT_PROXY_URL` from a previous auth
 // setup (Neon Auth / Supabase). Auth.js auto-adopts that env var as its OAuth
@@ -38,10 +39,17 @@ export const authConfig = {
       const isLoggedIn = !!auth?.user
       const isOnSignin = nextUrl.pathname === "/signin"
       if (isOnSignin) {
-        if (isLoggedIn) return Response.redirect(new URL("/", nextUrl))
+        if (isLoggedIn) return NextResponse.redirect(new URL("/", nextUrl))
         return true
       }
-      return isLoggedIn
+      if (isLoggedIn) return true
+      // Redirect unauthenticated visitors to a clean, relative /signin. We do
+      // NOT let Auth.js apply its default behavior of appending
+      // `?callbackUrl=<absolute request URL>`: behind the preview/proxy the
+      // request host is `localhost`, so that absolute value points off-origin
+      // and the preview iframe blocks it. The sign-in flow always returns the
+      // user to "/" itself, so the callbackUrl is unnecessary.
+      return NextResponse.redirect(new URL("/signin", nextUrl))
     },
     // Expose the user id on the session (JWT strategy stores it on token.sub).
     session({ session, token }) {

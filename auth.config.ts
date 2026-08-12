@@ -1,6 +1,17 @@
 import type { NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 
+// This project inherited a stale `AUTH_REDIRECT_PROXY_URL` from a previous auth
+// setup (Neon Auth / Supabase). Auth.js auto-adopts that env var as its OAuth
+// `redirectProxyUrl` (see @auth/core setEnvDefaults), which rewrites the Google
+// `redirect_uri` to an origin that isn't registered for this app. In
+// production that makes the OAuth callback fail with `error=Configuration`
+// after sign-in. This is a single-deployment app that does not use a redirect
+// proxy, so we clear the leftover value before Auth.js ever reads it. This
+// module is imported by both the middleware (edge) and the server auth
+// instance, so the cleanup applies everywhere.
+delete (process.env as Record<string, string | undefined>).AUTH_REDIRECT_PROXY_URL
+
 /**
  * Edge-safe Auth.js config shared by the middleware and the full server auth
  * instance. Keep it free of Node-only deps (no db/adapter here) so it can run

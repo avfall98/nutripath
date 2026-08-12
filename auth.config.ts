@@ -21,18 +21,29 @@ import { NextResponse } from "next/server"
  * sign-in cookies (they live on the preview domain), and throws
  * `error=Configuration`.
  *
- * We prefer the explicit `AUTH_REDIRECT_PROXY_URL` env var because it is the
- * known-correct, Google-registered origin. We fall back to
- * `VERCEL_PROJECT_PRODUCTION_URL` only when the env var is absent — note that
- * fallback can resolve to a different alias than the one registered with Google,
- * so the env var should be set on ALL environments. Invalid candidates are
- * skipped so a malformed value can't make Auth.js throw during init.
+ * Resolution order:
+ *   1. `AUTH_REDIRECT_PROXY_URL` env var — the known-correct, Google-registered
+ *      origin (set on Production and Preview in Vercel).
+ *   2. `VERCEL_PROJECT_PRODUCTION_URL` — Vercel's canonical production domain,
+ *      injected at runtime on every deployment.
+ *   3. `CANONICAL_AUTH_PROXY_URL` — a hardcoded last resort so environments that
+ *      load NONE of the above still proxy correctly. This matters for the v0
+ *      sandbox / `next dev`, whose local env contains neither var; without it
+ *      `redirectProxyUrl` would be undefined there, the sandbox's own
+ *      unregistered callback URL would be sent to Google, and sign-in would
+ *      fail with `redirect_uri_mismatch`.
+ *
+ * Invalid candidates are skipped so a malformed value can't make Auth.js throw
+ * (`error=Configuration`) during init.
  */
+const CANONICAL_AUTH_PROXY_URL = "https://nutripath-alpha-nine.vercel.app/api/auth"
+
 function resolveRedirectProxyUrl(): string | undefined {
   const productionUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
   const candidates = [
     process.env.AUTH_REDIRECT_PROXY_URL,
     productionUrl ? `https://${productionUrl}/api/auth` : undefined,
+    CANONICAL_AUTH_PROXY_URL,
   ]
   for (const candidate of candidates) {
     if (!candidate) continue
@@ -67,8 +78,8 @@ export const authConfig = {
   // Route OAuth callbacks through the canonical (registered) production URL so
   // preview/sandbox deployments can complete sign-in. On the production
   // deployment itself this is a no-op (Auth.js detects it is already on the
-  // proxy origin and uses the local callback). Undefined when no canonical URL
-  // is known (e.g. plain `next dev`), in which case the local callback is used.
+  // proxy origin and uses the local callback). `resolveRedirectProxyUrl` always
+  // returns the canonical URL, so this is defined in every environment.
   redirectProxyUrl,
   pages: {
     signIn: "/signin",

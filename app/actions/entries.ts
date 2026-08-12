@@ -1,12 +1,13 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { entries, foods, skippedDays } from "@/lib/db/schema"
+import { entries, foods, mealGroups, skippedDays } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
 import { parseServingUnit, parseServingWeight } from "@/lib/nutrition"
 import type { EntryDTO } from "@/lib/types"
+import { requireUserId } from "@/lib/session"
 
 function serialize(r: typeof entries.$inferSelect): EntryDTO {
   return {
@@ -27,21 +28,44 @@ function serialize(r: typeof entries.$inferSelect): EntryDTO {
   }
 }
 
+// Verify a food belongs to the current user; returns the row or throws.
+async function requireOwnedFood(userId: string, foodId: number) {
+  const [food] = await db
+    .select()
+    .from(foods)
+    .where(and(eq(foods.id, foodId), eq(foods.userId, userId)))
+    .limit(1)
+  if (!food) throw new Error("Food not found")
+  return food
+}
+
+// Verify a meal group belongs to the current user; throws if not.
+async function requireOwnedMealGroup(userId: string, mealGroupId: number) {
+  const [group] = await db
+    .select({ id: mealGroups.id })
+    .from(mealGroups)
+    .where(and(eq(mealGroups.id, mealGroupId), eq(mealGroups.userId, userId)))
+    .limit(1)
+  if (!group) throw new Error("Meal group not found")
+}
+
 export async function getEntriesByDate(dateKey: string): Promise<EntryDTO[]> {
+  const userId = await requireUserId()
   const rows = await db
     .select()
     .from(entries)
-    .where(eq(entries.entryDate, dateKey))
+    .where(and(eq(entries.userId, userId), eq(entries.entryDate, dateKey)))
     .orderBy(asc(entries.createdAt))
   return rows.map(serialize)
 }
 
 export async function getEntriesInRange(startKey: string, endKey: string): Promise<EntryDTO[]> {
+  const userId = await requireUserId()
   const rows = await db
     .select({ entry: entries, servingSize: foods.servingSize })
     .from(entries)
-    .leftJoin(foods, eq(entries.foodId, foods.id))
-    .where(and(gte(entries.entryDate, startKey), lte(entries.entryDate, endKey)))
+    .leftJoin(foods, and(eq(entries.foodId, foods.id), eq(foods.userId, userId)))
+    .where(and(eq(entries.userId, userId), gte(entries.entryDate, startKey), lte(entries.entryDate, endKey)))
     .orderBy(asc(entries.entryDate), asc(entries.createdAt))
   return rows.map(({ entry, servingSize }) => {
     // Prefer the entry's own serving size (custom entries); fall back to the linked food's.
@@ -63,9 +87,11 @@ export async function addEntryFromFood(input: {
   mealGroupName: string
   quantity: number
 }) {
-  const [food] = await db.select().from(foods).where(eq(foods.id, input.foodId)).limit(1)
-  if (!food) throw new Error("Food not found")
+  const userId = await requireUserId()
+  const food = await requireOwnedFood(userId, input.foodId)
+  await requireOwnedMealGroup(userId, input.mealGroupId)
   await db.insert(entries).values({
+    userId,
     entryDate: input.dateKey,
     mealGroupId: input.mealGroupId,
     mealGroupName: input.mealGroupName,
@@ -93,7 +119,10 @@ export async function addQuickEntry(input: {
   quantity: number
   servingSize?: string | null
 }) {
+  const userId = await requireUserId()
+  await requireOwnedMealGroup(userId, input.mealGroupId)
   await db.insert(entries).values({
+    userId,
     entryDate: input.dateKey,
     mealGroupId: input.mealGroupId,
     mealGroupName: input.mealGroupName,
@@ -110,18 +139,21 @@ export async function addQuickEntry(input: {
 }
 
 export async function updateEntryQuantity(id: number, quantity: number) {
+  const userId = await requireUserId()
   await db
     .update(entries)
     .set({ quantity: toNumeric(quantity) ?? "1" })
-    .where(eq(entries.id, id))
+    .where(and(eq(entries.id, id), eq(entries.userId, userId)))
   revalidatePath("/")
 }
 
 export async function moveEntry(id: number, mealGroupId: number, mealGroupName: string) {
+  const userId = await requireUserId()
+  await requireOwnedMealGroup(userId, mealGroupId)
   await db
     .update(entries)
     .set({ mealGroupId, mealGroupName })
-    .where(eq(entries.id, id))
+    .where(and(eq(entries.id, id), eq(entries.userId, userId)))
   revalidatePath("/")
 }
 
@@ -129,9 +161,9 @@ export async function updateEntry(id: number, input: {
   foodId: number
   quantity: number
 }) {
-  const [food] = await db.select().from(foods).where(eq(foods.id, input.foodId)).limit(1)
-  if (!food) throw new Error("Food not found")
-  
+  const userId = await requireUserId()
+  const food = await requireOwnedFood(userId, input.foodId)
+
   await db
     .update(entries)
     .set({
@@ -143,7 +175,7 @@ export async function updateEntry(id: number, input: {
       fat: food.fat,
       quantity: toNumeric(input.quantity) ?? "1",
     })
-    .where(eq(entries.id, id))
+    .where(and(eq(entries.id, id), eq(entries.userId, userId)))
   revalidatePath("/")
 }
 
@@ -157,6 +189,7 @@ export async function updateQuickEntry(id: number, input: {
   quantity: number
   servingSize?: string | null
 }) {
+  const userId = await requireUserId()
   await db
     .update(entries)
     .set({
@@ -169,41 +202,49 @@ export async function updateQuickEntry(id: number, input: {
       fat: toNumeric(input.fat),
       quantity: toNumeric(input.quantity) ?? "1",
     })
-    .where(eq(entries.id, id))
+    .where(and(eq(entries.id, id), eq(entries.userId, userId)))
   revalidatePath("/")
 }
 
 export async function deleteEntry(id: number) {
-  await db.delete(entries).where(eq(entries.id, id))
+  const userId = await requireUserId()
+  await db.delete(entries).where(and(eq(entries.id, id), eq(entries.userId, userId)))
   revalidatePath("/")
 }
 
 // Whether a single day is marked as skipped (excluded from weekly totals).
 export async function isDaySkipped(dateKey: string): Promise<boolean> {
+  const userId = await requireUserId()
   const [row] = await db
     .select({ entryDate: skippedDays.entryDate })
     .from(skippedDays)
-    .where(eq(skippedDays.entryDate, dateKey))
+    .where(and(eq(skippedDays.userId, userId), eq(skippedDays.entryDate, dateKey)))
     .limit(1)
   return !!row
 }
 
 // Return the set of skipped dates within an inclusive range.
 export async function getSkippedDaysInRange(startKey: string, endKey: string): Promise<string[]> {
+  const userId = await requireUserId()
   const rows = await db
     .select({ entryDate: skippedDays.entryDate })
     .from(skippedDays)
-    .where(and(gte(skippedDays.entryDate, startKey), lte(skippedDays.entryDate, endKey)))
+    .where(
+      and(eq(skippedDays.userId, userId), gte(skippedDays.entryDate, startKey), lte(skippedDays.entryDate, endKey)),
+    )
   return rows.map((r) => r.entryDate)
 }
 
 // Toggle a day's skipped state. Skipping does NOT delete any food entries — it
 // only excludes the day from weekly totals until it's included again.
 export async function setDaySkipped(dateKey: string, skipped: boolean) {
+  const userId = await requireUserId()
   if (skipped) {
-    await db.insert(skippedDays).values({ entryDate: dateKey }).onConflictDoNothing()
+    await db.insert(skippedDays).values({ userId, entryDate: dateKey }).onConflictDoNothing()
   } else {
-    await db.delete(skippedDays).where(eq(skippedDays.entryDate, dateKey))
+    await db
+      .delete(skippedDays)
+      .where(and(eq(skippedDays.userId, userId), eq(skippedDays.entryDate, dateKey)))
   }
   revalidatePath("/")
   revalidatePath("/week")

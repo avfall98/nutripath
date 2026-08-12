@@ -6,9 +6,11 @@ import { eq } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, toNumeric } from "@/lib/format"
 import type { ProfileDTO } from "@/lib/types"
+import { requireUserId } from "@/lib/session"
 
 export async function getProfile(): Promise<ProfileDTO | null> {
-  const rows = await db.select().from(profile).where(eq(profile.id, 1)).limit(1)
+  const userId = await requireUserId()
+  const rows = await db.select().from(profile).where(eq(profile.userId, userId)).limit(1)
   const p = rows[0]
   if (!p) return null
   return {
@@ -35,8 +37,9 @@ export type SaveProfileInput = {
 }
 
 export async function saveProfile(input: SaveProfileInput) {
+  const userId = await requireUserId()
+
   const values = {
-    id: 1,
     age: input.age ?? null,
     sex: input.sex ?? null,
     heightCm: toNumeric(input.heightCm),
@@ -48,23 +51,17 @@ export async function saveProfile(input: SaveProfileInput) {
     updatedAt: new Date(),
   }
 
-  await db
-    .insert(profile)
-    .values(values)
-    .onConflictDoUpdate({
-      target: profile.id,
-      set: {
-        age: values.age,
-        sex: values.sex,
-        heightCm: values.heightCm,
-        weightKg: values.weightKg,
-        targetWeightKg: values.targetWeightKg,
-        targetCalories: values.targetCalories,
-        targetProtein: values.targetProtein,
-        activityLevel: values.activityLevel,
-        updatedAt: values.updatedAt,
-      },
-    })
+  // Manual upsert scoped to the current user. Avoids depending on a unique
+  // constraint that only exists after migration 2, and never trusts a client id.
+  const updated = await db
+    .update(profile)
+    .set(values)
+    .where(eq(profile.userId, userId))
+    .returning({ userId: profile.userId })
+
+  if (updated.length === 0) {
+    await db.insert(profile).values({ userId, ...values })
+  }
 
   revalidatePath("/")
   revalidatePath("/profile")

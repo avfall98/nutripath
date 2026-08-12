@@ -2,6 +2,7 @@ import { Analytics } from "@vercel/analytics/next"
 import type { Metadata, Viewport } from "next"
 import { Instrument_Sans, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
+import { auth } from "@/auth"
 import { AppNav } from "@/components/app-nav"
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register"
 import { InstallBanner } from "@/components/pwa/install-app"
@@ -33,15 +34,20 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const session = await auth()
+  const user = session?.user
+    ? { name: session.user.name, email: session.user.email, image: session.user.image }
+    : null
+
   return (
     <html lang="en" className={`dark bg-background ${instrumentSans.variable} ${geistMono.variable}`}>
       <body className="font-sans antialiased pb-20 md:pb-0 md:pl-0 md:pt-16">
-        <AppNav />
+        <AppNav user={user} />
         {children}
         <InstallBanner />
         <ServiceWorkerRegister />

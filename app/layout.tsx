@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next"
 import { Instrument_Sans, Geist_Mono } from "next/font/google"
 import { Toaster } from "@/components/ui/sonner"
 import { auth } from "@/auth"
+import { isPreviewBypassEnabled } from "@/lib/preview-auth"
 import { AppNav } from "@/components/app-nav"
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register"
 import { InstallBanner } from "@/components/pwa/install-app"
@@ -42,7 +43,9 @@ export default async function RootLayout({
   const session = await auth()
   const user = session?.user
     ? { name: session.user.name, email: session.user.email, image: session.user.image }
-    : null
+    : isPreviewBypassEnabled()
+      ? { name: "Preview", email: null, image: null }
+      : null
 
   return (
     <html lang="en" className={`dark bg-background ${instrumentSans.variable} ${geistMono.variable}`}>

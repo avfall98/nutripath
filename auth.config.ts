@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth"
 import Google from "next-auth/providers/google"
 import { NextResponse } from "next/server"
+import { isPreviewBypassEnabled } from "@/lib/preview-auth"
 
 /**
  * Resolve the OAuth redirect proxy URL.
@@ -89,6 +90,12 @@ export const authConfig = {
     // Gate every route except the sign-in page. Returning false makes Auth.js
     // redirect the visitor to `pages.signIn`.
     authorized({ auth, request: { nextUrl } }) {
+      // Non-production preview bypass: let every route through without a real
+      // session so the app can be viewed without signing in.
+      if (isPreviewBypassEnabled()) {
+        if (nextUrl.pathname === "/signin") return NextResponse.redirect(new URL("/", nextUrl))
+        return true
+      }
       const isLoggedIn = !!auth?.user
       const isOnSignin = nextUrl.pathname === "/signin"
       if (isOnSignin) {

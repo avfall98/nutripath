@@ -11,6 +11,11 @@ import Google from "next-auth/providers/google"
  * AUTH_GOOGLE_SECRET from the environment automatically.
  */
 export const authConfig = {
+  // Trust the forwarded host headers from the Vercel/preview proxy. Without
+  // this, Auth.js falls back to `localhost` when building redirect URLs, which
+  // breaks the sign-in redirect inside the preview iframe (and any deployment
+  // behind a proxy).
+  trustHost: true,
   pages: {
     signIn: "/signin",
   },

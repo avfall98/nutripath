@@ -131,6 +131,7 @@ function StatCell({
   target,
   unit,
   index,
+  weekAvg,
 }: {
   label: string
   labelColor: string
@@ -138,6 +139,7 @@ function StatCell({
   target?: number | null
   unit: string
   index: number
+  weekAvg?: number | null
 }) {
   return (
     <div
@@ -161,6 +163,12 @@ function StatCell({
           <span className="ml-0.5 text-xs font-normal text-faint">{unit}</span>
         )}
       </span>
+      {weekAvg != null ? (
+        <span className="text-[11px] tabular-nums text-faint">
+          Week avg {round(weekAvg).toLocaleString()}
+          {unit === "g" ? "g" : unit}
+        </span>
+      ) : null}
     </div>
   )
 }
@@ -172,12 +180,14 @@ function StatCard({
   value,
   target,
   unit,
+  weekAvg,
 }: {
   label: string
   labelColor: string
   value: number
   target?: number | null
   unit: string
+  weekAvg?: number | null
 }) {
   return (
     <div className="flex flex-col gap-1.5 rounded-lg bg-card p-5 transition-colors hover:bg-card-hover">
@@ -195,8 +205,21 @@ function StatCard({
           <span className="ml-1 text-sm font-medium text-faint">{unit}</span>
         )}
       </span>
+      {weekAvg != null ? (
+        <span className="text-[13px] tabular-nums text-faint">
+          Week avg {round(weekAvg).toLocaleString()}
+          {unit === "g" ? "g" : unit}
+        </span>
+      ) : null}
     </div>
   )
+}
+
+export type WeekAverages = {
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
 }
 
 export function DaySummary({
@@ -205,12 +228,14 @@ export function DaySummary({
   targetProtein,
   mealGroups = [],
   servingWeightG = null,
+  weekAverages = null,
 }: {
   totals: DayTotals
   targetCalories: number | null
   targetProtein: number | null
   mealGroups?: GroupNutrition[]
   servingWeightG?: number | null
+  weekAverages?: WeekAverages | null
 }) {
   const caloriesKcal = Math.round(totals.calories / KJ_PER_KCAL)
   const calPct = targetCalories && targetCalories > 0 ? (caloriesKcal / targetCalories) * 100 : 0
@@ -307,10 +332,36 @@ export function DaySummary({
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <StatCard label="Calories" labelColor="var(--stat-calories)" value={caloriesKcal} target={targetCalories} unit=" kcal" />
-          <StatCard label="Protein" labelColor="var(--stat-protein)" value={totals.protein} target={targetProtein} unit="g" />
-          <StatCard label="Carbs" labelColor="var(--stat-carbs)" value={totals.carbs} unit="g" />
-          <StatCard label="Fat" labelColor="var(--stat-fat)" value={totals.fat} unit="g" />
+          <StatCard
+            label="Calories"
+            labelColor="var(--stat-calories)"
+            value={caloriesKcal}
+            target={targetCalories}
+            unit=" kcal"
+            weekAvg={weekAverages?.calories ?? null}
+          />
+          <StatCard
+            label="Protein"
+            labelColor="var(--stat-protein)"
+            value={totals.protein}
+            target={targetProtein}
+            unit="g"
+            weekAvg={weekAverages?.protein ?? null}
+          />
+          <StatCard
+            label="Carbs"
+            labelColor="var(--stat-carbs)"
+            value={totals.carbs}
+            unit="g"
+            weekAvg={weekAverages?.carbs ?? null}
+          />
+          <StatCard
+            label="Fat"
+            labelColor="var(--stat-fat)"
+            value={totals.fat}
+            unit="g"
+            weekAvg={weekAverages?.fat ?? null}
+          />
         </div>
       </div>
 
@@ -373,10 +424,40 @@ export function DaySummary({
 
           {/* Macro strip */}
           <div className="grid grid-cols-2 gap-y-4 border-t border-border pt-4 sm:grid-cols-4">
-            <StatCell index={0} label="Calories" labelColor="var(--stat-calories)" value={caloriesKcal} target={targetCalories} unit=" kcal" />
-            <StatCell index={1} label="Protein" labelColor="var(--stat-protein)" value={totals.protein} target={targetProtein} unit="g" />
-            <StatCell index={2} label="Carbs" labelColor="var(--stat-carbs)" value={totals.carbs} unit="g" />
-            <StatCell index={3} label="Fat" labelColor="var(--stat-fat)" value={totals.fat} unit="g" />
+            <StatCell
+              index={0}
+              label="Calories"
+              labelColor="var(--stat-calories)"
+              value={caloriesKcal}
+              target={targetCalories}
+              unit=" kcal"
+              weekAvg={weekAverages?.calories ?? null}
+            />
+            <StatCell
+              index={1}
+              label="Protein"
+              labelColor="var(--stat-protein)"
+              value={totals.protein}
+              target={targetProtein}
+              unit="g"
+              weekAvg={weekAverages?.protein ?? null}
+            />
+            <StatCell
+              index={2}
+              label="Carbs"
+              labelColor="var(--stat-carbs)"
+              value={totals.carbs}
+              unit="g"
+              weekAvg={weekAverages?.carbs ?? null}
+            />
+            <StatCell
+              index={3}
+              label="Fat"
+              labelColor="var(--stat-fat)"
+              value={totals.fat}
+              unit="g"
+              weekAvg={weekAverages?.fat ?? null}
+            />
           </div>
         </CardContent>
       </Card>

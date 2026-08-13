@@ -2,9 +2,9 @@
 
 import { useEffect, useMemo, useState, useTransition } from "react"
 import useSWR from "swr"
-import { addDays, format, isToday, parseISO } from "date-fns"
+import { addDays, endOfWeek, format, isToday, parseISO, startOfWeek } from "date-fns"
 import { ChevronLeft, ChevronRight, MoreHorizontal, CalendarOff, RotateCcw } from "lucide-react"
-import { getEntriesByDate, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
+import { getEntriesByDate, getEntriesInRange, getSkippedDaysInRange, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
 import { DaySummary } from "@/components/dashboard/day-summary"
 import { DayNavigator } from "@/components/dashboard/day-navigator"
@@ -17,6 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { parseServingWeight } from "@/lib/nutrition"
+
+const KJ_PER_KCAL = 4.184
 
 export function Dashboard({
   profile,
@@ -90,6 +92,55 @@ export function Dashboard({
       { calories: 0, protein: 0, carbs: 0, fat: 0 },
     )
   }, [list])
+
+  // Current week's (Mon–Sun) entries, used to show a daily average alongside each stat.
+  const weekStartKey = useMemo(() => format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"), [])
+  const weekEndKey = useMemo(() => format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"), [])
+
+  const { data: weekEntries } = useSWR<EntryDTO[]>(
+    ["week-entries", weekStartKey, weekEndKey],
+    () => getEntriesInRange(weekStartKey, weekEndKey),
+    { keepPreviousData: true },
+  )
+  const { data: weekSkippedDays } = useSWR<string[]>(
+    ["week-skipped", weekStartKey, weekEndKey],
+    () => getSkippedDaysInRange(weekStartKey, weekEndKey),
+    { keepPreviousData: true },
+  )
+
+  const weekAverages = useMemo(() => {
+    if (!weekEntries) return null
+    const skippedSet = new Set(weekSkippedDays ?? [])
+    const byDay = new Map<string, { kcal: number; protein: number; carbs: number; fat: number }>()
+    for (const e of weekEntries) {
+      if (skippedSet.has(e.entryDate)) continue
+      const q = e.quantity || 1
+      const day = byDay.get(e.entryDate) ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
+      day.kcal += (e.calories / KJ_PER_KCAL) * q
+      day.protein += e.protein * q
+      day.carbs += (e.carbs ?? 0) * q
+      day.fat += (e.fat ?? 0) * q
+      byDay.set(e.entryDate, day)
+    }
+    const days = [...byDay.values()]
+    if (days.length === 0) return null
+    const sums = days.reduce(
+      (acc, d) => ({
+        kcal: acc.kcal + d.kcal,
+        protein: acc.protein + d.protein,
+        carbs: acc.carbs + d.carbs,
+        fat: acc.fat + d.fat,
+      }),
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+    )
+    const n = days.length
+    return {
+      calories: sums.kcal / n,
+      protein: sums.protein / n,
+      carbs: sums.carbs / n,
+      fat: sums.fat / n,
+    }
+  }, [weekEntries, weekSkippedDays])
 
   // Total serving weight across the day, summed from each entry's food serving size.
   const totalServingWeight = useMemo(() => {
@@ -268,6 +319,7 @@ export function Dashboard({
         targetProtein={profile?.targetProtein ?? null}
         mealGroups={mealGroupNutrition}
         servingWeightG={totalServingWeight}
+        weekAverages={weekAverages}
       />
 
       <div className="flex flex-col gap-4">

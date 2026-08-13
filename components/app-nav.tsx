@@ -21,7 +21,6 @@ const links = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/week", label: "Week", icon: CalendarRange },
   { href: "/foods", label: "Foods", icon: Apple },
-  { href: "/profile", label: "Profile", icon: UserRound },
 ]
 
 function isActive(href: string, pathname: string) {
@@ -62,6 +61,17 @@ function UserMenu({ user, align = "end" }: { user: NavUser; align?: "end" | "cen
             ) : null}
           </DropdownMenuLabel>
         </DropdownMenuGroup>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          className="cursor-pointer gap-2"
+          render={
+            <Link href="/profile">
+              <UserRound className="size-4" aria-hidden="true" />
+              Profile
+            </Link>
+          }
+        />
+
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="cursor-pointer gap-2"

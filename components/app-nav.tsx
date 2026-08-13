@@ -38,21 +38,56 @@ function initials(user: NavUser) {
   return base.trim().charAt(0).toUpperCase()
 }
 
-function UserMenu({ user, align = "end" }: { user: NavUser; align?: "end" | "center" }) {
+function UserMenu({
+  user,
+  align = "end",
+  side = "bottom",
+  variant = "header",
+  active = false,
+}: {
+  user: NavUser
+  align?: "end" | "center"
+  side?: "bottom" | "top"
+  variant?: "header" | "tab"
+  active?: boolean
+}) {
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
-        aria-label="Account menu"
-      >
-        <Avatar className="size-8">
-          {user.image ? <AvatarImage src={user.image || "/placeholder.svg"} alt="" /> : null}
-          <AvatarFallback className="bg-sidebar-accent text-xs font-bold text-white">
-            {initials(user)}
-          </AvatarFallback>
-        </Avatar>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align={align} className="w-56">
+      {variant === "tab" ? (
+        <DropdownMenuTrigger
+          className={cn(
+            "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-bold outline-none transition-colors",
+            active ? "text-primary" : "text-muted-foreground",
+          )}
+          aria-label="Account menu"
+        >
+          <Avatar className="size-5">
+            {user.image ? <AvatarImage src={user.image || "/placeholder.svg"} alt="" /> : null}
+            <AvatarFallback
+              className={cn(
+                "text-[10px] font-bold text-white",
+                active ? "bg-primary" : "bg-sidebar-accent",
+              )}
+            >
+              {initials(user)}
+            </AvatarFallback>
+          </Avatar>
+          Profile
+        </DropdownMenuTrigger>
+      ) : (
+        <DropdownMenuTrigger
+          className="flex items-center gap-2 rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring"
+          aria-label="Account menu"
+        >
+          <Avatar className="size-8">
+            {user.image ? <AvatarImage src={user.image || "/placeholder.svg"} alt="" /> : null}
+            <AvatarFallback className="bg-sidebar-accent text-xs font-bold text-white">
+              {initials(user)}
+            </AvatarFallback>
+          </Avatar>
+        </DropdownMenuTrigger>
+      )}
+      <DropdownMenuContent align={align} side={side} className="w-56">
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex flex-col gap-0.5">
             {user.name ? <span className="truncate font-bold">{user.name}</span> : null}
@@ -132,13 +167,6 @@ export function AppNav({ user }: { user: NavUser | null }) {
         </div>
       </header>
 
-      {/* Mobile floating account button (top-right) */}
-      <div className="fixed right-3 top-3 z-40 md:hidden">
-        <div className="rounded-full bg-background/80 p-0.5 backdrop-blur">
-          <UserMenu user={user} />
-        </div>
-      </div>
-
       {/* Mobile bottom tab bar */}
       <nav className="fixed inset-x-0 bottom-0 z-40 bg-black md:hidden">
         <div className="mx-auto flex max-w-md items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
@@ -158,6 +186,7 @@ export function AppNav({ user }: { user: NavUser | null }) {
               </Link>
             )
           })}
+          <UserMenu user={user} variant="tab" side="top" align="end" active={isActive("/profile", pathname)} />
         </div>
       </nav>
     </>

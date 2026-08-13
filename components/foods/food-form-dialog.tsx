@@ -546,7 +546,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                 Save foods you eat often with their nutrition, a photo, and a reference link.
               </DialogDescription>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden shrink-0 items-center gap-2 sm:flex">
               <Button
                 type="button"
                 variant="outline"
@@ -637,7 +637,7 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
             </div>
             )}
 
-          <div className="flex items-start gap-4">
+          <div className="flex flex-wrap items-start gap-4">
             <Popover>
               <PopoverTrigger
                 aria-label="Edit photo"
@@ -731,7 +731,40 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
               </PopoverContent>
             </Popover>
 
-            <div className="grid flex-1 gap-5 sm:grid-cols-2">
+            <div className="flex flex-1 items-center justify-end gap-2 sm:hidden">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                aria-pressed={isFavourite}
+                onClick={() => setIsFavourite((v) => !v)}
+                title="Toggle as favourite"
+                className={cn(
+                  "h-9 rounded-xl px-3 font-semibold border-2 transition-colors",
+                  isFavourite
+                    ? "bg-green-500 border-green-600 text-green-500 hover:bg-green-600"
+                    : "bg-slate-700 border-slate-600 text-slate-200 hover:bg-slate-600"
+                )}
+              >
+                <Bookmark
+                  className="size-4"
+                  fill={isFavourite ? "currentColor" : "none"}
+                />
+              </Button>
+              <Button
+                type="button"
+                variant={showImport ? "default" : "outline"}
+                size="sm"
+                aria-pressed={showImport}
+                onClick={() => setShowImport((v) => !v)}
+                className="h-9 rounded-xl px-4 font-semibold"
+              >
+                <Download data-icon="inline-start" />
+                Import
+              </Button>
+            </div>
+
+            <div className="grid basis-full gap-5 sm:w-auto sm:flex-1 sm:basis-auto sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <label htmlFor="food-name" className={labelClass}>
                   Name
@@ -800,37 +833,39 @@ export function FoodFormDialog({ open, onOpenChange, food, onSaved }: Props) {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="food-servings-pack" className={labelClass}>
-                  Servings / pack <span className="font-normal text-faint">(optional)</span>
-                </label>
-                <Input
-                  id="food-servings-pack"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.servingsPack}
-                  onChange={(e) => set("servingsPack", e.target.value)}
-                  placeholder="e.g. 4"
-                  className={fieldInput}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <label htmlFor="food-pack-size" className={labelClass}>
-                  Pack size <span className="font-normal text-faint">(optional)</span>
-                </label>
-                <Input
-                  id="food-pack-size"
-                  type="number"
-                  inputMode="decimal"
-                  min={0}
-                  step="any"
-                  value={form.packSize}
-                  onChange={(e) => set("packSize", e.target.value)}
-                  placeholder={`e.g. 500 (total ${servingUnit} of product)`}
-                  className={fieldInput}
-                />
+              <div className="grid grid-cols-2 gap-5 sm:contents">
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="food-servings-pack" className={labelClass}>
+                    Servings / pack <span className="font-normal text-faint">(optional)</span>
+                  </label>
+                  <Input
+                    id="food-servings-pack"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={form.servingsPack}
+                    onChange={(e) => set("servingsPack", e.target.value)}
+                    placeholder="e.g. 4"
+                    className={fieldInput}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <label htmlFor="food-pack-size" className={labelClass}>
+                    Pack size <span className="font-normal text-faint">(optional)</span>
+                  </label>
+                  <Input
+                    id="food-pack-size"
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    step="any"
+                    value={form.packSize}
+                    onChange={(e) => set("packSize", e.target.value)}
+                    placeholder={`e.g. 500 (total ${servingUnit} of product)`}
+                    className={fieldInput}
+                  />
+                </div>
               </div>
             </div>
 

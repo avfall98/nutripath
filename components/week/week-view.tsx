@@ -216,8 +216,8 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
       <>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <LegendDot className="bg-primary" label="Calories" />
-          <LegendDot className="bg-cal-over" label="Over target" />
           <LegendDot className="bg-protein-bar" label="Protein" />
+          <LegendDot className="bg-cal-over" label="Over target" />
           <div className="hidden items-center gap-4 md:ml-auto md:flex">
             {calTarget ? <DashLegend colorVar="var(--primary)" label={`${calTarget.toLocaleString()} kcal target`} /> : null}
             {proteinTarget ? <DashLegend colorVar="var(--protein-bar)" label={`${proteinTarget}g protein target`} /> : null}

@@ -597,7 +597,7 @@ export function AddFoodDialog({
                     />
                   </Field>
                 </div>
-                <div className="grid grid-cols-[1fr_auto] gap-3">
+                <div className="grid grid-cols-1 gap-3">
                   <Field>
                     <FieldLabel htmlFor="q-serving" className={fieldLabelClass}>
                       Serving Size
@@ -634,52 +634,8 @@ export function AddFoodDialog({
                       </div>
                     </div>
                   </Field>
-                  <Field>
-                    <FieldLabel htmlFor="q-qty" className={fieldLabelClass}>
-                      Servings
-                    </FieldLabel>
-                    <div className="flex items-center gap-3">
-                      {quickQtyMode === "servings" ? (
-                        <ServingsStepper
-                          value={quick.quantity}
-                          onChange={(v) => setQuick((s) => ({ ...s, quantity: v }))}
-                          step={0.5}
-                        />
-                      ) : (
-                        <Input
-                          type="number"
-                          inputMode="decimal"
-                          min={0}
-                          step="any"
-                          aria-label="Weight in grams"
-                          value={quickWeight}
-                          onChange={(e) => setQuickWeight(e.target.value)}
-                          className="h-11 w-24 rounded-full text-center"
-                          placeholder="g"
-                        />
-                      )}
-                      <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
-                        {(["servings", "weight"] as QuantityMode[]).map((mode) => {
-                          const active = quickQtyMode === mode
-                          const label = mode === "servings" ? "Servings" : "g/ml"
-                          return (
-                            <button
-                              key={mode}
-                              type="button"
-                              onClick={() => setQuickQtyMode(mode)}
-                              className={cn(
-                                "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
-                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
-                              )}
-                            >
-                              {label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  </Field>
                 </div>
+
                 <div className="flex justify-center pt-2">
                   <Button type="submit" disabled={pending} className="rounded-full bg-primary px-6 py-2 text-primary-foreground hover:bg-primary/90">
                     <Plus data-icon="inline-start" />

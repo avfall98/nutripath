@@ -30,12 +30,17 @@ export function ServingsStepper({ value, onChange, step = 0.5, min = 0, classNam
   }
 
   return (
-    <div className={cn("flex items-center gap-1.5", className)}>
+    <div
+      className={cn(
+        "flex h-11 w-[124px] shrink-0 items-center rounded-full border border-white/15 bg-white/5",
+        className,
+      )}
+    >
       <button
         type="button"
         onClick={() => nudge(-step)}
         aria-label="Decrease servings"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary active:scale-95"
+        className="flex h-full w-9 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-primary active:scale-95"
       >
         <Minus className="size-4" />
       </button>
@@ -47,14 +52,14 @@ export function ServingsStepper({ value, onChange, step = 0.5, min = 0, classNam
         aria-label="Servings"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="h-11 w-16 rounded-full text-center [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+        className="h-full min-w-0 flex-1 border-0 bg-transparent px-0 text-center focus-visible:ring-0 focus-visible:ring-offset-0 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         placeholder="1"
       />
       <button
         type="button"
         onClick={() => nudge(step)}
         aria-label="Increase servings"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary active:scale-95"
+        className="flex h-full w-9 shrink-0 items-center justify-center text-muted-foreground transition-colors hover:text-primary active:scale-95"
       >
         <Plus className="size-4" />
       </button>

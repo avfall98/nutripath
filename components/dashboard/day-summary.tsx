@@ -207,8 +207,8 @@ function StatCard({
       </span>
       {weekAvg != null ? (
         <span className="text-[13px] tabular-nums text-faint">
-          Week avg {round(weekAvg).toLocaleString()}
-          {unit === "g" ? "g" : unit}
+          <span className="text-foreground">{round(weekAvg).toLocaleString()}</span>{" "}
+          {unit === "g" ? "g" : unit} weekly avg
         </span>
       ) : null}
     </div>

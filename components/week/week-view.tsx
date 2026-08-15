@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useState, useTransition } from "react"
 import {
   addWeeks,
@@ -9,6 +10,8 @@ import {
   format,
   isSameDay,
   isSameWeek,
+  isValid,
+  parse,
   startOfWeek,
 } from "date-fns"
 import { ChevronLeft, ChevronRight } from "lucide-react"
@@ -44,8 +47,30 @@ type FoodTotals = {
   fat: number
 }
 
+function parseAnchorParam(value: string | null): Date | null {
+  if (!value || !/^\d{8}$/.test(value)) return null
+  const parsed = parse(value, "ddMMyyyy", new Date())
+  return isValid(parsed) ? parsed : null
+}
+
 export function WeekView({ profile }: { profile: ProfileDTO | null }) {
-  const [anchor, setAnchor] = useState(() => new Date())
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
+  const anchor = useMemo(() => parseAnchorParam(searchParams.get("d")) ?? new Date(), [searchParams])
+
+  function goToAnchor(nextAnchor: Date) {
+    const params = new URLSearchParams(searchParams.toString())
+    if (isSameWeek(nextAnchor, new Date(), { weekStartsOn: 1 })) {
+      params.delete("d")
+    } else {
+      params.set("d", format(nextAnchor, "ddMMyyyy"))
+    }
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
+
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
   const [hasLoaded, setHasLoaded] = useState(false)
@@ -278,7 +303,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setAnchor((a) => addWeeks(a, -1))}
+              onClick={() => goToAnchor(addWeeks(anchor, -1))}
               aria-label="Previous week"
               className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
             >
@@ -286,7 +311,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
             </button>
             <button
               type="button"
-              onClick={() => setAnchor((a) => addWeeks(a, 1))}
+              onClick={() => goToAnchor(addWeeks(anchor, 1))}
               aria-label="Next week"
               className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
             >
@@ -300,7 +325,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
           <div className="flex items-center justify-between gap-1 rounded-lg bg-card px-2 py-1.5">
             <button
               type="button"
-              onClick={() => setAnchor((a) => addWeeks(a, -1))}
+              onClick={() => goToAnchor(addWeeks(anchor, -1))}
               aria-label="Previous week"
               className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-white"
             >
@@ -312,7 +337,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
             </div>
             <button
               type="button"
-              onClick={() => setAnchor((a) => addWeeks(a, 1))}
+              onClick={() => goToAnchor(addWeeks(anchor, 1))}
               aria-label="Next week"
               className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-white"
             >

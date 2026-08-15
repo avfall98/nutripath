@@ -16,6 +16,7 @@ import type { EntryDTO, FoodDTO } from "@/lib/types"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
+import { ServingsStepper } from "@/components/dashboard/servings-stepper"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -216,17 +217,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     return (
       <div className="flex items-center gap-3">
         {qtyMode === "servings" ? (
-          <Input
-            type="number"
-            inputMode="decimal"
-            min={0}
-            step="0.5"
-            aria-label="Servings"
-            value={servings}
-            onChange={(e) => setServings(e.target.value)}
-            className="h-11 w-24 rounded-full text-center"
-            placeholder="1"
-          />
+          <ServingsStepper value={servings} onChange={setServings} step={0.5} />
         ) : (
           <Input
             type="number"
@@ -595,7 +586,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
     )
   }
 
-  // ── Select step ───��──────────────────────────────────────────────────────────
+  // ── Select step ───��──────────────��───────────────────────────────────────────
   if (step === "select") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>

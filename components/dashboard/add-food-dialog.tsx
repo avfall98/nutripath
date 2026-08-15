@@ -519,18 +519,56 @@ export function AddFoodDialog({
           <div className="min-h-0 flex-1 overflow-y-auto">
             <form onSubmit={submitQuick}>
               <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="q-name" className={fieldLabelClass}>
-                    Name
-                  </FieldLabel>
-                  <Input
-                    id="q-name"
-                    value={quick.name}
-                    onChange={(e) => setQuick((s) => ({ ...s, name: e.target.value }))}
-                    placeholder="e.g. Banana"
-                    className={fieldInput}
-                  />
-                </Field>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel htmlFor="q-name" className={fieldLabelClass}>
+                      Name
+                    </FieldLabel>
+                    <Input
+                      id="q-name"
+                      value={quick.name}
+                      onChange={(e) => setQuick((s) => ({ ...s, name: e.target.value }))}
+                      placeholder="e.g. Banana"
+                      className={fieldInput}
+                    />
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-serving" className={fieldLabelClass}>
+                      Serving Size
+                    </FieldLabel>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="q-serving"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="any"
+                        value={quick.servingSize}
+                        onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
+                        placeholder="e.g. 100"
+                        className={fieldInput}
+                      />
+                      <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                        {(["g", "ml"] as ServingUnit[]).map((unit) => {
+                          const active = quick.servingUnitCustom === unit
+                          return (
+                            <button
+                              key={unit}
+                              type="button"
+                              onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
+                              className={cn(
+                                "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                              )}
+                            >
+                              {unit}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </Field>
+                </div>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Field>
                     <FieldLabel htmlFor="q-cal" className={fieldLabelClass}>
@@ -595,44 +633,6 @@ export function AddFoodDialog({
                       placeholder="0"
                       className={fieldInput}
                     />
-                  </Field>
-                </div>
-                <div className="grid grid-cols-1 gap-3">
-                  <Field>
-                    <FieldLabel htmlFor="q-serving" className={fieldLabelClass}>
-                      Serving Size
-                    </FieldLabel>
-                    <div className="flex items-center gap-2">
-                      <Input
-                        id="q-serving"
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        step="any"
-                        value={quick.servingSize}
-                        onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
-                        placeholder="e.g. 100"
-                        className={fieldInput}
-                      />
-                      <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
-                        {(["g", "ml"] as ServingUnit[]).map((unit) => {
-                          const active = quick.servingUnitCustom === unit
-                          return (
-                            <button
-                              key={unit}
-                              type="button"
-                              onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
-                              className={cn(
-                                "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
-                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
-                              )}
-                            >
-                              {unit}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
                   </Field>
                 </div>
 

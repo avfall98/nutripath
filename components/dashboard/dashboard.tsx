@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useState, useTransition } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import useSWR from "swr"
-import { addDays, endOfWeek, format, isToday, parseISO, startOfWeek } from "date-fns"
+import { addDays, endOfWeek, format, isToday, isValid, parse, parseISO, startOfWeek } from "date-fns"
 import { ChevronLeft, ChevronRight, MoreHorizontal, CalendarOff, RotateCcw } from "lucide-react"
 import { getEntriesByDate, getEntriesInRange, getSkippedDaysInRange, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
@@ -29,13 +30,38 @@ export function Dashboard({
   mealGroups: MealGroupDTO[]
   foods: FoodDTO[]
 }) {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+
   // Compute "today" only on the client to avoid SSR/client timezone mismatches
   // (the server may be in UTC while the browser is in a different timezone).
-  const [dateKey, setDateKey] = useState<string | null>(null)
-
+  const [mounted, setMounted] = useState(false)
   useEffect(() => {
-    setDateKey(format(new Date(), "yyyy-MM-dd"))
+    setMounted(true)
   }, [])
+
+  const dateKey = useMemo(() => {
+    const dParam = searchParams.get("d")
+    if (dParam && /^\d{8}$/.test(dParam)) {
+      const parsed = parse(dParam, "ddMMyyyy", new Date())
+      if (isValid(parsed)) return format(parsed, "yyyy-MM-dd")
+    }
+    if (!mounted) return null
+    return format(new Date(), "yyyy-MM-dd")
+  }, [searchParams, mounted])
+
+  function goToDate(nextDateKey: string) {
+    const todayKey = format(new Date(), "yyyy-MM-dd")
+    const params = new URLSearchParams(searchParams.toString())
+    if (nextDateKey === todayKey) {
+      params.delete("d")
+    } else {
+      params.set("d", format(parseISO(nextDateKey), "ddMMyyyy"))
+    }
+    const query = params.toString()
+    router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
+  }
 
   const { data: entries, isLoading, mutate } = useSWR<EntryDTO[]>(
     dateKey ? ["entries", dateKey] : null,
@@ -221,7 +247,7 @@ export function Dashboard({
   const eyebrow = `${format(parsed, "EEEE, MMM d").toUpperCase()} · ${isToday(parsed) ? "TODAY" : format(parsed, "yyyy").toUpperCase()}`
 
   function shiftDay(days: number) {
-    setDateKey(format(addDays(parsed, days), "yyyy-MM-dd"))
+    goToDate(format(addDays(parsed, days), "yyyy-MM-dd"))
   }
 
   const dayMenu = (
@@ -281,7 +307,7 @@ export function Dashboard({
             <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
             {dayMenu}
           </div>
-          <DayNavigator date={dateKey} onDateChange={setDateKey} />
+            <DayNavigator date={dateKey} onDateChange={goToDate} />
         </div>
       </header>
 

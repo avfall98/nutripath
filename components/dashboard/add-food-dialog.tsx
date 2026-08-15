@@ -77,6 +77,8 @@ export function AddFoodDialog({
   const [weight, setWeight] = useState("")
   const [servingUnit, setServingUnit] = useState<ServingUnit>("g")
   const [quick, setQuick] = useState({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g" as ServingUnit, quantity: "1" })
+  const [quickQtyMode, setQuickQtyMode] = useState<QuantityMode>("servings")
+  const [quickWeight, setQuickWeight] = useState("")
   const [showNutrition, setShowNutrition] = useState(false)
 
   const filtered = useMemo(() => {
@@ -141,6 +143,20 @@ export function AddFoodDialog({
       toast.error("Enter a name for the item.")
       return
     }
+
+    let quantity = 1
+    if (quickQtyMode === "servings") {
+      quantity = num(quick.quantity, 1) || 1
+    } else {
+      const weightValue = num(quickWeight, 0)
+      const servingSizeValue = num(quick.servingSize, 0)
+      if (weightValue <= 0 || servingSizeValue <= 0) {
+        toast.error("Enter a weight and a serving size to calculate the quantity.")
+        return
+      }
+      quantity = weightValue / servingSizeValue
+    }
+
     startTransition(async () => {
       await addQuickEntry({
         dateKey,
@@ -152,11 +168,13 @@ export function AddFoodDialog({
         protein: num(quick.protein),
         carbs: quick.carbs.trim() === "" ? null : num(quick.carbs),
         fat: quick.fat.trim() === "" ? null : num(quick.fat),
-        quantity: num(quick.quantity, 1) || 1,
+        quantity,
         servingSize: quick.servingSize.trim() === "" ? null : `${quick.servingSize.trim()}${quick.servingUnitCustom}`,
       })
       toast.success(`Added ${quick.name} to ${group.name}.`)
       setQuick({ name: "", calories: "", protein: "", carbs: "", fat: "", servingSize: "", servingUnitCustom: "g", quantity: "1" })
+      setQuickQtyMode("servings")
+      setQuickWeight("")
       onAdded()
       onOpenChange(false)
     })
@@ -584,27 +602,17 @@ export function AddFoodDialog({
                     <FieldLabel htmlFor="q-serving" className={fieldLabelClass}>
                       Serving Size
                     </FieldLabel>
-                    <Input
-                      id="q-serving"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={quick.servingSize}
-                      onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
-                      placeholder="e.g. 100"
-                      className={fieldInput}
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel htmlFor="q-qty" className={fieldLabelClass}>
-                      Servings
-                    </FieldLabel>
-                    <div className="flex items-center gap-3">
-                      <ServingsStepper
-                        value={quick.quantity}
-                        onChange={(v) => setQuick((s) => ({ ...s, quantity: v }))}
-                        step={0.5}
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="q-serving"
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        step="any"
+                        value={quick.servingSize}
+                        onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
+                        placeholder="e.g. 100"
+                        className={fieldInput}
                       />
                       <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
                         {(["g", "ml"] as ServingUnit[]).map((unit) => {
@@ -620,6 +628,51 @@ export function AddFoodDialog({
                               )}
                             >
                               {unit}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </Field>
+                  <Field>
+                    <FieldLabel htmlFor="q-qty" className={fieldLabelClass}>
+                      Servings
+                    </FieldLabel>
+                    <div className="flex items-center gap-3">
+                      {quickQtyMode === "servings" ? (
+                        <ServingsStepper
+                          value={quick.quantity}
+                          onChange={(v) => setQuick((s) => ({ ...s, quantity: v }))}
+                          step={0.5}
+                        />
+                      ) : (
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          min={0}
+                          step="any"
+                          aria-label="Weight in grams"
+                          value={quickWeight}
+                          onChange={(e) => setQuickWeight(e.target.value)}
+                          className="h-11 w-24 rounded-full text-center"
+                          placeholder="g"
+                        />
+                      )}
+                      <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                        {(["servings", "weight"] as QuantityMode[]).map((mode) => {
+                          const active = quickQtyMode === mode
+                          const label = mode === "servings" ? "Servings" : "g/ml"
+                          return (
+                            <button
+                              key={mode}
+                              type="button"
+                              onClick={() => setQuickQtyMode(mode)}
+                              className={cn(
+                                "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                              )}
+                            >
+                              {label}
                             </button>
                           )
                         })}

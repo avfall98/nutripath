@@ -555,7 +555,7 @@ export function AddFoodDialog({
                     />
                   </Field>
                 </div>
-                <div className="grid grid-cols-[1fr_100px_100px] gap-3">
+                <div className="grid grid-cols-[1fr_auto] gap-3">
                   <Field>
                     <FieldLabel htmlFor="q-serving">Serving Size</FieldLabel>
                     <Input
@@ -570,37 +570,32 @@ export function AddFoodDialog({
                     />
                   </Field>
                   <Field>
-                    <FieldLabel>Unit</FieldLabel>
-                    <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
-                      {(["g", "ml"] as ServingUnit[]).map((unit) => {
-                        const active = quick.servingUnitCustom === unit
-                        return (
-                          <button
-                            key={unit}
-                            type="button"
-                            onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
-                            className={cn(
-                              "rounded-full px-3 py-1 text-[13px] font-bold transition-colors",
-                              active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
-                            )}
-                          >
-                            {unit}
-                          </button>
-                        )
-                      })}
-                    </div>
-                  </Field>
-                  <Field>
                     <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
-                    <Input
-                      id="q-qty"
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      step="any"
-                      value={quick.quantity}
-                      onChange={(e) => setQuick((s) => ({ ...s, quantity: e.target.value }))}
-                    />
+                    <div className="flex items-center gap-3">
+                      <ServingsStepper
+                        value={quick.quantity}
+                        onChange={(v) => setQuick((s) => ({ ...s, quantity: v }))}
+                        step={0.5}
+                      />
+                      <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+                        {(["g", "ml"] as ServingUnit[]).map((unit) => {
+                          const active = quick.servingUnitCustom === unit
+                          return (
+                            <button
+                              key={unit}
+                              type="button"
+                              onClick={() => setQuick((s) => ({ ...s, servingUnitCustom: unit }))}
+                              className={cn(
+                                "rounded-full px-4 py-2 text-[13px] font-bold transition-colors",
+                                active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-white",
+                              )}
+                            >
+                              {unit}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   </Field>
                 </div>
                 <div className="flex justify-center pt-2">

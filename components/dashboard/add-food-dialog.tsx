@@ -42,6 +42,11 @@ const KJ_PER_KCAL = 4.184
 
 const ROW_GRID = "grid grid-cols-[28px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
 
+// Matches the input style used on the "Add a food" (library) form for visual consistency.
+const fieldInput =
+  "h-11 rounded-md border-0 bg-inset px-3.5 text-sm shadow-none placeholder:text-faint focus-visible:ring-2 focus-visible:ring-ring/40"
+const fieldLabelClass = "text-sm font-semibold text-foreground"
+
 export function AddFoodDialog({
   open,
   onOpenChange,
@@ -497,17 +502,22 @@ export function AddFoodDialog({
             <form onSubmit={submitQuick}>
               <FieldGroup>
                 <Field>
-                  <FieldLabel htmlFor="q-name">Name</FieldLabel>
+                  <FieldLabel htmlFor="q-name" className={fieldLabelClass}>
+                    Name
+                  </FieldLabel>
                   <Input
                     id="q-name"
                     value={quick.name}
                     onChange={(e) => setQuick((s) => ({ ...s, name: e.target.value }))}
                     placeholder="e.g. Banana"
+                    className={fieldInput}
                   />
                 </Field>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <Field>
-                    <FieldLabel htmlFor="q-cal">Calories</FieldLabel>
+                    <FieldLabel htmlFor="q-cal" className={fieldLabelClass}>
+                      Calories
+                    </FieldLabel>
                     <Input
                       id="q-cal"
                       type="number"
@@ -516,10 +526,14 @@ export function AddFoodDialog({
                       step="any"
                       value={quick.calories}
                       onChange={(e) => setQuick((s) => ({ ...s, calories: e.target.value }))}
+                      placeholder="0"
+                      className={fieldInput}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="q-pro">Protein</FieldLabel>
+                    <FieldLabel htmlFor="q-pro" className={fieldLabelClass}>
+                      Protein
+                    </FieldLabel>
                     <Input
                       id="q-pro"
                       type="number"
@@ -528,10 +542,14 @@ export function AddFoodDialog({
                       step="any"
                       value={quick.protein}
                       onChange={(e) => setQuick((s) => ({ ...s, protein: e.target.value }))}
+                      placeholder="0"
+                      className={fieldInput}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="q-carb">Carbs</FieldLabel>
+                    <FieldLabel htmlFor="q-carb" className={fieldLabelClass}>
+                      Carbs
+                    </FieldLabel>
                     <Input
                       id="q-carb"
                       type="number"
@@ -540,10 +558,14 @@ export function AddFoodDialog({
                       step="any"
                       value={quick.carbs}
                       onChange={(e) => setQuick((s) => ({ ...s, carbs: e.target.value }))}
+                      placeholder="0"
+                      className={fieldInput}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="q-fat">Fat</FieldLabel>
+                    <FieldLabel htmlFor="q-fat" className={fieldLabelClass}>
+                      Fat
+                    </FieldLabel>
                     <Input
                       id="q-fat"
                       type="number"
@@ -552,12 +574,16 @@ export function AddFoodDialog({
                       step="any"
                       value={quick.fat}
                       onChange={(e) => setQuick((s) => ({ ...s, fat: e.target.value }))}
+                      placeholder="0"
+                      className={fieldInput}
                     />
                   </Field>
                 </div>
                 <div className="grid grid-cols-[1fr_auto] gap-3">
                   <Field>
-                    <FieldLabel htmlFor="q-serving">Serving Size</FieldLabel>
+                    <FieldLabel htmlFor="q-serving" className={fieldLabelClass}>
+                      Serving Size
+                    </FieldLabel>
                     <Input
                       id="q-serving"
                       type="number"
@@ -567,10 +593,13 @@ export function AddFoodDialog({
                       value={quick.servingSize}
                       onChange={(e) => setQuick((s) => ({ ...s, servingSize: e.target.value }))}
                       placeholder="e.g. 100"
+                      className={fieldInput}
                     />
                   </Field>
                   <Field>
-                    <FieldLabel htmlFor="q-qty">Servings</FieldLabel>
+                    <FieldLabel htmlFor="q-qty" className={fieldLabelClass}>
+                      Servings
+                    </FieldLabel>
                     <div className="flex items-center gap-3">
                       <ServingsStepper
                         value={quick.quantity}

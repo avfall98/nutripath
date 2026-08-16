@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import { deleteFood, toggleFavourite } from "@/app/actions/foods"
 import type { FoodDTO, ProfileDTO } from "@/lib/types"
 import { FoodFormDialog } from "@/components/foods/food-form-dialog"
@@ -121,6 +121,24 @@ export function FoodLibrary({ foods, profile }: { foods: FoodDTO[]; profile: Pro
     })
     return sorted
   }, [items, query, sortKey, filter, profile])
+
+  // Support deep-linking to a food's edit dialog via "?edit=<id>", used by the
+  // read-only detail dialog on the Today page as a shortcut into editing here.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const editId = params.get("edit")
+    if (!editId) return
+    const target = items.find((f) => String(f.id) === editId)
+    if (target) {
+      setEditing(target)
+      setDialogOpen(true)
+    }
+    // Strip the param so a refresh or back navigation doesn't reopen the dialog.
+    params.delete("edit")
+    const qs = params.toString()
+    window.history.replaceState(null, "", qs ? `${window.location.pathname}?${qs}` : window.location.pathname)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   function openNew() {
     setEditing(null)

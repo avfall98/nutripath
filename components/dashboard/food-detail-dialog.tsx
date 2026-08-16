@@ -12,7 +12,8 @@ import {
 } from "@/components/ui/dialog"
 import { round } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import { ExternalLink, Link2, UtensilsCrossed } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { ExternalLink, Link2, Pencil, UtensilsCrossed } from "lucide-react"
 
 const KJ_PER_KCAL = 4.184
 
@@ -40,7 +41,15 @@ function isValidUrl(value: string | null | undefined) {
  * they can inspect a food without being able to modify library data.
  */
 export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
+  const router = useRouter()
+
   if (!food) return null
+
+  function handleEdit() {
+    if (!food) return
+    onOpenChange(false)
+    router.push(`/foods?edit=${encodeURIComponent(food.id)}`)
+  }
 
   const servingUnitMatch = food.servingSize?.match(/(g|ml)\s*$/i)
   const servingUnit = servingUnitMatch ? servingUnitMatch[1].toLowerCase() : "g"
@@ -72,7 +81,15 @@ export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92svh] gap-0 overflow-y-auto rounded-2xl p-6 ring-0 sm:max-w-3xl sm:p-8">
-        <DialogHeader className="mb-6 pr-10">
+        <button
+          type="button"
+          onClick={handleEdit}
+          className="absolute right-12 top-4 z-10 flex items-center gap-1.5 rounded-full bg-inset px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-inset-hover sm:right-14 sm:top-6"
+        >
+          <Pencil className="size-3.5" />
+          Edit
+        </button>
+        <DialogHeader className="mb-6 pr-28 sm:pr-32">
           <div className="flex flex-col gap-1.5">
             <DialogTitle className="text-2xl font-bold tracking-tight">{food.name}</DialogTitle>
             <DialogDescription>Food details from your library. Editing is available from the Foods tab.</DialogDescription>

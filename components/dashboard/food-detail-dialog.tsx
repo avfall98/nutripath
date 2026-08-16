@@ -79,8 +79,8 @@ export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
           </div>
         </DialogHeader>
 
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-wrap items-start gap-4">
+        <div className="flex min-w-0 flex-col gap-6">
+          <div className="flex min-w-0 flex-wrap items-start gap-4">
             <span
               className={cn(
                 "relative size-24 shrink-0 overflow-hidden rounded-2xl",
@@ -113,7 +113,7 @@ export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
             </div>
           </div>
 
-          <div className="flex flex-col gap-5">
+          <div className="flex min-w-0 flex-col gap-5">
             <div className="grid gap-5 sm:grid-cols-3">
               <div className="flex flex-col gap-2">
                 <span className={labelClass}>Serving size</span>
@@ -136,7 +136,7 @@ export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
             </div>
 
             {isValidUrl(food.infoUrl) && (
-              <div className="flex flex-col gap-2">
+              <div className="flex min-w-0 flex-col gap-2">
                 <span className={labelClass}>Reference link</span>
                 <div className="relative min-w-0">
                   <Link2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" />

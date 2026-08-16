@@ -9,6 +9,7 @@ import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ServingsStepper } from "@/components/dashboard/servings-stepper"
+import { FoodDetailDialog } from "@/components/dashboard/food-detail-dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -80,6 +81,7 @@ export function AddFoodDialog({
   const [quickQtyMode, setQuickQtyMode] = useState<QuantityMode>("servings")
   const [quickWeight, setQuickWeight] = useState("")
   const [showNutrition, setShowNutrition] = useState(false)
+  const [detailFood, setDetailFood] = useState<FoodDTO | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -261,7 +263,12 @@ export function AddFoodDialog({
                       <Plus className="size-4" />
                     </button>
                   </div>
-                  <span className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                  <button
+                    type="button"
+                    onClick={() => setDetailFood(food)}
+                    aria-label={`View details for ${food.name}`}
+                    className="size-11 shrink-0 overflow-hidden rounded-[4px] bg-track transition-opacity hover:opacity-80"
+                  >
                     {food.imageUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
@@ -270,8 +277,12 @@ export function AddFoodDialog({
                         <UtensilsCrossed className="size-4" />
                       </span>
                     )}
-                  </span>
-                  <div className="min-w-0">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDetailFood(food)}
+                    className="min-w-0 text-left transition-opacity hover:opacity-80"
+                  >
                     <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{food.name}</p>
                     {(food.brand || food.servingSize || food.servingsPack || food.packSize) && (
                       <p className="truncate text-[11.5px] text-faint">
@@ -282,7 +293,7 @@ export function AddFoodDialog({
                           : food.brand || food.servingSize || ""}
                       </p>
                     )}
-                  </div>
+                  </button>
                   <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
                     <MacroIcon macro="calories" />
                     {caloriesKcal}
@@ -340,7 +351,12 @@ export function AddFoodDialog({
                 <li key={food.id} className="flex flex-col gap-2 border-t border-border py-4 first:border-t-0 first:pt-0">
                   {/* Row 1: Thumbnail + Name/Details + Add button */}
                   <div className="flex items-start gap-3 pr-2">
-                    <span className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track">
+                    <button
+                      type="button"
+                      onClick={() => setDetailFood(food)}
+                      aria-label={`View details for ${food.name}`}
+                      className="size-12 shrink-0 overflow-hidden rounded-[4px] bg-track transition-opacity hover:opacity-80"
+                    >
                       {food.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img src={food.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
@@ -349,11 +365,11 @@ export function AddFoodDialog({
                           <UtensilsCrossed className="size-5" />
                         </span>
                       )}
-                    </span>
+                    </button>
                     <button
                       type="button"
-                      disabled={!food}
-                      className="min-w-0 flex-1 text-left transition-opacity enabled:hover:opacity-80 disabled:cursor-default"
+                      onClick={() => setDetailFood(food)}
+                      className="min-w-0 flex-1 text-left transition-opacity hover:opacity-80"
                     >
                       <p className="text-[13.5px] font-semibold leading-tight text-pretty">
                         {food.name}
@@ -422,6 +438,7 @@ export function AddFoodDialog({
   )
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
         <DialogHeader>
@@ -648,5 +665,13 @@ export function AddFoodDialog({
         )}
       </DialogContent>
     </Dialog>
+    <FoodDetailDialog
+      open={detailFood != null}
+      onOpenChange={(o) => {
+        if (!o) setDetailFood(null)
+      }}
+      food={detailFood}
+    />
+    </>
   )
 }

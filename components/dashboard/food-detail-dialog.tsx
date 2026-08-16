@@ -141,7 +141,7 @@ export function FoodDetailDialog({ open, onOpenChange, food }: Props) {
                 <div className="relative min-w-0">
                   <Link2 className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-faint" />
                   <div className="flex h-11 min-w-0 items-center rounded-md bg-inset px-3.5 pl-10 pr-10 text-sm text-foreground">
-                    <span className="truncate">{food.infoUrl}</span>
+                    <span className="min-w-0 flex-1 truncate">{food.infoUrl}</span>
                   </div>
                   <a
                     href={food.infoUrl!}

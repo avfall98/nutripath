@@ -75,15 +75,15 @@ function DonutChart({
   const config = buildConfig(slices)
 
   return (
-    <div className="relative">
-      <ChartContainer config={config} className="h-[180px] w-[180px]">
+    <div className="relative mx-auto w-full max-w-[220px] shrink-0 sm:mx-0 sm:w-[180px] sm:max-w-none">
+      <ChartContainer config={config} className="aspect-square h-auto w-full sm:h-[180px] sm:w-[180px]">
         <PieChart>
           <Pie
             data={slices}
             cx="50%"
             cy="50%"
-            innerRadius={56}
-            outerRadius={80}
+            innerRadius="62%"
+            outerRadius="90%"
             paddingAngle={slices.length > 1 ? 2 : 0}
             dataKey="value"
             strokeWidth={0}
@@ -104,7 +104,7 @@ function DonutChart({
       </ChartContainer>
       {/* Centre label */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-xl font-bold tabular-nums leading-none">{total.toLocaleString()}</span>
+        <span className="text-2xl font-bold tabular-nums leading-none sm:text-xl">{total.toLocaleString()}</span>
         <span className="mt-0.5 text-[10px] font-bold uppercase tracking-[.08em] text-faint">{label}</span>
       </div>
     </div>
@@ -133,8 +133,8 @@ export function TopFoodsDonutChart({
   const pct = (value: number, total: number) => (total > 0 ? Math.round((value / total) * 100) : 0)
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <div className="flex items-center justify-center gap-8">
+    <div className="flex w-full flex-col items-center gap-2">
+      <div className="flex w-full flex-col items-center justify-center gap-6 sm:w-auto sm:flex-row sm:gap-8">
         <DonutChart slices={kcalSlices} label="kcal" activeKey={activeKey} onActiveChange={onActiveChange} />
         <DonutChart slices={proteinSlices} label="protein" activeKey={activeKey} onActiveChange={onActiveChange} />
       </div>

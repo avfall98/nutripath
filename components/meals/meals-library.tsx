@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { deleteMeal, duplicateMeal, toggleMealFavourite } from "@/app/actions/meals"
 import type { MealDTO, ProfileDTO } from "@/lib/types"
-import { mealTotals } from "@/lib/meals"
+import { mealTotals, ingredientNutrition } from "@/lib/meals"
 import { proteinPer100Cal, calorieDensity } from "@/lib/nutrition"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
@@ -20,12 +20,12 @@ import {
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { ArrowUpDown, Bookmark, Copy, MoreVertical, Pencil, Plus, Search, Soup, Trash2 } from "lucide-react"
+import { ArrowUpDown, Bookmark, ChevronRight, Copy, MoreVertical, Pencil, Plus, Search, Soup, Trash2, UtensilsCrossed } from "lucide-react"
 
 type SortKey = "name-asc" | "name-desc" | "kcal-desc" | "protein-desc" | "kcal-score-desc" | "protein-score-desc"
 type FilterKey = "all" | "favourites" | "high-protein" | "low-calorie" | "ab-scores"
 
-const ROW_GRID = "grid grid-cols-[44px_1fr_120px_112px_60px_60px_80px_80px_28px] items-center gap-x-3"
+const ROW_GRID = "grid grid-cols-[24px_44px_1fr_120px_112px_60px_60px_80px_80px_28px] items-center gap-x-3"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "All" },
@@ -43,6 +43,7 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
   const [query, setQuery] = useState("")
   const [sortKey, setSortKey] = useState<SortKey>("name-asc")
   const [filter, setFilter] = useState<FilterKey>("all")
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [, startTransition] = useTransition()
 
   const withTotals: MealWithTotals[] = useMemo(
@@ -333,6 +334,7 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
               )}
             >
               <span />
+              <span />
               <span>Meal</span>
               <span>Kcal</span>
               <span>Protein</span>
@@ -347,8 +349,21 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
                 const t = meal.totals
                 const caloriesPct = profile?.targetCalories ? Math.round((t.kcal / profile.targetCalories) * 100) : 0
                 const proteinPct = profile?.targetProtein ? Math.round((t.protein / profile.targetProtein) * 100) : 0
+                const expanded = expandedId === meal.id
                 return (
-                  <li key={meal.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
+                  <li key={meal.id} className="flex flex-col">
+                    <div className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
+                    <div className="flex justify-start">
+                      <button
+                        type="button"
+                        onClick={() => setExpandedId(expanded ? null : meal.id)}
+                        aria-label={expanded ? `Collapse ${meal.name}` : `Expand ${meal.name}`}
+                        aria-expanded={expanded}
+                        className="flex size-6 items-center justify-center rounded-[4px] text-faint transition-colors hover:text-foreground"
+                      >
+                        <ChevronRight className={cn("size-4 transition-transform", expanded && "rotate-90")} />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       onClick={() => openEdit(meal)}
@@ -399,6 +414,55 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
                       <ProteinScoreBadges proteinG={t.protein} kcal={t.kcal} />
                     </div>
                     <div className="flex items-center justify-end">{mealMenu(meal)}</div>
+                    </div>
+
+                    {expanded ? (
+                      <ul className="mb-1 ml-2 flex flex-col rounded-[6px] bg-white/[0.03] py-1">
+                        {meal.ingredients.map((ing) => {
+                          const n = ingredientNutrition(ing)
+                          const servingLabel =
+                            ing.mode === "weight"
+                              ? `${ing.amount}${ing.servingSize?.match(/(ml|g)/i)?.[0] ?? "g"}`
+                              : `${ing.amount} serving${ing.amount === 1 ? "" : "s"}`
+                          return (
+                            <li key={ing.id} className={cn(ROW_GRID, "px-2 py-1.5")}>
+                              <span />
+                              <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-track">
+                                {ing.imageUrl ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={ing.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                                ) : (
+                                  <UtensilsCrossed className="size-3.5 text-faint" />
+                                )}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="max-w-full truncate text-[13px] font-medium leading-tight">{ing.name}</p>
+                                <p className="truncate text-[11px] text-faint">{servingLabel}</p>
+                              </div>
+                              <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                                <MacroIcon macro="calories" />
+                                {Math.round(n.kcal)}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                                <MacroIcon macro="protein" />
+                                {Math.round(n.protein)}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                                <MacroIcon macro="carbs" />
+                                {ing.carbs != null ? Math.round(n.carbs) : "—"}
+                              </span>
+                              <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                                <MacroIcon macro="fat" />
+                                {ing.fat != null ? Math.round(n.fat) : "—"}
+                              </span>
+                              <span />
+                              <span />
+                              <span />
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    ) : null}
                   </li>
                 )
               })}

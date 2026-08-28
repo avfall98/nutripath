@@ -100,7 +100,7 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
   }
 
   function openEdit(meal: MealDTO) {
-    router.push(`/meals/${meal.id}`)
+    router.push(`/meals/${meal.id}/edit`)
   }
 
   function handleDelete(meal: MealDTO) {

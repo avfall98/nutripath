@@ -159,6 +159,43 @@ export const entries = pgTable(
   (t) => [index("entries_user_id_idx").on(t.userId)],
 )
 
+// A saved, named combination of library foods eaten as one thing. Nutrition is
+// never stored here — it's always summed from the ingredients at read time.
+export const meals = pgTable(
+  "meals",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    imageUrl: text("image_url"),
+    favourite: boolean("favourite").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("meals_user_id_idx").on(t.userId)],
+)
+
+// One row per ingredient in a meal. amount + mode describe how much of the
+// referenced library food is used: mode "serving" -> amount is a serving count;
+// mode "weight" -> amount is grams/ml in the food's own serving unit.
+export const mealIngredients = pgTable(
+  "meal_ingredients",
+  {
+    id: serial("id").primaryKey(),
+    mealId: integer("meal_id")
+      .notNull()
+      .references(() => meals.id, { onDelete: "cascade" }),
+    foodId: integer("food_id")
+      .notNull()
+      .references(() => foods.id, { onDelete: "cascade" }),
+    amount: numeric("amount").notNull().default("1"),
+    mode: text("mode").notNull().default("serving"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (t) => [index("meal_ingredients_meal_id_idx").on(t.mealId)],
+)
+
 // Composite primary key (userId, entryDate) so skipped days don't collide across users.
 export const skippedDays = pgTable(
   "skipped_days",
@@ -178,3 +215,5 @@ export type MealGroup = typeof mealGroups.$inferSelect
 export type Food = typeof foods.$inferSelect
 export type Entry = typeof entries.$inferSelect
 export type SkippedDay = typeof skippedDays.$inferSelect
+export type Meal = typeof meals.$inferSelect
+export type MealIngredient = typeof mealIngredients.$inferSelect

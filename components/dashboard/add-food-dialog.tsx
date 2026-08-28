@@ -2,9 +2,11 @@
 
 import { useMemo, useState, useTransition, useEffect } from "react"
 import useSWR from "swr"
-import { addEntryFromFood, addQuickEntry } from "@/app/actions/entries"
+import { addEntryFromFood, addQuickEntry, addEntriesFromMeal } from "@/app/actions/entries"
 import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
-import type { FoodDTO, MealGroupDTO } from "@/lib/types"
+import { getMeals } from "@/app/actions/meals"
+import type { FoodDTO, MealDTO, MealGroupDTO } from "@/lib/types"
+import { mealTotals, ingredientNutrition } from "@/lib/meals"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
@@ -22,7 +24,7 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Clock, Loader2, Plus, Search, Star, UtensilsCrossed } from "lucide-react"
+import { ChevronRight, Clock, Loader2, Plus, Search, Soup, Star, UtensilsCrossed } from "lucide-react"
 
 type Props = {
   open: boolean
@@ -36,7 +38,7 @@ type Props = {
 }
 
 type QuantityMode = "servings" | "weight"
-type TabKey = "library" | "recent" | "favourites" | "quick"
+type TabKey = "library" | "recent" | "favourites" | "meals" | "quick"
 type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
@@ -82,6 +84,9 @@ export function AddFoodDialog({
   const [quickWeight, setQuickWeight] = useState("")
   const [showNutrition, setShowNutrition] = useState(false)
   const [detailFood, setDetailFood] = useState<FoodDTO | null>(null)
+  const [mealQuery, setMealQuery] = useState("")
+  const [mealQuantity, setMealQuantity] = useState("1")
+  const [expandedMeal, setExpandedMeal] = useState<number | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -100,6 +105,32 @@ export function AddFoodDialog({
     open && tab === "favourites" ? ["favourite-foods", dateKey] : null,
     () => getFavouriteFoods(20),
   )
+  const { data: allMeals, isLoading: mealsLoading } = useSWR(
+    open && tab === "meals" ? ["all-meals"] : null,
+    () => getMeals(),
+  )
+
+  const filteredMeals = useMemo(() => {
+    const list = allMeals ?? []
+    const q = mealQuery.trim().toLowerCase()
+    if (!q) return list
+    return list.filter((m) => m.name.toLowerCase().includes(q))
+  }, [allMeals, mealQuery])
+
+  function addMeal(meal: MealDTO) {
+    const qty = num(mealQuantity, 1) || 1
+    startTransition(async () => {
+      await addEntriesFromMeal({
+        dateKey,
+        mealId: meal.id,
+        mealGroupId: group.id,
+        mealGroupName: group.name,
+        mealQuantity: qty,
+      })
+      toast.success(`Added ${meal.name} to ${group.name}.`)
+      onAdded()
+    })
+  }
 
   function num(v: string, fallback = 0): number {
     const n = Number(v)
@@ -423,6 +454,238 @@ export function AddFoodDialog({
     )
   }
 
+  function renderMealRow(meal: MealDTO) {
+    const totals = mealTotals(meal.ingredients)
+    const kcalPct = targetCalories ? Math.round((totals.kcal / targetCalories) * 100) : 0
+    const proteinPct = targetProtein ? Math.round((totals.protein / targetProtein) * 100) : 0
+    const expanded = expandedMeal === meal.id
+    const gramLabel = `${totals.weightG}g`
+    return (
+      <li key={meal.id} className="flex flex-col">
+        {/* Meal summary row */}
+        <div className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.06]")}>
+          <div className="flex justify-start">
+            <button
+              type="button"
+              onClick={() => setExpandedMeal(expanded ? null : meal.id)}
+              aria-label={expanded ? `Collapse ${meal.name}` : `Expand ${meal.name}`}
+              aria-expanded={expanded}
+              className="flex size-6 items-center justify-center rounded-[4px] text-faint transition-colors hover:text-foreground"
+            >
+              <ChevronRight className={cn("size-4 transition-transform", expanded && "rotate-90")} />
+            </button>
+          </div>
+          <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-track">
+            {meal.imageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={meal.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+            ) : (
+              <Soup className="size-4 text-faint" />
+            )}
+          </span>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              {meal.favourite ? <Soup className="hidden" /> : null}
+              <p className="max-w-full truncate text-[14px] font-semibold leading-tight">{meal.name}</p>
+            </div>
+            <p className="truncate text-[11.5px] text-faint">
+              {totals.count} {totals.count === 1 ? "ingredient" : "ingredients"} · {gramLabel}
+            </p>
+          </div>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="calories" />
+            {totals.kcal}
+            {targetCalories ? <span className="font-normal text-faint">({kcalPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="protein" />
+            {totals.protein}
+            {targetProtein ? <span className="font-normal text-faint">({proteinPct}%)</span> : null}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="carbs" />
+            {totals.carbs != null ? totals.carbs : "—"}
+          </span>
+          <span className="flex items-center gap-1.5 text-[13px] font-bold tabular-nums">
+            <MacroIcon macro="fat" />
+            {totals.fat != null ? totals.fat : "—"}
+          </span>
+          <div className="flex items-center justify-end">
+            <CalorieDensityBadge kcal={totals.kcal} servingSize={`${totals.weightG}g`} />
+          </div>
+          <div className="flex items-center justify-end">
+            <ProteinScoreBadges proteinG={totals.protein} kcal={totals.kcal} />
+          </div>
+          <div className="flex justify-end">
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => addMeal(meal)}
+              aria-label={`Add ${meal.name}`}
+              className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+            >
+              <Plus className="size-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Expanded ingredient breakdown */}
+        {expanded ? (
+          <ul className="mb-1 ml-2 flex flex-col rounded-[6px] bg-white/[0.03] py-1">
+            {meal.ingredients.map((ing) => {
+              const n = ingredientNutrition(ing)
+              const servingLabel =
+                ing.mode === "weight" ? `${ing.amount}${ing.servingSize?.match(/(ml|g)/i)?.[0] ?? "g"}` : `${ing.amount} serving${ing.amount === 1 ? "" : "s"}`
+              return (
+                <li key={ing.id} className={cn(ROW_GRID, "px-2 py-1.5")}>
+                  <span />
+                  <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-track">
+                    {ing.imageUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={ing.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                    ) : (
+                      <UtensilsCrossed className="size-3.5 text-faint" />
+                    )}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="max-w-full truncate text-[13px] font-medium leading-tight">{ing.name}</p>
+                    <p className="truncate text-[11px] text-faint">{servingLabel}</p>
+                  </div>
+                  <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                    <MacroIcon macro="calories" />
+                    {Math.round(n.kcal)}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                    <MacroIcon macro="protein" />
+                    {Math.round(n.protein)}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                    <MacroIcon macro="carbs" />
+                    {ing.carbs != null ? Math.round(n.carbs) : "—"}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-[12.5px] tabular-nums text-muted-foreground">
+                    <MacroIcon macro="fat" />
+                    {ing.fat != null ? Math.round(n.fat) : "—"}
+                  </span>
+                  <span />
+                  <span />
+                  <span />
+                </li>
+              )
+            })}
+          </ul>
+        ) : null}
+      </li>
+    )
+  }
+
+  function renderMealsPanel() {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
+        {/* Search + meal quantity multiplier */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
+              placeholder="Search your meals..."
+              value={mealQuery}
+              onChange={(e) => setMealQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center rounded-full bg-inset">
+            <Input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              aria-label="Number of meal servings"
+              value={mealQuantity}
+              onChange={(e) => setMealQuantity(e.target.value)}
+              className="h-12 w-20 rounded-full border-0 bg-transparent text-center text-sm shadow-none focus-visible:ring-2 focus-visible:ring-ring/40"
+            />
+          </div>
+        </div>
+
+        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+          {mealsLoading ? (
+            loadingState
+          ) : filteredMeals.length === 0 ? (
+            emptyState(
+              <Soup className="size-6" />,
+              (allMeals?.length ?? 0) === 0
+                ? "No meals yet. Build one in the Meals tab and it'll appear here."
+                : `No meals match "${mealQuery}".`,
+            )
+          ) : (
+            <>
+              <div className="hidden flex-col md:flex">
+                <div
+                  className={cn(
+                    ROW_GRID,
+                    "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
+                  )}
+                >
+                  <span />
+                  <span />
+                  <span>Meal</span>
+                  <span>Kcal</span>
+                  <span>Protein</span>
+                  <span>Carbs</span>
+                  <span>Fat</span>
+                  <span className="text-right">Kcal score</span>
+                  <span className="text-right">P score</span>
+                  <span />
+                </div>
+                <ul className="mt-1 flex flex-col">{filteredMeals.map((meal) => renderMealRow(meal))}</ul>
+              </div>
+              {/* Mobile: simplified cards */}
+              <ul className="flex flex-col md:hidden">
+                {filteredMeals.map((meal) => {
+                  const totals = mealTotals(meal.ingredients)
+                  return (
+                    <li
+                      key={meal.id}
+                      className="flex items-center gap-3 border-t border-border py-3 first:border-t-0 first:pt-0"
+                    >
+                      <span className="flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-track">
+                        {meal.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={meal.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
+                        ) : (
+                          <Soup className="size-4 text-faint" />
+                        )}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-[13.5px] font-semibold leading-tight">{meal.name}</p>
+                        <p className="truncate text-[11.5px] text-faint">
+                          {totals.count} {totals.count === 1 ? "ingredient" : "ingredients"} · {totals.kcal} kcal ·{" "}
+                          {totals.protein}g P
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={pending}
+                        onClick={() => addMeal(meal)}
+                        aria-label={`Add ${meal.name}`}
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                      >
+                        <Plus className="size-4" />
+                      </button>
+                    </li>
+                  )
+                })}
+              </ul>
+              <p className="mt-3 pb-1 text-center text-[11.5px] text-faint">
+                Showing {filteredMeals.length} {filteredMeals.length === 1 ? "meal" : "meals"}
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const emptyState = (icon: React.ReactNode, text: string) => (
     <div className="flex flex-col items-center gap-3 py-12 text-center text-sm text-muted-foreground">
       {icon}
@@ -452,6 +715,7 @@ export function AddFoodDialog({
               { key: "library", label: "Library" },
               { key: "favourites", label: "Favs" },
               { key: "recent", label: "Recent" },
+              { key: "meals", label: "Meals" },
               { key: "quick", label: "Custom" },
             ] as { key: TabKey; label: string }[]
           ).map((t) => {
@@ -472,7 +736,9 @@ export function AddFoodDialog({
           })}
         </div>
 
-        {tab !== "quick" ? (
+        {tab === "meals" ? (
+          renderMealsPanel()
+        ) : tab !== "quick" ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4">
             {/* Search (library only) + servings/weight toggle + quantity */}
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

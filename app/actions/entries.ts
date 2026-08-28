@@ -1,12 +1,13 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { entries, foods, mealGroups, skippedDays } from "@/lib/db/schema"
+import { entries, foods, mealGroups, mealIngredients, meals, skippedDays } from "@/lib/db/schema"
 import { and, asc, eq, gte, lte } from "drizzle-orm"
 import { revalidatePath } from "next/cache"
 import { num, num0, toNumeric } from "@/lib/format"
 import { parseServingUnit, parseServingWeight } from "@/lib/nutrition"
-import type { EntryDTO } from "@/lib/types"
+import { ingredientServings } from "@/lib/meals"
+import type { EntryDTO, IngredientMode } from "@/lib/types"
 import { requireUserId } from "@/lib/session"
 
 function serialize(r: typeof entries.$inferSelect): EntryDTO {
@@ -103,6 +104,61 @@ export async function addEntryFromFood(input: {
     fat: food.fat,
     quantity: toNumeric(input.quantity) ?? "1",
   })
+  revalidatePath("/")
+}
+
+// Add a saved meal to the log. Each ingredient becomes its own linked entry so
+// the daily log still shows the individual foods and stays editable. The meal's
+// nutrition is never stored — quantities are recomputed from the ingredients.
+// `mealQuantity` multiplies every ingredient (e.g. 2 = two servings of the meal).
+export async function addEntriesFromMeal(input: {
+  dateKey: string
+  mealId: number
+  mealGroupId: number
+  mealGroupName: string
+  mealQuantity?: number
+}) {
+  const userId = await requireUserId()
+  await requireOwnedMealGroup(userId, input.mealGroupId)
+
+  const [meal] = await db
+    .select({ id: meals.id })
+    .from(meals)
+    .where(and(eq(meals.id, input.mealId), eq(meals.userId, userId)))
+    .limit(1)
+  if (!meal) throw new Error("Meal not found")
+
+  const rows = await db
+    .select({ ingredient: mealIngredients, food: foods })
+    .from(mealIngredients)
+    .innerJoin(foods, eq(mealIngredients.foodId, foods.id))
+    .where(eq(mealIngredients.mealId, meal.id))
+    .orderBy(asc(mealIngredients.sortOrder), asc(mealIngredients.id))
+
+  const multiplier = input.mealQuantity && input.mealQuantity > 0 ? input.mealQuantity : 1
+
+  const values = rows
+    .filter(({ food }) => food.userId === userId)
+    .map(({ ingredient, food }) => {
+      const mode = (ingredient.mode === "weight" ? "weight" : "serving") as IngredientMode
+      const servings =
+        ingredientServings({ amount: num0(ingredient.amount), mode, servingSize: food.servingSize }) * multiplier
+      return {
+        userId,
+        entryDate: input.dateKey,
+        mealGroupId: input.mealGroupId,
+        mealGroupName: input.mealGroupName,
+        foodId: food.id,
+        name: food.name,
+        calories: food.calories,
+        protein: food.protein,
+        carbs: food.carbs,
+        fat: food.fat,
+        quantity: toNumeric(servings) ?? "0",
+      }
+    })
+
+  if (values.length > 0) await db.insert(entries).values(values)
   revalidatePath("/")
 }
 

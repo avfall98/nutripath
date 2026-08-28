@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Apple, CalendarDays, CalendarRange, LogOut, Salad, UserRound } from "lucide-react"
+import { Apple, CalendarDays, CalendarRange, LogOut, Salad, Soup, UserRound } from "lucide-react"
 import { signOutAction } from "@/app/actions/auth"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
@@ -21,6 +21,7 @@ const links = [
   { href: "/", label: "Today", icon: CalendarDays },
   { href: "/week", label: "Week", icon: CalendarRange },
   { href: "/foods", label: "Foods", icon: Apple },
+  { href: "/meals", label: "Meals", icon: Soup },
 ]
 
 function isActive(href: string, pathname: string) {

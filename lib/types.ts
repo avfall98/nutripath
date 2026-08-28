@@ -43,6 +43,37 @@ export type MealGroupDTO = {
   sortOrder: number
 }
 
+// How much of a library food an ingredient uses:
+//  - "serving": amount is a serving count
+//  - "weight":  amount is grams/ml in the food's own serving unit
+export type IngredientMode = "serving" | "weight"
+
+export type MealIngredientDTO = {
+  id: number
+  foodId: number
+  amount: number
+  mode: IngredientMode
+  sortOrder: number
+  // A snapshot of the referenced library food, for display + calculation.
+  name: string
+  brand: string | null
+  servingSize: string | null
+  imageUrl: string | null
+  // Per-serving nutrition. calories are stored in kJ (as with foods).
+  calories: number
+  protein: number
+  carbs: number | null
+  fat: number | null
+}
+
+export type MealDTO = {
+  id: number
+  name: string
+  imageUrl: string | null
+  favourite: boolean
+  ingredients: MealIngredientDTO[]
+}
+
 export type EntryDTO = {
   id: number
   entryDate: string

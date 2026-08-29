@@ -215,7 +215,7 @@ export function AddFoodDialog({
 
   function renderQuantityControls() {
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3">
         {qtyMode === "servings" ? (
           <ServingsStepper value={servings} onChange={setServings} step={0.5} />
         ) : (
@@ -709,7 +709,7 @@ export function AddFoodDialog({
         </DialogHeader>
 
         {/* Pill tabs */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {(
             [
               { key: "library", label: "Library" },

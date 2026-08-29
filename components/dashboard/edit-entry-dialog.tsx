@@ -749,13 +749,13 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[90svh] overflow-hidden sm:max-w-3xl">
+        <DialogContent className="flex max-h-[90svh] flex-col overflow-hidden sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Edit entry</DialogTitle>
             <DialogDescription>Change the food item or adjust the serving size.</DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4 overflow-y-auto">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
             {/* Food card — clicking it navigates to food selection */}
             <button
               type="button"
@@ -844,17 +844,17 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                 {editRow("Sodium (mg)", editFood.sodium, editFood.sodiumPerHundred)}
               </div>
             )}
+          </div>
 
-            {/* Save button */}
-            <div className="flex justify-center pb-2">
-              <Button
-                onClick={handleSave}
-                disabled={pending || !editFood}
-                className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-              >
-                Save changes
-              </Button>
-            </div>
+          {/* Save button — fixed footer, always visible */}
+          <div className="flex shrink-0 justify-center border-t border-border pt-4">
+            <Button
+              onClick={handleSave}
+              disabled={pending || !editFood}
+              className="rounded-full px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+            >
+              Save changes
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

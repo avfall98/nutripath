@@ -87,6 +87,9 @@ export function AddFoodDialog({
   const [mealQuery, setMealQuery] = useState("")
   const [mealQuantity, setMealQuantity] = useState("1")
   const [expandedMeal, setExpandedMeal] = useState<number | null>(null)
+  // Tracks which specific food/meal row is currently being added, so only
+  // that row's add button shows a spinner instead of disabling every row.
+  const [addingKey, setAddingKey] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -119,16 +122,22 @@ export function AddFoodDialog({
 
   function addMeal(meal: MealDTO) {
     const qty = num(mealQuantity, 1) || 1
+    const key = `meal-${meal.id}`
+    setAddingKey(key)
     startTransition(async () => {
-      await addEntriesFromMeal({
-        dateKey,
-        mealId: meal.id,
-        mealGroupId: group.id,
-        mealGroupName: group.name,
-        mealQuantity: qty,
-      })
-      toast.success(`Added ${meal.name} to ${group.name}.`)
-      onAdded()
+      try {
+        await addEntriesFromMeal({
+          dateKey,
+          mealId: meal.id,
+          mealGroupId: group.id,
+          mealGroupName: group.name,
+          mealQuantity: qty,
+        })
+        toast.success(`Added ${meal.name} to ${group.name}.`)
+        onAdded()
+      } finally {
+        setAddingKey((k) => (k === key ? null : k))
+      }
     })
   }
 
@@ -157,16 +166,22 @@ export function AddFoodDialog({
       quantity = weightValue / servingSizeValue
     }
 
+    const key = `food-${food.id}`
+    setAddingKey(key)
     startTransition(async () => {
-      await addEntryFromFood({
-        dateKey,
-        foodId: food.id,
-        mealGroupId: group.id,
-        mealGroupName: group.name,
-        quantity,
-      })
-      toast.success(`Added ${food.name} to ${group.name}.`)
-      onAdded()
+      try {
+        await addEntryFromFood({
+          dateKey,
+          foodId: food.id,
+          mealGroupId: group.id,
+          mealGroupName: group.name,
+          quantity,
+        })
+        toast.success(`Added ${food.name} to ${group.name}.`)
+        onAdded()
+      } finally {
+        setAddingKey((k) => (k === key ? null : k))
+      }
     })
   }
 
@@ -281,17 +296,18 @@ export function AddFoodDialog({
               const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
               const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
               const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+              const isAdding = addingKey === `food-${food.id}`
               return (
                 <li key={food.id} className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.08]")}>
                   <div className="flex justify-end">
                     <button
                       type="button"
-                      disabled={pending}
+                      disabled={isAdding}
                       onClick={() => addFromLibrary(food)}
                       aria-label={`Add ${food.name}`}
-                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-default"
                     >
-                      <Plus className="size-4" />
+                      {isAdding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                     </button>
                   </div>
                   <button
@@ -378,6 +394,7 @@ export function AddFoodDialog({
               const caloriesKcal = Math.round(food.calories / KJ_PER_KCAL)
               const caloriesPct = targetCalories ? Math.round((caloriesKcal / targetCalories) * 100) : 0
               const proteinPct = targetProtein ? Math.round((food.protein / targetProtein) * 100) : 0
+              const isAdding = addingKey === `food-${food.id}`
               return (
                 <li key={food.id} className="flex flex-col gap-2 border-t border-border py-4 first:border-t-0 first:pt-0">
                   {/* Row 1: Thumbnail + Name/Details + Add button */}
@@ -417,12 +434,12 @@ export function AddFoodDialog({
                     </button>
                     <button
                       type="button"
-                      disabled={pending}
+                      disabled={isAdding}
                       onClick={() => addFromLibrary(food)}
                       aria-label={`Add ${food.name}`}
-                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                      className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-default"
                     >
-                      <Plus className="size-4" />
+                      {isAdding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                     </button>
                   </div>
                   
@@ -460,6 +477,7 @@ export function AddFoodDialog({
     const proteinPct = targetProtein ? Math.round((totals.protein / targetProtein) * 100) : 0
     const expanded = expandedMeal === meal.id
     const gramLabel = `${totals.weightG}g`
+    const isAdding = addingKey === `meal-${meal.id}`
     return (
       <li key={meal.id} className="flex flex-col">
         {/* Meal summary row */}
@@ -519,12 +537,12 @@ export function AddFoodDialog({
           <div className="flex justify-end">
             <button
               type="button"
-              disabled={pending}
+              disabled={isAdding}
               onClick={() => addMeal(meal)}
               aria-label={`Add ${meal.name}`}
-              className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+              className="flex size-7 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-default"
             >
-              <Plus className="size-4" />
+              {isAdding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
             </button>
           </div>
         </div>
@@ -643,6 +661,7 @@ export function AddFoodDialog({
               <ul className="flex flex-col md:hidden">
                 {filteredMeals.map((meal) => {
                   const totals = mealTotals(meal.ingredients)
+                  const isAdding = addingKey === `meal-${meal.id}`
                   return (
                     <li
                       key={meal.id}
@@ -665,12 +684,12 @@ export function AddFoodDialog({
                       </div>
                       <button
                         type="button"
-                        disabled={pending}
+                        disabled={isAdding}
                         onClick={() => addMeal(meal)}
                         aria-label={`Add ${meal.name}`}
-                        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-50"
+                        className="flex size-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-muted-foreground transition-colors hover:border-primary hover:text-primary disabled:cursor-default"
                       >
-                        <Plus className="size-4" />
+                        {isAdding ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}
                       </button>
                     </li>
                   )

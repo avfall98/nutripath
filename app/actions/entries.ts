@@ -213,6 +213,38 @@ export async function moveEntry(id: number, mealGroupId: number, mealGroupName: 
   revalidatePath("/")
 }
 
+// Copy an entry into today's log, in the given meal group. Used to bring a food
+// logged on a past (or present) day into today's entries without removing the
+// original entry — unlike moveEntry, the source row is left untouched.
+// `todayKey` is computed client-side (see Dashboard) so it matches the user's
+// local "today" rather than the server's, which may be in a different timezone.
+export async function copyEntryToToday(id: number, mealGroupId: number, mealGroupName: string, todayKey: string) {
+  const userId = await requireUserId()
+  await requireOwnedMealGroup(userId, mealGroupId)
+  const [entry] = await db
+    .select()
+    .from(entries)
+    .where(and(eq(entries.id, id), eq(entries.userId, userId)))
+    .limit(1)
+  if (!entry) throw new Error("Entry not found")
+
+  await db.insert(entries).values({
+    userId,
+    entryDate: todayKey,
+    mealGroupId,
+    mealGroupName,
+    foodId: entry.foodId,
+    name: entry.name,
+    servingSize: entry.servingSize,
+    calories: entry.calories,
+    protein: entry.protein,
+    carbs: entry.carbs,
+    fat: entry.fat,
+    quantity: entry.quantity,
+  })
+  revalidatePath("/")
+}
+
 export async function updateEntry(id: number, input: {
   foodId: number
   quantity: number

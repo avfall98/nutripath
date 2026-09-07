@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useTransition } from "react"
-import { deleteEntry, moveEntry } from "@/app/actions/entries"
+import { format } from "date-fns"
+import { copyEntryToToday, deleteEntry, moveEntry } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO } from "@/lib/types"
 import { AddFoodDialog } from "@/components/dashboard/add-food-dialog"
 import { EditEntryDialog } from "@/components/dashboard/edit-entry-dialog"
@@ -12,7 +13,9 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { round } from "@/lib/format"
@@ -21,7 +24,7 @@ import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badg
 import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
-import { Apple, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
+import { Apple, ArrowRightLeft, Copy, Edit, MoreVertical, Plus, Trash2 } from "lucide-react"
 
 type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
@@ -109,11 +112,24 @@ export function MealSection({
   function move(entry: EntryDTO, target: MealGroupDTO) {
     startTransition(async () => {
       await moveEntry(entry.id, target.id, target.name)
+      toast.success(`Moved to ${target.name}.`)
+      onChanged()
+    })
+  }
+
+  function copyToToday(entry: EntryDTO, target: MealGroupDTO) {
+    // Compute "today" on the client so it matches the user's local date rather
+    // than the server's, which may be in a different timezone.
+    const todayKey = format(new Date(), "yyyy-MM-dd")
+    startTransition(async () => {
+      await copyEntryToToday(entry.id, target.id, target.name, todayKey)
+      toast.success(`Copied to today's ${target.name}.`)
       onChanged()
     })
   }
 
   function entryMenu(entry: EntryDTO) {
+    const moveTargets = allGroups.filter((g) => g.id !== entry.mealGroupId)
     return (
       <DropdownMenu>
         <DropdownMenuTrigger
@@ -134,17 +150,35 @@ export function MealSection({
               <Edit data-icon="inline-start" />
               Edit entry
             </DropdownMenuItem>
-            {allGroups.filter((g) => g.id !== entry.mealGroupId).length > 0 && (
-              <>
-                <DropdownMenuLabel>Move to</DropdownMenuLabel>
-                {allGroups
-                  .filter((g) => g.id !== entry.mealGroupId)
-                  .map((g) => (
+            {moveTargets.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <ArrowRightLeft data-icon="inline-start" />
+                  Move to
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {moveTargets.map((g) => (
                     <DropdownMenuItem key={g.id} onClick={() => move(entry, g)}>
                       {g.name}
                     </DropdownMenuItem>
                   ))}
-              </>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+            )}
+            {allGroups.length > 0 && (
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <Copy data-icon="inline-start" />
+                  Copy entry
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  {allGroups.map((g) => (
+                    <DropdownMenuItem key={g.id} onClick={() => copyToToday(entry, g)}>
+                      {g.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             )}
             <DropdownMenuItem variant="destructive" onClick={() => remove(entry)}>
               <Trash2 data-icon="inline-start" />

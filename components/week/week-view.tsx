@@ -71,6 +71,10 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
   }
 
+  function dayHref(date: Date) {
+    return isSameDay(date, new Date()) ? "/" : `/?d=${format(date, "ddMMyyyy")}`
+  }
+
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
   const [hasLoaded, setHasLoaded] = useState(false)
@@ -298,7 +302,18 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
         <div className="hidden items-start justify-between gap-4 md:flex">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-faint">{eyebrow}</p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
+            <div className="mt-1 flex items-center gap-3">
+              <h1 className="text-3xl font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
+              {!isThisWeek ? (
+                <button
+                  type="button"
+                  onClick={() => goToAnchor(new Date())}
+                  className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Jump to current week
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -333,7 +348,17 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
             </button>
             <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
               <span>{rangeLabel}</span>
-              {isThisWeek ? <span className="font-semibold text-primary">This week</span> : null}
+              {isThisWeek ? (
+                <span className="font-semibold text-primary">This week</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => goToAnchor(new Date())}
+                  className="font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Jump to current week
+                </button>
+              )}
             </div>
             <button
               type="button"
@@ -453,7 +478,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
                 return (
                   <li key={d.key} className={cn(ROW_GRID, "rounded-[4px] px-2 py-3 opacity-70")}>
                     <MiniBars empty />
-                    <Link href="/" className="min-w-0 text-sm">
+                    <Link href={dayHref(d.date)} className="min-w-0 text-sm">
                       <span className="font-bold text-muted-foreground line-through">{fullDay}</span>{" "}
                       <span className="text-faint">{dateLabel}</span>
                       <span className="ml-2 rounded-full bg-card px-2 py-0.5 text-[11px] font-semibold text-muted-foreground no-underline">
@@ -488,7 +513,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
                     proPct={proteinTarget ? (d.protein / proteinTarget) * 100 : 100}
                     over={over}
                   />
-                  <Link href="/" className="min-w-0">
+                  <Link href={dayHref(d.date)} className="min-w-0">
                     <span className="flex items-center gap-2">
                       <span className="font-bold">{fullDay}</span>
                       {isToday ? (
@@ -543,7 +568,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
               if (d.skipped) {
                 return (
                   <li key={d.key} className="border-t border-border/60 first:border-t-0">
-                    <Link href="/" className="flex items-center gap-3 px-5 py-4 opacity-70 transition-colors hover:bg-white/[0.06]">
+                    <Link href={dayHref(d.date)} className="flex items-center gap-3 px-5 py-4 opacity-70 transition-colors hover:bg-white/[0.06]">
                       <MiniBars empty />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
@@ -578,7 +603,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
               const proPct = proteinTarget ? Math.round((d.protein / proteinTarget) * 100) : null
               return (
                 <li key={d.key} className="border-t border-border/60 first:border-t-0">
-                  <Link href="/" className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-white/[0.06]">
+                  <Link href={dayHref(d.date)} className="flex items-center gap-3 px-5 py-4 transition-colors hover:bg-white/[0.06]">
                     <MiniBars
                       calPct={calTarget ? (d.kcal / calTarget) * 100 : 100}
                       proPct={proteinTarget ? (d.protein / proteinTarget) * 100 : 100}

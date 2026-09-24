@@ -244,7 +244,8 @@ export function Dashboard({
   }
 
   const parsed = parseISO(dateKey)
-  const eyebrow = `${format(parsed, "EEEE, MMM d").toUpperCase()} · ${isToday(parsed) ? "TODAY" : format(parsed, "yyyy").toUpperCase()}`
+  const isCurrentDay = isToday(parsed)
+  const eyebrow = `${format(parsed, "EEEE, MMM d").toUpperCase()} · ${isCurrentDay ? "TODAY" : format(parsed, "yyyy").toUpperCase()}`
 
   function shiftDay(days: number) {
     goToDate(format(addDays(parsed, days), "yyyy-MM-dd"))
@@ -279,7 +280,18 @@ export function Dashboard({
         <div className="hidden items-start justify-between gap-4 md:flex">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-faint">{eyebrow}</p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
+            <div className="mt-1 flex items-center gap-3">
+              <h1 className="text-3xl font-extrabold tracking-[-0.8px] text-balance">Today&apos;s Nutrition</h1>
+              {!isCurrentDay ? (
+                <button
+                  type="button"
+                  onClick={() => goToDate(format(new Date(), "yyyy-MM-dd"))}
+                  className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Jump to today
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

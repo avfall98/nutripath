@@ -302,7 +302,18 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
         <div className="hidden items-start justify-between gap-4 md:flex">
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-faint">{eyebrow}</p>
-            <h1 className="mt-1 text-3xl font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
+            <div className="mt-1 flex items-center gap-3">
+              <h1 className="text-3xl font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
+              {!isThisWeek ? (
+                <button
+                  type="button"
+                  onClick={() => goToAnchor(new Date())}
+                  className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Jump to current week
+                </button>
+              ) : null}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -337,7 +348,17 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
             </button>
             <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
               <span>{rangeLabel}</span>
-              {isThisWeek ? <span className="font-semibold text-primary">This week</span> : null}
+              {isThisWeek ? (
+                <span className="font-semibold text-primary">This week</span>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => goToAnchor(new Date())}
+                  className="font-semibold text-primary underline-offset-2 hover:underline"
+                >
+                  Jump to current week
+                </button>
+              )}
             </div>
             <button
               type="button"

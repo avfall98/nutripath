@@ -103,7 +103,7 @@ export function AddFoodDialog({
   // Lazily load Recent / Favourites only while the dialog is open on that tab.
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? ["recent-foods", dateKey] : null,
-    () => getRecentFoods(10),
+    () => getRecentFoods(20),
   )
   const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
     open && tab === "favourites" ? ["favourite-foods", dateKey] : null,

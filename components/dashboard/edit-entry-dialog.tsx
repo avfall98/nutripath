@@ -85,7 +85,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   // Lazy load recent / favourites
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? ["edit-recent-foods"] : null,
-    () => getRecentFoods(10),
+    () => getRecentFoods(20),
   )
   const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
     open && tab === "favourites" ? ["edit-favourite-foods"] : null,

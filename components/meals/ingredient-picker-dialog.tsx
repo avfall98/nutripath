@@ -54,7 +54,7 @@ export function IngredientPickerDialog({
 
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? "meal-recent-foods" : null,
-    () => getRecentFoods(10),
+    () => getRecentFoods(20),
   )
   const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
     open && tab === "favourites" ? "meal-favourite-foods" : null,

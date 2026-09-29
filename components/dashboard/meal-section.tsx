@@ -30,6 +30,18 @@ type SectionGroup = { id: number; name: string } // id -1 = unassigned
 
 const KJ_PER_KCAL = 4.184
 
+// Scales a base serving size string (e.g. "250ml", "100g") by the entered quantity,
+// so "1.6 servings" of a 250ml food shows the actual amount consumed (400ml).
+function scaledServingSize(quantity: number, servingSize: string | null | undefined): string | null {
+  if (!servingSize) return null
+  const match = servingSize.match(/^([\d.]+)\s*(.*)$/)
+  if (!match) return servingSize
+  const value = Number(match[1])
+  if (!Number.isFinite(value)) return servingSize
+  const unit = match[2] || ""
+  return `${round(value * quantity)}${unit}`
+}
+
 // Shared grid template so header + rows align vertically.
 const ROW_GRID =
   "grid grid-cols-[20px_40px_1fr_auto_32px] items-center gap-x-3 md:grid-cols-[20px_44px_1fr_120px_112px_60px_60px_80px_80px_32px]"
@@ -433,10 +445,10 @@ export function MealSection({
                     <p className="truncate text-[14px] font-semibold leading-tight">{food?.name || entry.name}</p>
                     <p className="text-[11.5px] text-faint">
                       {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                      {(food?.servingSize || entry.servingSize) && (
+                      {scaledServingSize(entry.quantity, food?.servingSize || entry.servingSize) && (
                         <>
                           {" − "}
-                          {food?.servingSize || entry.servingSize}
+                          {scaledServingSize(entry.quantity, food?.servingSize || entry.servingSize)}
                         </>
                       )}
                     </p>
@@ -494,16 +506,10 @@ export function MealSection({
                         {food?.name || entry.name}
                         <span className="block md:ml-2 md:inline text-[11.5px] font-normal text-faint">
                           {qtyLabel} serving{entry.quantity === 1 ? "" : "s"}
-                          {(food?.servingSize || entry.servingSize) && (
+                          {scaledServingSize(entry.quantity, food?.servingSize || entry.servingSize) && (
                             <>
                               {" − "}
-                              {food?.servingSize || entry.servingSize}
-                            </>
-                          )}
-                          {entry.servingWeightG && (
-                            <>
-                              {" · "}
-                              {Math.round(entry.quantity * entry.servingWeightG)}g
+                              {scaledServingSize(entry.quantity, food?.servingSize || entry.servingSize)}
                             </>
                           )}
                         </span>

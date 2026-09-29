@@ -43,7 +43,7 @@ type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 
-const ROW_GRID = "grid grid-cols-[28px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+const ROW_GRID = "grid grid-cols-[28px_44px_1fr_100px_92px_52px_52px_72px_72px] items-center gap-x-3"
 
 // Matches the input style used on the "Add a food" (library) form for visual consistency.
 const fieldInput =
@@ -289,7 +289,6 @@ export function AddFoodDialog({
             <span>Fat</span>
             <span className="text-right">Kcal score</span>
             <span className="text-right">P score</span>
-            <span />
           </div>
           <ul className="mt-1 flex flex-col">
             {list.map((food, i) => {
@@ -722,7 +721,7 @@ export function AddFoodDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
+      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
         </DialogHeader>

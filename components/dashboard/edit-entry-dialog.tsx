@@ -46,7 +46,7 @@ type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 const ROW_GRID =
-  "grid grid-cols-[28px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+  "grid grid-cols-[28px_44px_1fr_100px_92px_52px_52px_72px_72px] items-center gap-x-3"
 
 export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }: Props) {
   const [pending, startTransition] = useTransition()
@@ -274,7 +274,6 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
             <span>Fat</span>
             <span className="text-right">Kcal score</span>
             <span className="text-right">P score</span>
-            <span />
           </div>
           <ul className="mt-1 flex flex-col">
             {list.map((food) => {
@@ -344,7 +343,6 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
                   <div className="flex items-center justify-end">
                     <ProteinScoreBadges proteinG={food.protein} kcal={caloriesKcal} />
                   </div>
-                  <span />
                 </li>
               )
             })}
@@ -590,7 +588,7 @@ export function EditEntryDialog({ open, onOpenChange, entry, foods, onUpdated }:
   if (step === "select") {
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
+        <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-5xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Select food item</DialogTitle>
             <DialogDescription className="sr-only">

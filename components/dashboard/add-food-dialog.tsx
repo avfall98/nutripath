@@ -43,7 +43,8 @@ type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
 
-const ROW_GRID = "grid grid-cols-[28px_44px_1fr_120px_112px_60px_60px_80px_80px_32px] items-center gap-x-3"
+const ROW_GRID = "grid grid-cols-[28px_44px_1fr_100px_92px_52px_52px_72px_72px] items-center gap-x-3"
+const MEAL_ROW_GRID = "grid grid-cols-[28px_44px_1fr_100px_92px_52px_52px_72px_72px_32px] items-center gap-x-3"
 
 // Matches the input style used on the "Add a food" (library) form for visual consistency.
 const fieldInput =
@@ -102,7 +103,7 @@ export function AddFoodDialog({
   // Lazily load Recent / Favourites only while the dialog is open on that tab.
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? ["recent-foods", dateKey] : null,
-    () => getRecentFoods(10),
+    () => getRecentFoods(20),
   )
   const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
     open && tab === "favourites" ? ["favourite-foods", dateKey] : null,
@@ -289,7 +290,6 @@ export function AddFoodDialog({
             <span>Fat</span>
             <span className="text-right">Kcal score</span>
             <span className="text-right">P score</span>
-            <span />
           </div>
           <ul className="mt-1 flex flex-col">
             {list.map((food, i) => {
@@ -481,7 +481,7 @@ export function AddFoodDialog({
     return (
       <li key={meal.id} className="flex flex-col">
         {/* Meal summary row */}
-        <div className={cn(ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.06]")}>
+        <div className={cn(MEAL_ROW_GRID, "group rounded-[4px] px-2 py-2.5 hover:bg-white/[0.06]")}>
           <div className="flex justify-start">
             <button
               type="button"
@@ -555,7 +555,7 @@ export function AddFoodDialog({
               const servingLabel =
                 ing.mode === "weight" ? `${ing.amount}${ing.servingSize?.match(/(ml|g)/i)?.[0] ?? "g"}` : `${ing.amount} serving${ing.amount === 1 ? "" : "s"}`
               return (
-                <li key={ing.id} className={cn(ROW_GRID, "px-2 py-1.5")}>
+                <li key={ing.id} className={cn(MEAL_ROW_GRID, "px-2 py-1.5")}>
                   <span />
                   <span className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-[4px] bg-track">
                     {ing.imageUrl ? (
@@ -585,8 +585,12 @@ export function AddFoodDialog({
                     <MacroIcon macro="fat" />
                     {ing.fat != null ? Math.round(n.fat) : "—"}
                   </span>
-                  <span />
-                  <span />
+                  <div className="flex items-center justify-end">
+                    <CalorieDensityBadge kcal={Math.round(n.kcal)} servingSize={servingLabel} />
+                  </div>
+                  <div className="flex items-center justify-end">
+                    <ProteinScoreBadges proteinG={n.protein} kcal={n.kcal} />
+                  </div>
                   <span />
                 </li>
               )
@@ -640,7 +644,7 @@ export function AddFoodDialog({
               <div className="hidden flex-col md:flex">
                 <div
                   className={cn(
-                    ROW_GRID,
+                    MEAL_ROW_GRID,
                     "border-b border-white/10 px-2 pb-2 text-[10.5px] font-bold uppercase tracking-[.08em] text-faint",
                   )}
                 >
@@ -722,7 +726,7 @@ export function AddFoodDialog({
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-4xl">
+      <DialogContent className="flex h-[88svh] max-h-[88svh] flex-col overflow-hidden sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
         </DialogHeader>

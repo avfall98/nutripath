@@ -55,7 +55,7 @@ export async function getFoodById(id: number): Promise<FoodDTO | null> {
 }
 
 // The N most recently logged library foods (deduped by food, newest first).
-export async function getRecentFoods(limit = 10): Promise<FoodDTO[]> {
+export async function getRecentFoods(limit = 20): Promise<FoodDTO[]> {
   const userId = await requireUserId()
   const rows = await db
     .select({ food: foods, createdAt: entries.createdAt })

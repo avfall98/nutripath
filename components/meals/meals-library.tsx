@@ -225,7 +225,7 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
   function thumb(meal: MealDTO, size: "sm" | "md" = "sm") {
     const cls = size === "md" ? "size-12" : "size-11"
     return (
-      <span className={cn(cls, "shrink-0 overflow-hidden rounded-[4px] bg-track")}>
+      <span className={cn(cls, "block shrink-0 overflow-hidden rounded-[4px] bg-track")}>
         {meal.imageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={meal.imageUrl || "/placeholder.svg"} alt="" className="size-full object-cover" />
@@ -481,7 +481,7 @@ export function MealsLibrary({ meals, profile }: { meals: MealDTO[]; profile: Pr
                     <button
                       type="button"
                       onClick={() => openEdit(meal)}
-                      className="transition-opacity hover:opacity-80"
+                      className="shrink-0 transition-opacity hover:opacity-80"
                       aria-label={`Edit ${meal.name}`}
                     >
                       {thumb(meal, "md")}

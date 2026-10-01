@@ -248,8 +248,8 @@ export function MealSection({
           )}
         </div>
         {entries.length > 0 ? (
-          <div className="flex flex-col gap-2 md:hidden">
-            {/* Macro badges row */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 md:hidden">
+            {/* Macro badges + score badges share one line, wrapping when narrow */}
             <MacroBadges
               kcal={groupCaloriesKcal}
               kcalPct={targetCalories ? groupCaloriesPct : null}
@@ -258,13 +258,12 @@ export function MealSection({
               carbs={groupCarbs}
               fat={groupFat}
             />
-            {/* Score badges row */}
-            <div className="flex items-center gap-1.5">
-              <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
-              {groupServingSize ? (
-                <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
-              ) : null}
-            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+{groupServingSize ? (
+  <CalorieDensityBadge kcal={groupCaloriesKcal} servingSize={`${groupServingSize}g`} />
+  ) : null}
+  <ProteinScoreBadges proteinG={groupProtein} kcal={groupCaloriesKcal} />
+  </div>
           </div>
         ) : (
           <span className="text-[13px] text-faint">Nothing logged yet</span>
@@ -518,23 +517,23 @@ export function MealSection({
                     <div className="-mt-1 -mr-1">{entryMenu(entry)}</div>
                   </div>
                   
-                  {/* Row 2: Nutrition stats */}
-                  <MacroBadges
-                    kcal={entryCalories}
-                    kcalPct={targetCalories ? entryCaloriesPct : null}
-                    protein={entryProtein}
-                    proteinPct={targetProtein ? entryProteinPct : null}
-                    carbs={entryCarbs}
-                    fat={entryFat}
-                  />
-                  
-                  {/* Row 3: Score badges */}
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
-                    <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || entry.servingSize || null} />
+                  {/* Row 2: Nutrition stats + score badges, wrapping when narrow */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <MacroBadges
+                      kcal={entryCalories}
+                      kcalPct={targetCalories ? entryCaloriesPct : null}
+                      protein={entryProtein}
+                      proteinPct={targetProtein ? entryProteinPct : null}
+                      carbs={entryCarbs}
+                      fat={entryFat}
+                    />
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <CalorieDensityBadge kcal={round(entry.calories / KJ_PER_KCAL)} servingSize={food?.servingSize || entry.servingSize || null} />
+                      <ProteinScoreBadges proteinG={entry.protein} kcal={entry.calories / KJ_PER_KCAL} />
+                    </div>
                   </div>
-                </div>
-              </li>
+  </div>
+  </li>
             )
           })}
         </ul>

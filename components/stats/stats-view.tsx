@@ -3,17 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useState, useTransition } from "react"
-import {
-  addWeeks,
-  eachDayOfInterval,
-  endOfWeek,
-  format,
-  isSameDay,
-  isSameWeek,
-  isValid,
-  parse,
-  startOfWeek,
-} from "date-fns"
+import { eachDayOfInterval, format, isSameDay } from "date-fns"
 import { ChartColumn, ChartLine, ChevronLeft, ChevronRight } from "lucide-react"
 import { getEntriesInRange, getSkippedDaysInRange } from "@/app/actions/entries"
 import { getFoodById } from "@/app/actions/foods"
@@ -26,7 +16,19 @@ import { MacroBadges, MacroIcon } from "@/components/dashboard/macro-badges"
 import { ProteinScoreBadges } from "@/components/dashboard/protein-score-badges"
 import { CalorieDensityBadge } from "@/components/dashboard/calorie-density-badge"
 import { PageLoading } from "@/components/page-loading"
-import { TopFoodsDonutChart } from "@/components/week/top-foods-donut-chart"
+import { TopFoodsDonutChart } from "@/components/stats/top-foods-donut-chart"
+import { TimeframePicker } from "@/components/stats/timeframe-picker"
+import {
+  DEFAULT_PRESET,
+  PRESETS,
+  formatRangeLabel,
+  matchPreset,
+  presetRange,
+  rangeFromParams,
+  rangeToParams,
+  shiftRange,
+  type DateRange,
+} from "@/lib/stats-range"
 
 const KJ_PER_KCAL = 4.184
 
@@ -49,25 +51,24 @@ type FoodTotals = {
   fat: number
 }
 
-function parseAnchorParam(value: string | null): Date | null {
-  if (!value || !/^\d{8}$/.test(value)) return null
-  const parsed = parse(value, "ddMMyyyy", new Date())
-  return isValid(parsed) ? parsed : null
-}
-
-export function WeekView({ profile }: { profile: ProfileDTO | null }) {
+export function StatsView({ profile }: { profile: ProfileDTO | null }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const anchor = useMemo(() => parseAnchorParam(searchParams.get("d")) ?? new Date(), [searchParams])
+  const range = useMemo(() => rangeFromParams(new URLSearchParams(searchParams.toString())), [searchParams])
+  const rangeStartKey = format(range.from, "yyyy-MM-dd")
+  const rangeEndKey = format(range.to, "yyyy-MM-dd")
 
-  function goToAnchor(nextAnchor: Date) {
+  function goToRange(next: DateRange) {
     const params = new URLSearchParams(searchParams.toString())
-    if (isSameWeek(nextAnchor, new Date(), { weekStartsOn: 1 })) {
-      params.delete("d")
-    } else {
-      params.set("d", format(nextAnchor, "ddMMyyyy"))
+    params.delete("d")
+    params.delete("f")
+    params.delete("t")
+    const rangeParams = rangeToParams(next)
+    if (rangeParams) {
+      params.set("f", rangeParams.f)
+      params.set("t", rangeParams.t)
     }
     const query = params.toString()
     router.push(query ? `${pathname}?${query}` : pathname, { scroll: false })
@@ -94,23 +95,27 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
     setEditFoodOpen(true)
   }
 
-  const weekStart = useMemo(() => startOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
-  const weekEnd = useMemo(() => endOfWeek(anchor, { weekStartsOn: 1 }), [anchor])
-  const days = useMemo(() => eachDayOfInterval({ start: weekStart, end: weekEnd }), [weekStart, weekEnd])
+  const days = useMemo(
+    () => eachDayOfInterval({ start: new Date(`${rangeStartKey}T00:00:00`), end: new Date(`${rangeEndKey}T00:00:00`) }),
+    [rangeStartKey, rangeEndKey],
+  )
 
   useEffect(() => {
-    const startKey = format(weekStart, "yyyy-MM-dd")
-    const endKey = format(weekEnd, "yyyy-MM-dd")
+    let cancelled = false
     startTransition(async () => {
       const [rows, skipped] = await Promise.all([
-        getEntriesInRange(startKey, endKey),
-        getSkippedDaysInRange(startKey, endKey),
+        getEntriesInRange(rangeStartKey, rangeEndKey),
+        getSkippedDaysInRange(rangeStartKey, rangeEndKey),
       ])
+      if (cancelled) return
       setEntries(rows)
       setSkippedKeys(new Set(skipped))
       setHasLoaded(true)
     })
-  }, [weekStart, weekEnd])
+    return () => {
+      cancelled = true
+    }
+  }, [rangeStartKey, rangeEndKey])
 
   const byDay = useMemo(() => {
     return days.map((date) => {
@@ -199,10 +204,14 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
   const ofTargetProtein = proteinTarget ? Math.round((avg.protein / proteinTarget) * 100) : null
 
   const today = new Date()
-  const isThisWeek = isSameWeek(anchor, today, { weekStartsOn: 1 })
-  const sameMonth = weekStart.getMonth() === weekEnd.getMonth()
-  const rangeLabel = `${format(weekStart, "MMM d")} – ${sameMonth ? format(weekEnd, "d") : format(weekEnd, "MMM d")}`
-  const eyebrow = `${rangeLabel.toUpperCase()} · ${isThisWeek ? "THIS WEEK" : format(weekStart, "yyyy")}`
+  const activePreset = matchPreset(range, today)
+  const isDefaultRange = activePreset === DEFAULT_PRESET
+  const rangeLabel = formatRangeLabel(range, today)
+  const presetLabel = PRESETS.find((p) => p.id === activePreset)?.label
+  const eyebrow = `${rangeLabel.toUpperCase()} · ${presetLabel ? presetLabel.toUpperCase() : `${days.length} DAYS`}`
+  const resetLabel = "Back to current week"
+  const dense = days.length > 14
+  const barWidth = days.length <= 7 ? "w-2.5 sm:w-3.5" : dense ? "w-1 sm:w-2" : "w-2 sm:w-3"
 
   const calMax = Math.max(calTarget ?? 0, ...byDay.map((d) => d.kcal), 1) * 1.12
   const proteinMax = Math.max(proteinTarget ?? 0, ...byDay.map((d) => d.protein), 1) * 1.28
@@ -281,7 +290,10 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
               })}
             />
           ) : (
-          <div className="absolute inset-0 grid grid-cols-7">
+          <div
+            className="absolute inset-0 grid"
+            style={{ gridTemplateColumns: `repeat(${byDay.length}, minmax(0, 1fr))` }}
+          >
             {byDay.map((d) => {
               const empty = d.entries === 0
               const inactive = empty || d.skipped
@@ -294,16 +306,16 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
               return (
                 <div
                   key={d.key}
-                  className="flex items-end justify-center gap-1 sm:gap-1.5"
+                  className={cn("flex items-end justify-center", dense ? "gap-px sm:gap-0.5" : "gap-1 sm:gap-1.5")}
                   title={d.skipped ? "Skipped — not counted" : undefined}
                 >
                   <span
-                    className="w-2.5 rounded-t-md sm:w-3.5"
+                    className={cn("rounded-t-md", barWidth, dense && "rounded-t-sm")}
                     style={{ height: `${calH}%`, backgroundColor: calColor, opacity: isToday && !inactive ? 0.6 : 1 }}
                     title={`${Math.round(d.kcal)} kcal`}
                   />
                   <span
-                    className="w-2.5 rounded-t-md sm:w-3.5"
+                    className={cn("rounded-t-md", barWidth, dense && "rounded-t-sm")}
                     style={{ height: `${proH}%`, backgroundColor: proColor, opacity: isToday && !inactive ? 0.6 : 1 }}
                     title={`${Math.round(d.protein)}g protein`}
                   />
@@ -325,32 +337,33 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
           <div>
             <p className="text-[12px] font-bold uppercase tracking-[0.12em] text-faint">{eyebrow}</p>
             <div className="mt-1 flex items-center gap-3">
-              <h1 className="text-3xl font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
-              {!isThisWeek ? (
+              <h1 className="text-3xl font-extrabold tracking-[-0.8px] text-balance">Nutrition Stats</h1>
+              {!isDefaultRange ? (
                 <button
                   type="button"
-                  onClick={() => goToAnchor(new Date())}
+                  onClick={() => goToRange(presetRange(DEFAULT_PRESET))}
                   className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
                 >
-                  Jump to current week
+                  {resetLabel}
                 </button>
               ) : null}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <TimeframePicker range={range} onChange={goToRange} />
             <button
               type="button"
-              onClick={() => goToAnchor(addWeeks(anchor, -1))}
-              aria-label="Previous week"
-              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
+              onClick={() => goToRange(shiftRange(range, -1))}
+              aria-label="Previous period"
+              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-foreground"
             >
               <ChevronLeft className="size-4" />
             </button>
             <button
               type="button"
-              onClick={() => goToAnchor(addWeeks(anchor, 1))}
-              aria-label="Next week"
-              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-white"
+              onClick={() => goToRange(shiftRange(range, 1))}
+              aria-label="Next period"
+              className="flex size-9 items-center justify-center rounded-full bg-card text-muted-foreground transition-colors hover:bg-card-hover hover:text-foreground"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -358,35 +371,36 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
         </div>
         {/* Mobile */}
         <div className="flex flex-col gap-4 md:hidden">
-          <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Weekly Nutrition</h1>
+          <h1 className="text-[30px] font-extrabold tracking-[-0.8px] text-balance">Nutrition Stats</h1>
+          <TimeframePicker range={range} onChange={goToRange} className="[&>*]:min-w-0 [&>*]:flex-1 [&>*]:justify-center" />
           <div className="flex items-center justify-between gap-1 rounded-lg bg-card px-2 py-1.5">
             <button
               type="button"
-              onClick={() => goToAnchor(addWeeks(anchor, -1))}
-              aria-label="Previous week"
-              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-white"
+              onClick={() => goToRange(shiftRange(range, -1))}
+              aria-label="Previous period"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
             >
               <ChevronLeft className="size-4" />
             </button>
-            <div className="flex items-center gap-2 text-sm font-bold tabular-nums">
-              <span>{rangeLabel}</span>
-              {isThisWeek ? (
-                <span className="font-semibold text-primary">This week</span>
+            <div className="flex min-w-0 items-center gap-2 text-sm font-bold tabular-nums">
+              <span className="truncate">{rangeLabel}</span>
+              {isDefaultRange ? (
+                <span className="shrink-0 font-semibold text-primary">This week</span>
               ) : (
                 <button
                   type="button"
-                  onClick={() => goToAnchor(new Date())}
-                  className="font-semibold text-primary underline-offset-2 hover:underline"
+                  onClick={() => goToRange(presetRange(DEFAULT_PRESET))}
+                  className="shrink-0 font-semibold text-primary underline-offset-2 hover:underline"
                 >
-                  Jump to current week
+                  Reset
                 </button>
               )}
             </div>
             <button
               type="button"
-              onClick={() => goToAnchor(addWeeks(anchor, 1))}
-              aria-label="Next week"
-              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-white"
+              onClick={() => goToRange(shiftRange(range, 1))}
+              aria-label="Next period"
+              className="flex size-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -395,7 +409,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
       </header>
 
       {!hasLoaded ? (
-        <PageLoading label="Loading your week…" />
+        <PageLoading label="Loading your stats…" />
       ) : (
       <>
       {/* Desktop: 4 stat cards */}

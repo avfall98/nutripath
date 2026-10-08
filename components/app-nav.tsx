@@ -19,7 +19,7 @@ import {
 
 const links = [
   { href: "/", label: "Today", icon: CalendarDays },
-  { href: "/week", label: "Week", icon: CalendarRange },
+  { href: "/stats", label: "Stats", icon: CalendarRange },
   { href: "/foods", label: "Foods", icon: Apple },
   { href: "/meals", label: "Meals", icon: Soup },
 ]

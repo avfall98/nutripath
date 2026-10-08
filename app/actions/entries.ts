@@ -335,5 +335,5 @@ export async function setDaySkipped(dateKey: string, skipped: boolean) {
       .where(and(eq(skippedDays.userId, userId), eq(skippedDays.entryDate, dateKey)))
   }
   revalidatePath("/")
-  revalidatePath("/week")
+  revalidatePath("/stats")
 }

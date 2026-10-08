@@ -14,7 +14,7 @@ import {
   parse,
   startOfWeek,
 } from "date-fns"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChartColumn, ChartLine, ChevronLeft, ChevronRight } from "lucide-react"
 import { getEntriesInRange, getSkippedDaysInRange } from "@/app/actions/entries"
 import { getFoodById } from "@/app/actions/foods"
 import type { EntryDTO, FoodDTO, ProfileDTO } from "@/lib/types"
@@ -29,6 +29,8 @@ import { PageLoading } from "@/components/page-loading"
 import { TopFoodsDonutChart } from "@/components/week/top-foods-donut-chart"
 
 const KJ_PER_KCAL = 4.184
+
+type ChartType = "bar" | "line"
 
   const ROW_GRID = "grid grid-cols-[40px_1fr_120px_112px_60px_60px_132px_20px] items-center gap-x-3"
   const FOOD_ROW_GRID = "grid grid-cols-[60px_1fr_80px_90px_120px_112px_60px_60px] items-center gap-x-3"
@@ -82,6 +84,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
   const [editFood, setEditFood] = useState<FoodDTO | null>(null)
   const [editFoodOpen, setEditFoodOpen] = useState(false)
   const [activeFoodKey, setActiveFoodKey] = useState<string | null>(null)
+  const [chartType, setChartType] = useState<ChartType>("bar")
 
   async function openFoodEdit(foodId: number | null) {
     if (!foodId) return
@@ -245,12 +248,13 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
       <>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
           <LegendDot className="bg-primary" label="Calories" />
-          <LegendDot className="bg-cal-over" label="Over target" />
           <LegendDot className="bg-protein-bar" label="Protein" />
+          <LegendDot className="bg-cal-over" label="Over target" />
           <div className="hidden items-center gap-4 md:ml-auto md:flex">
             {calTarget ? <DashLegend colorVar="var(--primary)" label={`${calTarget.toLocaleString()} kcal target`} /> : null}
             {proteinTarget ? <DashLegend colorVar="var(--protein-bar)" label={`${proteinTarget}g protein target`} /> : null}
           </div>
+          <ChartTypeToggle value={chartType} onChange={setChartType} />
         </div>
 
         <div className="relative mt-4 h-56 w-full">
@@ -260,6 +264,23 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
           {proteinTarget ? (
             <TargetLine frac={proteinTarget / proteinMax} colorVar="var(--protein-bar)" label={`${proteinTarget}g protein`} />
           ) : null}
+          {chartType === "line" ? (
+            <LineSeries
+              points={byDay.map((d) => {
+                const active = d.entries > 0 && !d.skipped
+                return {
+                  key: d.key,
+                  active,
+                  calFrac: Math.min(1, d.kcal / calMax),
+                  proFrac: Math.min(1, d.protein / proteinMax),
+                  over: calTarget != null && d.kcal > calTarget * 1.05,
+                  kcal: d.kcal,
+                  protein: d.protein,
+                  isToday: isSameDay(d.date, today),
+                }
+              })}
+            />
+          ) : (
           <div className="absolute inset-0 grid grid-cols-7">
             {byDay.map((d) => {
               const empty = d.entries === 0
@@ -290,6 +311,7 @@ export function WeekView({ profile }: { profile: ProfileDTO | null }) {
               )
             })}
           </div>
+          )}
         </div>
       </>
     )
@@ -798,6 +820,112 @@ function DashLegend({ colorVar, label }: { colorVar: string; label: string }) {
       <span className="h-0 w-5 border-t-2 border-dashed" style={{ borderColor: colorVar }} aria-hidden />
       {label}
     </span>
+  )
+}
+
+function ChartTypeToggle({ value, onChange }: { value: ChartType; onChange: (value: ChartType) => void }) {
+  const options: { type: ChartType; label: string; Icon: typeof ChartColumn }[] = [
+    { type: "bar", label: "Bar chart", Icon: ChartColumn },
+    { type: "line", label: "Line chart", Icon: ChartLine },
+  ]
+  return (
+    <div role="group" aria-label="Chart type" className="ml-auto flex items-center gap-0.5 rounded-full bg-track p-0.5 md:ml-2">
+      {options.map(({ type, label, Icon }) => (
+        <button
+          key={type}
+          type="button"
+          aria-label={label}
+          aria-pressed={value === type}
+          onClick={() => onChange(type)}
+          className={cn(
+            "flex size-7 items-center justify-center rounded-full transition-colors",
+            value === type ? "bg-card-hover text-foreground" : "text-faint hover:text-foreground",
+          )}
+        >
+          <Icon className="size-4" aria-hidden />
+        </button>
+      ))}
+    </div>
+  )
+}
+
+type LinePoint = {
+  key: string
+  active: boolean
+  calFrac: number
+  proFrac: number
+  over: boolean
+  kcal: number
+  protein: number
+  isToday: boolean
+}
+
+function buildPath(points: LinePoint[], pick: (p: LinePoint) => number) {
+  let path = ""
+  let drawing = false
+  points.forEach((p, i) => {
+    if (!p.active) {
+      drawing = false
+      return
+    }
+    const x = ((i + 0.5) / points.length) * 100
+    const y = 100 - pick(p) * 100
+    path += `${drawing ? "L" : "M"}${x.toFixed(3)} ${y.toFixed(3)} `
+    drawing = true
+  })
+  return path
+}
+
+function LineSeries({ points }: { points: LinePoint[] }) {
+  const series = [
+    { id: "cal", color: "var(--primary)", pick: (p: LinePoint) => p.calFrac },
+    { id: "pro", color: "var(--protein-bar)", pick: (p: LinePoint) => p.proFrac },
+  ]
+  return (
+    <div className="absolute inset-0">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 size-full overflow-visible" aria-hidden>
+        {series.map((s) => (
+          <path
+            key={s.id}
+            d={buildPath(points, s.pick)}
+            fill="none"
+            stroke={s.color}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
+      </svg>
+      {points.map((p, i) => {
+        if (!p.active) {
+          return (
+            <span
+              key={p.key}
+              className="absolute bottom-0 size-2 -translate-x-1/2 rounded-full bg-track"
+              style={{ left: `${((i + 0.5) / points.length) * 100}%` }}
+              aria-hidden
+            />
+          )
+        }
+        const left = `${((i + 0.5) / points.length) * 100}%`
+        const dotOpacity = p.isToday ? 0.7 : 1
+        return (
+          <span key={p.key}>
+            <span
+              className="absolute size-3 -translate-x-1/2 translate-y-1/2 rounded-full ring-2 ring-card"
+              style={{ left, bottom: `${p.calFrac * 100}%`, backgroundColor: p.over ? "var(--cal-over)" : "var(--primary)", opacity: dotOpacity }}
+              title={`${Math.round(p.kcal)} kcal`}
+            />
+            <span
+              className="absolute size-3 -translate-x-1/2 translate-y-1/2 rounded-full ring-2 ring-card"
+              style={{ left, bottom: `${p.proFrac * 100}%`, backgroundColor: "var(--protein-bar)", opacity: dotOpacity }}
+              title={`${Math.round(p.protein)}g protein`}
+            />
+          </span>
+        )
+      })}
+    </div>
   )
 }
 

@@ -20,11 +20,11 @@ export const MAX_RANGE_DAYS = 31
 export type PresetId = "week" | "last7" | "last14" | "last21" | "last28" | "month"
 
 export const PRESETS: { id: PresetId; label: string }[] = [
-  { id: "week", label: "Current week" },
   { id: "last7", label: "Last 7 days" },
   { id: "last14", label: "Last 14 days" },
   { id: "last21", label: "Last 21 days" },
   { id: "last28", label: "Last 28 days" },
+  { id: "week", label: "Current week" },
   { id: "month", label: "Current month" },
 ]
 
@@ -48,7 +48,7 @@ export function presetRange(id: PresetId, today = new Date()): DateRange {
   }
 }
 
-export const DEFAULT_PRESET: PresetId = "week"
+export const DEFAULT_PRESET: PresetId = "last7"
 
 function parseParam(value: string | null): Date | null {
   if (!value || !/^\d{8}$/.test(value)) return null

@@ -166,7 +166,7 @@ function StatCell({
       {weekAvg != null ? (
         <span className="text-[11px] tabular-nums text-faint">
           <span className="text-foreground">{round(weekAvg).toLocaleString()}</span>{" "}
-          {unit === "g" ? "g" : unit} weekly avg
+          {unit === "g" ? "g" : unit} last 7 day avg
         </span>
       ) : null}
     </div>
@@ -208,7 +208,7 @@ function StatCard({
       {weekAvg != null ? (
         <span className="text-[13px] tabular-nums text-faint">
           <span className="text-foreground">{round(weekAvg).toLocaleString()}</span>{" "}
-          {unit === "g" ? "g" : unit} weekly avg
+          {unit === "g" ? "g" : unit} last 7 day avg
         </span>
       ) : null}
     </div>

@@ -209,7 +209,7 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
   const rangeLabel = formatRangeLabel(range, today)
   const presetLabel = PRESETS.find((p) => p.id === activePreset)?.label
   const eyebrow = `${rangeLabel.toUpperCase()} · ${presetLabel ? presetLabel.toUpperCase() : `${days.length} DAYS`}`
-  const resetLabel = "Back to current week"
+  const resetLabel = "Back to last 7 days"
   const dense = days.length > 14
   const barWidth = days.length <= 7 ? "w-2.5 sm:w-3.5" : dense ? "w-1 sm:w-2" : "w-2 sm:w-3"
 
@@ -385,7 +385,7 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
             <div className="flex min-w-0 items-center gap-2 text-sm font-bold tabular-nums">
               <span className="truncate">{rangeLabel}</span>
               {isDefaultRange ? (
-                <span className="shrink-0 font-semibold text-primary">This week</span>
+                <span className="shrink-0 font-semibold text-primary">Last 7 days</span>
               ) : (
                 <button
                   type="button"

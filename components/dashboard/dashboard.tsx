@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import useSWR from "swr"
-import { addDays, endOfWeek, format, isToday, isValid, parse, parseISO, startOfWeek } from "date-fns"
+import { addDays, format, isToday, isValid, parse, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, MoreHorizontal, CalendarOff, RotateCcw } from "lucide-react"
 import { getEntriesByDate, getEntriesInRange, getSkippedDaysInRange, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
@@ -119,9 +119,9 @@ export function Dashboard({
     )
   }, [list])
 
-  // Current week's (Mon–Sun) entries, used to show a daily average alongside each stat.
-  const weekStartKey = useMemo(() => format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"), [])
-  const weekEndKey = useMemo(() => format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"), [])
+  // Rolling last 7 days (today and the 6 days before), used to show a daily average alongside each stat.
+  const weekStartKey = useMemo(() => format(addDays(new Date(), -6), "yyyy-MM-dd"), [])
+  const weekEndKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), [])
 
   const { data: weekEntries } = useSWR<EntryDTO[]>(
     ["week-entries", weekStartKey, weekEndKey],

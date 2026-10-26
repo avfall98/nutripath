@@ -28,9 +28,18 @@ import {
   rangeToParams,
   shiftRange,
   type DateRange,
+  type PresetId,
 } from "@/lib/stats-range"
+import { loadRollingAverage, type RollingAverage } from "@/lib/rolling-average"
 
 const KJ_PER_KCAL = 4.184
+
+const ROLLING_PRESET_DAYS: Partial<Record<PresetId, number>> = {
+  last7: 7,
+  last14: 14,
+  last21: 21,
+  last28: 28,
+}
 
 type ChartType = "bar" | "line"
 
@@ -80,7 +89,13 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
 
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
+  const [rolling, setRolling] = useState<RollingAverage | null>(null)
   const [hasLoaded, setHasLoaded] = useState(false)
+  const todayKey = format(new Date(), "yyyy-MM-dd")
+  const rollingCount = useMemo(() => {
+    const preset = matchPreset(range)
+    return preset ? (ROLLING_PRESET_DAYS[preset] ?? null) : null
+  }, [range])
   const [, startTransition] = useTransition()
   const [editFood, setEditFood] = useState<FoodDTO | null>(null)
   const [editFoodOpen, setEditFoodOpen] = useState(false)
@@ -103,19 +118,21 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
   useEffect(() => {
     let cancelled = false
     startTransition(async () => {
-      const [rows, skipped] = await Promise.all([
+      const [rows, skipped, rollingResult] = await Promise.all([
         getEntriesInRange(rangeStartKey, rangeEndKey),
         getSkippedDaysInRange(rangeStartKey, rangeEndKey),
+        rollingCount ? loadRollingAverage(rollingCount) : Promise.resolve(null),
       ])
       if (cancelled) return
       setEntries(rows)
       setSkippedKeys(new Set(skipped))
+      setRolling(rollingResult)
       setHasLoaded(true)
     })
     return () => {
       cancelled = true
     }
-  }, [rangeStartKey, rangeEndKey])
+  }, [rangeStartKey, rangeEndKey, rollingCount])
 
   const byDay = useMemo(() => {
     return days.map((date) => {
@@ -148,28 +165,26 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
     })
   }, [days, entries, skippedKeys])
 
-  // Skipped days are excluded from weekly totals/averages even if they have entries.
-  const loggedDays = byDay.filter((d) => d.entries > 0 && !d.skipped)
-  const totals = useMemo(
-    () =>
-      loggedDays.reduce(
-        (acc, d) => ({
-          kcal: acc.kcal + d.kcal,
-          protein: acc.protein + d.protein,
-          carbs: acc.carbs + d.carbs,
-          fat: acc.fat + d.fat,
-        }),
-        { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-      ),
-    [loggedDays],
-  )
-  const n = loggedDays.length || 1
-  const avg = {
-    kcal: totals.kcal / n,
-    protein: totals.protein / n,
-    carbs: totals.carbs / n,
-    fat: totals.fat / n,
-  }
+  // Averages never include today or skipped days. For "last N days" presets, skipped days are
+  // replaced by earlier days so the average always covers N non-skipped days before today.
+  const { totals, avg } = useMemo(() => {
+    if (rollingCount && rolling) return { totals: rolling.totals, avg: rolling.avg }
+    const counted = byDay.filter((d) => d.entries > 0 && !d.skipped && d.key !== todayKey)
+    const sums = counted.reduce(
+      (acc, d) => ({
+        kcal: acc.kcal + d.kcal,
+        protein: acc.protein + d.protein,
+        carbs: acc.carbs + d.carbs,
+        fat: acc.fat + d.fat,
+      }),
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+    )
+    const n = counted.length || 1
+    return {
+      totals: sums,
+      avg: { kcal: sums.kcal / n, protein: sums.protein / n, carbs: sums.carbs / n, fat: sums.fat / n },
+    }
+  }, [byDay, rolling, rollingCount, todayKey])
 
   const topFoods = useMemo<FoodTotals[]>(() => {
     const map = new Map<string, FoodTotals>()

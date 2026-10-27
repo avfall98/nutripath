@@ -30,7 +30,7 @@ import {
   type DateRange,
   type PresetId,
 } from "@/lib/stats-range"
-import { loadRollingAverage, type RollingAverage } from "@/lib/rolling-average"
+import { loadRollingAverage, pickAverageDayKeys, type RollingAverage } from "@/lib/rolling-average"
 
 const KJ_PER_KCAL = 4.184
 const CHART_LOOKBACK_DAYS = 120
@@ -118,8 +118,8 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
     [rangeStartKey, rangeEndKey],
   )
 
-  // The chart reaches further back than the selected range by one day for every skipped day in it,
-  // so it always shows as many non-skipped days as the range length.
+  // The chart reaches further back than the selected range so skipped days (and, for "last N days"
+  // presets, the in-progress current day) don't reduce the number of complete days shown.
   const chartDays = useMemo(() => {
     const start = chartStartKey && chartStartKey < rangeStartKey ? chartStartKey : rangeStartKey
     return eachDayOfInterval({ start: new Date(`${start}T00:00:00`), end: new Date(`${rangeEndKey}T00:00:00`) })
@@ -137,11 +137,18 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
       const skippedInRange = skipped.filter((k) => k >= rangeStartKey && k <= rangeEndKey).length
 
       let extraStartKey = rangeStartKey
-      let remaining = skippedInRange
-      for (let offset = 1; remaining > 0 && offset <= CHART_LOOKBACK_DAYS; offset++) {
-        const key = format(addDays(new Date(`${rangeStartKey}T00:00:00`), -offset), "yyyy-MM-dd")
-        extraStartKey = key
-        if (!skippedSet.has(key)) remaining--
+      if (rollingCount) {
+        // "Last N days": N complete non-skipped days before today, any skipped days between them, plus today.
+        const dayKeys = pickAverageDayKeys(rollingCount, skippedSet)
+        const oldest = dayKeys[dayKeys.length - 1]
+        if (oldest) extraStartKey = oldest
+      } else {
+        let remaining = skippedInRange
+        for (let offset = 1; remaining > 0 && offset <= CHART_LOOKBACK_DAYS; offset++) {
+          const key = format(addDays(new Date(`${rangeStartKey}T00:00:00`), -offset), "yyyy-MM-dd")
+          extraStartKey = key
+          if (!skippedSet.has(key)) remaining--
+        }
       }
 
       const rows = await getEntriesInRange(extraStartKey, rangeEndKey)

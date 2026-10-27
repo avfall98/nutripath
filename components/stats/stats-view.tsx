@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { useEffect, useMemo, useState, useTransition } from "react"
-import { eachDayOfInterval, format, isSameDay } from "date-fns"
+import { addDays, eachDayOfInterval, format, isSameDay } from "date-fns"
 import { ChartColumn, ChartLine, ChevronLeft, ChevronRight } from "lucide-react"
 import { getEntriesInRange, getSkippedDaysInRange } from "@/app/actions/entries"
 import { getFoodById } from "@/app/actions/foods"
@@ -28,9 +28,19 @@ import {
   rangeToParams,
   shiftRange,
   type DateRange,
+  type PresetId,
 } from "@/lib/stats-range"
+import { loadRollingAverage, pickAverageDayKeys, type RollingAverage } from "@/lib/rolling-average"
 
 const KJ_PER_KCAL = 4.184
+const CHART_LOOKBACK_DAYS = 120
+
+const ROLLING_PRESET_DAYS: Partial<Record<PresetId, number>> = {
+  last7: 7,
+  last14: 14,
+  last21: 21,
+  last28: 28,
+}
 
 type ChartType = "bar" | "line"
 
@@ -80,7 +90,13 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
 
   const [entries, setEntries] = useState<EntryDTO[]>([])
   const [skippedKeys, setSkippedKeys] = useState<Set<string>>(new Set())
+  const [rolling, setRolling] = useState<RollingAverage | null>(null)
   const [hasLoaded, setHasLoaded] = useState(false)
+  const todayKey = format(new Date(), "yyyy-MM-dd")
+  const rollingCount = useMemo(() => {
+    const preset = matchPreset(range)
+    return preset ? (ROLLING_PRESET_DAYS[preset] ?? null) : null
+  }, [range])
   const [, startTransition] = useTransition()
   const [editFood, setEditFood] = useState<FoodDTO | null>(null)
   const [editFoodOpen, setEditFoodOpen] = useState(false)
@@ -95,30 +111,61 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
     setEditFoodOpen(true)
   }
 
+  const [chartStartKey, setChartStartKey] = useState<string | null>(null)
+
   const days = useMemo(
     () => eachDayOfInterval({ start: new Date(`${rangeStartKey}T00:00:00`), end: new Date(`${rangeEndKey}T00:00:00`) }),
     [rangeStartKey, rangeEndKey],
   )
 
+  // The chart reaches further back than the selected range so skipped days (and, for "last N days"
+  // presets, the in-progress current day) don't reduce the number of complete days shown.
+  const chartDays = useMemo(() => {
+    const start = chartStartKey && chartStartKey < rangeStartKey ? chartStartKey : rangeStartKey
+    return eachDayOfInterval({ start: new Date(`${start}T00:00:00`), end: new Date(`${rangeEndKey}T00:00:00`) })
+  }, [chartStartKey, rangeStartKey, rangeEndKey])
+
   useEffect(() => {
     let cancelled = false
     startTransition(async () => {
-      const [rows, skipped] = await Promise.all([
-        getEntriesInRange(rangeStartKey, rangeEndKey),
-        getSkippedDaysInRange(rangeStartKey, rangeEndKey),
+      const lookbackStart = format(addDays(new Date(`${rangeStartKey}T00:00:00`), -CHART_LOOKBACK_DAYS), "yyyy-MM-dd")
+      const [skipped, rollingResult] = await Promise.all([
+        getSkippedDaysInRange(lookbackStart, rangeEndKey),
+        rollingCount ? loadRollingAverage(rollingCount) : Promise.resolve(null),
       ])
+      const skippedSet = new Set(skipped)
+      const skippedInRange = skipped.filter((k) => k >= rangeStartKey && k <= rangeEndKey).length
+
+      let extraStartKey = rangeStartKey
+      if (rollingCount) {
+        // "Last N days": N complete non-skipped days before today, any skipped days between them, plus today.
+        const dayKeys = pickAverageDayKeys(rollingCount, skippedSet)
+        const oldest = dayKeys[dayKeys.length - 1]
+        if (oldest) extraStartKey = oldest
+      } else {
+        let remaining = skippedInRange
+        for (let offset = 1; remaining > 0 && offset <= CHART_LOOKBACK_DAYS; offset++) {
+          const key = format(addDays(new Date(`${rangeStartKey}T00:00:00`), -offset), "yyyy-MM-dd")
+          extraStartKey = key
+          if (!skippedSet.has(key)) remaining--
+        }
+      }
+
+      const rows = await getEntriesInRange(extraStartKey, rangeEndKey)
       if (cancelled) return
       setEntries(rows)
-      setSkippedKeys(new Set(skipped))
+      setSkippedKeys(skippedSet)
+      setChartStartKey(extraStartKey)
+      setRolling(rollingResult)
       setHasLoaded(true)
     })
     return () => {
       cancelled = true
     }
-  }, [rangeStartKey, rangeEndKey])
+  }, [rangeStartKey, rangeEndKey, rollingCount])
 
-  const byDay = useMemo(() => {
-    return days.map((date) => {
+  const chartByDay = useMemo(() => {
+    return chartDays.map((date) => {
       const key = format(date, "yyyy-MM-dd")
       const dayEntries = entries.filter((e) => e.entryDate === key)
       let kcal = 0
@@ -146,35 +193,40 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
         skipped: skippedKeys.has(key),
       }
     })
-  }, [days, entries, skippedKeys])
+  }, [chartDays, entries, skippedKeys])
 
-  // Skipped days are excluded from weekly totals/averages even if they have entries.
-  const loggedDays = byDay.filter((d) => d.entries > 0 && !d.skipped)
-  const totals = useMemo(
-    () =>
-      loggedDays.reduce(
-        (acc, d) => ({
-          kcal: acc.kcal + d.kcal,
-          protein: acc.protein + d.protein,
-          carbs: acc.carbs + d.carbs,
-          fat: acc.fat + d.fat,
-        }),
-        { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-      ),
-    [loggedDays],
+  // Everything except the chart (averages, day lists) only covers the selected range.
+  const byDay = useMemo(
+    () => chartByDay.filter((d) => d.key >= rangeStartKey && d.key <= rangeEndKey),
+    [chartByDay, rangeStartKey, rangeEndKey],
   )
-  const n = loggedDays.length || 1
-  const avg = {
-    kcal: totals.kcal / n,
-    protein: totals.protein / n,
-    carbs: totals.carbs / n,
-    fat: totals.fat / n,
-  }
+
+  // Averages never include today or skipped days. For "last N days" presets, skipped days are
+  // replaced by earlier days so the average always covers N non-skipped days before today.
+  const { totals, avg } = useMemo(() => {
+    if (rollingCount && rolling) return { totals: rolling.totals, avg: rolling.avg }
+    const counted = byDay.filter((d) => d.entries > 0 && !d.skipped && d.key !== todayKey)
+    const sums = counted.reduce(
+      (acc, d) => ({
+        kcal: acc.kcal + d.kcal,
+        protein: acc.protein + d.protein,
+        carbs: acc.carbs + d.carbs,
+        fat: acc.fat + d.fat,
+      }),
+      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+    )
+    const n = counted.length || 1
+    return {
+      totals: sums,
+      avg: { kcal: sums.kcal / n, protein: sums.protein / n, carbs: sums.carbs / n, fat: sums.fat / n },
+    }
+  }, [byDay, rolling, rollingCount, todayKey])
 
   const topFoods = useMemo<FoodTotals[]>(() => {
     const map = new Map<string, FoodTotals>()
     for (const e of entries) {
       if (skippedKeys.has(e.entryDate)) continue
+      if (e.entryDate < rangeStartKey || e.entryDate > rangeEndKey) continue
       const key = e.foodId != null ? `food-${e.foodId}` : `name-${e.name.trim().toLowerCase()}`
       const q = e.quantity || 1
       const kcal = (e.calories / KJ_PER_KCAL) * q
@@ -196,7 +248,7 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
       }
     }
     return [...map.values()].sort((a, b) => b.count - a.count || b.kcal - a.kcal).slice(0, 10)
-  }, [entries, skippedKeys])
+  }, [entries, skippedKeys, rangeStartKey, rangeEndKey])
 
   const calTarget = profile?.targetCalories ?? null
   const proteinTarget = profile?.targetProtein ?? null
@@ -210,11 +262,11 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
   const presetLabel = PRESETS.find((p) => p.id === activePreset)?.label
   const eyebrow = `${rangeLabel.toUpperCase()} · ${presetLabel ? presetLabel.toUpperCase() : `${days.length} DAYS`}`
   const resetLabel = "Back to last 7 days"
-  const dense = days.length > 14
-  const barWidth = days.length <= 7 ? "w-2.5 sm:w-3.5" : dense ? "w-1 sm:w-2" : "w-2 sm:w-3"
+  const dense = chartDays.length > 14
+  const barWidth = chartDays.length <= 7 ? "w-2.5 sm:w-3.5" : dense ? "w-1 sm:w-2" : "w-2 sm:w-3"
 
-  const calMax = Math.max(calTarget ?? 0, ...byDay.map((d) => d.kcal), 1) * 1.12
-  const proteinMax = Math.max(proteinTarget ?? 0, ...byDay.map((d) => d.protein), 1) * 1.28
+  const calMax = Math.max(calTarget ?? 0, ...chartByDay.map((d) => d.kcal), 1) * 1.12
+  const proteinMax = Math.max(proteinTarget ?? 0, ...chartByDay.map((d) => d.protein), 1) * 1.28
   const anyOver = calTarget != null
 
   const statCards = [
@@ -275,7 +327,7 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
           ) : null}
           {chartType === "line" ? (
             <LineSeries
-              points={byDay.map((d) => {
+              points={chartByDay.map((d) => {
                 const active = d.entries > 0 && !d.skipped
                 return {
                   key: d.key,
@@ -292,9 +344,9 @@ export function StatsView({ profile }: { profile: ProfileDTO | null }) {
           ) : (
           <div
             className="absolute inset-0 grid"
-            style={{ gridTemplateColumns: `repeat(${byDay.length}, minmax(0, 1fr))` }}
+            style={{ gridTemplateColumns: `repeat(${chartByDay.length}, minmax(0, 1fr))` }}
           >
-            {byDay.map((d) => {
+            {chartByDay.map((d) => {
               const empty = d.entries === 0
               const inactive = empty || d.skipped
               const over = anyOver && calTarget != null && d.kcal > calTarget * 1.05

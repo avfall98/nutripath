@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import useSWR from "swr"
 import { addDays, format, isToday, isValid, parse, parseISO } from "date-fns"
 import { ChevronLeft, ChevronRight, MoreHorizontal, CalendarOff, RotateCcw } from "lucide-react"
-import { getEntriesByDate, getEntriesInRange, getSkippedDaysInRange, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
+import { getEntriesByDate, isDaySkipped, setDaySkipped } from "@/app/actions/entries"
 import type { EntryDTO, FoodDTO, MealGroupDTO, ProfileDTO } from "@/lib/types"
 import { DaySummary } from "@/components/dashboard/day-summary"
 import { DayNavigator } from "@/components/dashboard/day-navigator"
@@ -18,8 +18,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { parseServingWeight } from "@/lib/nutrition"
-
-const KJ_PER_KCAL = 4.184
+import { loadRollingAverage } from "@/lib/rolling-average"
 
 export function Dashboard({
   profile,
@@ -86,6 +85,7 @@ export function Dashboard({
     startSkipTransition(async () => {
       await setDaySkipped(dateKey, next)
       mutateSkipped()
+      mutateRolling()
     })
   }
 
@@ -119,54 +119,23 @@ export function Dashboard({
     )
   }, [list])
 
-  // Rolling last 7 days (today and the 6 days before), used to show a daily average alongside each stat.
-  const weekStartKey = useMemo(() => format(addDays(new Date(), -6), "yyyy-MM-dd"), [])
-  const weekEndKey = useMemo(() => format(new Date(), "yyyy-MM-dd"), [])
-
-  const { data: weekEntries } = useSWR<EntryDTO[]>(
-    ["week-entries", weekStartKey, weekEndKey],
-    () => getEntriesInRange(weekStartKey, weekEndKey),
-    { keepPreviousData: true },
-  )
-  const { data: weekSkippedDays } = useSWR<string[]>(
-    ["week-skipped", weekStartKey, weekEndKey],
-    () => getSkippedDaysInRange(weekStartKey, weekEndKey),
+  // Daily average over the last 7 non-skipped days before today (today itself is never counted).
+  const todayKey = format(new Date(), "yyyy-MM-dd")
+  const { data: rolling, mutate: mutateRolling } = useSWR(
+    ["rolling-average", 7, todayKey],
+    () => loadRollingAverage(7),
     { keepPreviousData: true },
   )
 
   const weekAverages = useMemo(() => {
-    if (!weekEntries) return null
-    const skippedSet = new Set(weekSkippedDays ?? [])
-    const byDay = new Map<string, { kcal: number; protein: number; carbs: number; fat: number }>()
-    for (const e of weekEntries) {
-      if (skippedSet.has(e.entryDate)) continue
-      const q = e.quantity || 1
-      const day = byDay.get(e.entryDate) ?? { kcal: 0, protein: 0, carbs: 0, fat: 0 }
-      day.kcal += (e.calories / KJ_PER_KCAL) * q
-      day.protein += e.protein * q
-      day.carbs += (e.carbs ?? 0) * q
-      day.fat += (e.fat ?? 0) * q
-      byDay.set(e.entryDate, day)
-    }
-    const days = [...byDay.values()]
-    if (days.length === 0) return null
-    const sums = days.reduce(
-      (acc, d) => ({
-        kcal: acc.kcal + d.kcal,
-        protein: acc.protein + d.protein,
-        carbs: acc.carbs + d.carbs,
-        fat: acc.fat + d.fat,
-      }),
-      { kcal: 0, protein: 0, carbs: 0, fat: 0 },
-    )
-    const n = days.length
+    if (!rolling || rolling.loggedDays === 0) return null
     return {
-      calories: sums.kcal / n,
-      protein: sums.protein / n,
-      carbs: sums.carbs / n,
-      fat: sums.fat / n,
+      calories: rolling.avg.kcal,
+      protein: rolling.avg.protein,
+      carbs: rolling.avg.carbs,
+      fat: rolling.avg.fat,
     }
-  }, [weekEntries, weekSkippedDays])
+  }, [rolling])
 
   // Total serving weight across the day, summed from each entry's food serving size.
   const totalServingWeight = useMemo(() => {

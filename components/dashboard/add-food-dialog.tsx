@@ -705,22 +705,23 @@ export function AddFoodDialog({
           <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
         </DialogHeader>
 
-        {/* Global search + quantity controls (hidden on the Custom form) */}
-        {tab !== "quick" ? (
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                aria-label="Search foods and meals"
-                className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
-                placeholder="Search foods and meals..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
+        {/* Global search + quantity controls. On the Custom form they stay in the layout (greyed/hidden) so the filter pills don't jump. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className={cn("relative flex-1 transition-opacity", tab === "quick" && "opacity-40")}>
+            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              aria-label="Search foods and meals"
+              className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:hover:bg-inset"
+              placeholder="Search foods and meals..."
+              value={query}
+              disabled={tab === "quick"}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          <div className={cn(tab === "quick" && "invisible")} aria-hidden={tab === "quick"} inert={tab === "quick"}>
             {renderQuantityControls(tab === "meals")}
           </div>
-        ) : null}
+        </div>
 
         {/* Pill filters */}
         <div className="flex flex-wrap items-center gap-2">

@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition, useEffect } from "react"
 import useSWR from "swr"
 import { addEntryFromFood, addQuickEntry, addEntriesFromMeal } from "@/app/actions/entries"
-import { getRecentFoods, getFavouriteFoods } from "@/app/actions/foods"
+import { getRecentFoods } from "@/app/actions/foods"
 import { getMeals } from "@/app/actions/meals"
 import type { FoodDTO, MealDTO, MealGroupDTO } from "@/lib/types"
 import { mealTotals, ingredientNutrition } from "@/lib/meals"
@@ -38,7 +38,8 @@ type Props = {
 }
 
 type QuantityMode = "servings" | "weight"
-type TabKey = "library" | "recent" | "favourites" | "meals" | "quick"
+type TabKey = "all" | "recent" | "favourites" | "meals" | "quick"
+const TAB_KEYS: TabKey[] = ["all", "favourites", "recent", "meals", "quick"]
 type ServingUnit = "g" | "ml"
 
 const KJ_PER_KCAL = 4.184
@@ -63,12 +64,11 @@ export function AddFoodDialog({
 }: Props) {
   const [pending, startTransition] = useTransition()
   const [tab, setTab] = useState<TabKey>(() => {
-    // Initialize from session storage, default to "favourites"
     if (typeof window !== "undefined") {
       const saved = sessionStorage.getItem("addFoodDialog_selectedTab")
-      return (saved as TabKey) || "favourites"
+      if (saved && TAB_KEYS.includes(saved as TabKey)) return saved as TabKey
     }
-    return "favourites"
+    return "all"
   })
   const [query, setQuery] = useState("")
   const [qtyMode, setQtyMode] = useState<QuantityMode>("servings")
@@ -85,44 +85,57 @@ export function AddFoodDialog({
   const [quickWeight, setQuickWeight] = useState("")
   const [showNutrition, setShowNutrition] = useState(false)
   const [detailFood, setDetailFood] = useState<FoodDTO | null>(null)
-  const [mealQuery, setMealQuery] = useState("")
-  const [mealQuantity, setMealQuantity] = useState("1")
   const [expandedMeal, setExpandedMeal] = useState<number | null>(null)
   // Tracks which specific food/meal row is currently being added, so only
   // that row's add button shows a spinner instead of disabling every row.
   const [addingKey, setAddingKey] = useState<string | null>(null)
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
-    if (!q) return foods
-    return foods.filter(
-      (f) => f.name.toLowerCase().includes(q) || (f.brand ?? "").toLowerCase().includes(q),
-    )
-  }, [foods, query])
+  const normalizedQuery = query.trim().toLowerCase()
 
-  // Lazily load Recent / Favourites only while the dialog is open on that tab.
+  function matchesQuery(food: FoodDTO) {
+    if (!normalizedQuery) return true
+    return (
+      food.name.toLowerCase().includes(normalizedQuery) ||
+      (food.brand ?? "").toLowerCase().includes(normalizedQuery)
+    )
+  }
+
+  // One search term drives every tab; the tab only narrows the pool being searched.
+  const filtered = useMemo(
+    () => foods.filter(matchesQuery),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [foods, normalizedQuery],
+  )
+  const filteredFavourites = useMemo(() => filtered.filter((f) => f.favourite), [filtered])
+
+  // Recent foods and meals are loaded lazily, only for the tabs that need them.
   const { data: recentFoods, isLoading: recentLoading } = useSWR(
     open && tab === "recent" ? ["recent-foods", dateKey] : null,
-    () => getRecentFoods(20),
-  )
-  const { data: favouriteFoods, isLoading: favouriteLoading } = useSWR(
-    open && tab === "favourites" ? ["favourite-foods", dateKey] : null,
-    () => getFavouriteFoods(20),
+    () => getRecentFoods(100),
   )
   const { data: allMeals, isLoading: mealsLoading } = useSWR(
-    open && tab === "meals" ? ["all-meals"] : null,
+    open && (tab === "all" || tab === "meals") ? ["all-meals"] : null,
     () => getMeals(),
+  )
+
+  const filteredRecent = useMemo(
+    () => (recentFoods ?? []).filter(matchesQuery),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [recentFoods, normalizedQuery],
   )
 
   const filteredMeals = useMemo(() => {
     const list = allMeals ?? []
-    const q = mealQuery.trim().toLowerCase()
-    if (!q) return list
-    return list.filter((m) => m.name.toLowerCase().includes(q))
-  }, [allMeals, mealQuery])
+    if (!normalizedQuery) return list
+    return list.filter((m) => m.name.toLowerCase().includes(normalizedQuery))
+  }, [allMeals, normalizedQuery])
 
   function addMeal(meal: MealDTO) {
-    const qty = num(mealQuantity, 1) || 1
+    if (qtyMode === "weight") {
+      toast.error("Meals can only be added by servings. Switch to Servings to add this meal.")
+      return
+    }
+    const qty = num(servings, 1) || 1
     const key = `meal-${meal.id}`
     setAddingKey(key)
     startTransition(async () => {
@@ -229,10 +242,11 @@ export function AddFoodDialog({
     })
   }
 
-  function renderQuantityControls() {
+  function renderQuantityControls(servingsOnly = false) {
+    const mode: QuantityMode = servingsOnly ? "servings" : qtyMode
     return (
       <div className="flex flex-wrap items-center gap-3">
-        {qtyMode === "servings" ? (
+        {mode === "servings" ? (
           <ServingsStepper value={servings} onChange={setServings} step={0.5} />
         ) : (
           <Input
@@ -247,7 +261,7 @@ export function AddFoodDialog({
             placeholder="g"
           />
         )}
-        <div className="flex shrink-0 items-center rounded-full bg-inset p-1">
+        <div className={cn("shrink-0 items-center rounded-full bg-inset p-1", servingsOnly ? "hidden" : "flex")}>
           {(["servings", "weight"] as QuantityMode[]).map((mode) => {
             const active = qtyMode === mode
             const label = mode === "servings" ? "Servings" : "g/ml"
@@ -601,45 +615,8 @@ export function AddFoodDialog({
     )
   }
 
-  function renderMealsPanel() {
+  function renderMealsList(filteredMeals: MealDTO[]) {
     return (
-      <div className="flex min-h-0 flex-1 flex-col gap-4">
-        {/* Search + meal quantity multiplier */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
-              placeholder="Search your meals..."
-              value={mealQuery}
-              onChange={(e) => setMealQuery(e.target.value)}
-            />
-          </div>
-          <div className="flex items-center rounded-full bg-inset">
-            <Input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              step="any"
-              aria-label="Number of meal servings"
-              value={mealQuantity}
-              onChange={(e) => setMealQuantity(e.target.value)}
-              className="h-12 w-20 rounded-full border-0 bg-transparent text-center text-sm shadow-none focus-visible:ring-2 focus-visible:ring-ring/40"
-            />
-          </div>
-        </div>
-
-        <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-          {mealsLoading ? (
-            loadingState
-          ) : filteredMeals.length === 0 ? (
-            emptyState(
-              <Soup className="size-6" />,
-              (allMeals?.length ?? 0) === 0
-                ? "No meals yet. Build one in the Meals tab and it'll appear here."
-                : `No meals match "${mealQuery}".`,
-            )
-          ) : (
             <>
               <div className="hidden flex-col md:flex">
                 <div
@@ -703,9 +680,6 @@ export function AddFoodDialog({
                 Showing {filteredMeals.length} {filteredMeals.length === 1 ? "meal" : "meals"}
               </p>
             </>
-          )}
-        </div>
-      </div>
     )
   }
 
@@ -731,11 +705,28 @@ export function AddFoodDialog({
           <DialogTitle className="text-2xl font-extrabold tracking-[-0.5px]">Add to {group.name}</DialogTitle>
         </DialogHeader>
 
-        {/* Pill tabs */}
+        {/* Global search + quantity controls (hidden on the Custom form) */}
+        {tab !== "quick" ? (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                aria-label="Search foods and meals"
+                className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
+                placeholder="Search foods and meals..."
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
+            {renderQuantityControls(tab === "meals")}
+          </div>
+        ) : null}
+
+        {/* Pill filters */}
         <div className="flex flex-wrap items-center gap-2">
           {(
             [
-              { key: "library", label: "Library" },
+              { key: "all", label: "All" },
               { key: "favourites", label: "Favs" },
               { key: "recent", label: "Recent" },
               { key: "meals", label: "Meals" },
@@ -759,67 +750,70 @@ export function AddFoodDialog({
           })}
         </div>
 
-        {tab === "meals" ? (
-          renderMealsPanel()
-        ) : tab !== "quick" ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-4">
-            {/* Search (library only) + servings/weight toggle + quantity */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              {tab === "library" ? (
-                <div className="relative flex-1">
-                  <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    className="h-12 w-full rounded-full bg-inset pl-11 pr-4 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground hover:bg-inset-hover focus-visible:ring-2 focus-visible:ring-ring/50"
-                    placeholder="Search foods..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                  />
-                </div>
-              ) : (
-                <p className="flex-1 text-sm text-muted-foreground">
-                  {tab === "recent"
-                    ? "Your 10 most recently logged foods."
-                    : "Foods you've tagged as favourites in your library."}
-                </p>
-              )}
-              {renderQuantityControls()}
-            </div>
-
-            {/* List */}
-            <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
-              {tab === "library" ? (
-                foods.length === 0 ? (
+        {tab !== "quick" ? (
+          <div className="-mx-1 min-h-0 flex-1 overflow-y-auto px-1">
+            {tab === "all" ? (
+              filtered.length === 0 && filteredMeals.length === 0 ? (
+                mealsLoading ? (
+                  loadingState
+                ) : query.trim() ? (
+                  <p className="py-8 text-center text-sm text-muted-foreground">
+                    No foods or meals match &quot;{query}&quot;.
+                  </p>
+                ) : (
                   emptyState(
                     <UtensilsCrossed className="size-6" />,
-                    "No foods saved yet. Add some in the Foods tab, or use Quick add.",
+                    "No foods saved yet. Add some in the Foods tab, or use Custom.",
                   )
-                ) : filtered.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-muted-foreground">No matches for &quot;{query}&quot;.</p>
-                ) : (
-                  renderFoodList(filtered)
-                )
-              ) : tab === "recent" ? (
-                recentLoading ? (
-                  loadingState
-                ) : !recentFoods || recentFoods.length === 0 ? (
-                  emptyState(
-                    <Clock className="size-6" />,
-                    "No recently logged foods yet. Add a food from your library and it will show up here.",
-                  )
-                ) : (
-                  renderFoodList(recentFoods)
-                )
-              ) : favouriteLoading ? (
-                loadingState
-              ) : !favouriteFoods || favouriteFoods.length === 0 ? (
-                emptyState(
-                  <Star className="size-6" />,
-                      "No favourites yet. Tag foods as favourites from your food library and they'll appear here.",
                 )
               ) : (
-                renderFoodList(favouriteFoods)
-              )}
-            </div>
+                <>
+                  {filtered.length > 0 ? renderFoodList(filtered) : null}
+                  {filteredMeals.length > 0 ? (
+                    <div className={cn(filtered.length > 0 && "mt-6")}>{renderMealsList(filteredMeals)}</div>
+                  ) : null}
+                </>
+              )
+            ) : tab === "meals" ? (
+              mealsLoading ? (
+                loadingState
+              ) : filteredMeals.length === 0 ? (
+                emptyState(
+                  <Soup className="size-6" />,
+                  (allMeals?.length ?? 0) === 0
+                    ? "No meals yet. Build one in the Meals tab and it'll appear here."
+                    : `No meals match "${query}".`,
+                )
+              ) : (
+                renderMealsList(filteredMeals)
+              )
+            ) : tab === "recent" ? (
+              recentLoading ? (
+                loadingState
+              ) : !recentFoods || recentFoods.length === 0 ? (
+                emptyState(
+                  <Clock className="size-6" />,
+                  "No recently logged foods yet. Add a food from your library and it will show up here.",
+                )
+              ) : filteredRecent.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">
+                  No recent foods match &quot;{query}&quot;.
+                </p>
+              ) : (
+                renderFoodList(filteredRecent)
+              )
+            ) : !foods.some((f) => f.favourite) ? (
+              emptyState(
+                <Star className="size-6" />,
+                "No favourites yet. Tag foods as favourites from your food library and they'll appear here.",
+              )
+            ) : filteredFavourites.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No favourites match &quot;{query}&quot;.
+              </p>
+            ) : (
+              renderFoodList(filteredFavourites)
+            )}
           </div>
         ) : (
           <div className="min-h-0 flex-1 overflow-y-auto">
